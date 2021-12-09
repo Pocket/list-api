@@ -90,3 +90,5 @@ Create a handler function. This function will be invoked by the batch processor 
 #### Start a batch processor
 
 A new instance of `EventBatchProcessor` must be created in `main.ts`. It should listen on the `ItemEventEmitter` instance that's passed into the graphql context. Once it is created, it will automatically start listening for events and sending them to the handler function on the specified schedule.
+
+
