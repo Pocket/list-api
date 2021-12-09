@@ -1,0 +1,9 @@
+/node_modules/
+dist
+.env
+.idea
+.aws/.terraform/
+.vscode/
+
+docker-compose.override.yml
+
