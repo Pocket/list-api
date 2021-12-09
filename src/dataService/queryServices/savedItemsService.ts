@@ -6,11 +6,11 @@ import {
   PaginationInput,
   SavedItem,
   SavedItemConnection,
+  SavedItemEdge,
   SavedItemsContentType,
   SavedItemsFilter,
   SavedItemsSort,
   SavedItemStatus,
-  SavedItemEdge,
 } from '../../types';
 import config from '../../config';
 
@@ -145,6 +145,20 @@ export class SavedItemDataService {
     const query = this.buildQuery()
       .where({ user_id: this.userId, given_url: givenUrl })
       .first();
+
+    return query.then(SavedItemDataService.convertDbResultStatus);
+  }
+
+  /**
+   * Fetch all SavedItems via a list of unique URLs from a user's list
+   * @param givenUrls the URLs of the items to fetch
+   */
+  public batchGetSavedItemsByGivenUrls(
+    givenUrls: string[]
+  ): Promise<SavedItem[]> {
+    const query = this.buildQuery()
+      .where({ user_id: this.userId })
+      .whereIn('given_url', givenUrls);
 
     return query.then(SavedItemDataService.convertDbResultStatus);
   }

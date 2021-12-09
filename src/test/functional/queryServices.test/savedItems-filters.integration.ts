@@ -4,7 +4,7 @@ import { buildFederatedSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
 import chai, { expect } from 'chai';
-import { IContext } from '../../../server/context';
+import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import { getUnixTimestamp } from '../../../utils';
@@ -17,19 +17,16 @@ describe('getSavedItems filter', () => {
   const server = new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
     context: ({ req }) => {
-      const executionContext: IContext = {
-        userId: '1',
-        apiId: '0',
-        headers: undefined,
+      return new ContextManager({
+        request: {
+          headers: { userid: '1', apiid: '0' },
+        },
         db: {
           readClient: readClient(),
           writeClient: writeClient(),
         },
         eventEmitter: null,
-        emitItemEvent: undefined,
-      };
-
-      return executionContext;
+      });
     },
   });
 

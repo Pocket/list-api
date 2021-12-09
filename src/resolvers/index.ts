@@ -19,6 +19,7 @@ import {
 } from './mutation';
 import { tagsSavedItems } from './tag';
 import { SavedItem } from '../types';
+import { IContext } from '../server/context';
 
 export const resolvers = {
   ItemResult: {
@@ -37,6 +38,9 @@ export const resolvers = {
   SavedItem: {
     tags: savedItemTags,
     item,
+    __resolveReference: async (savedItem, context: IContext) => {
+      return await context.dataLoaders.savedItems.load(savedItem.url);
+    },
   },
   Tag: {
     savedItems: tagsSavedItems,

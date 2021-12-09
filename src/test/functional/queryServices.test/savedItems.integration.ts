@@ -4,7 +4,7 @@ import { buildFederatedSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
 import chai, { expect } from 'chai';
-import { IContext } from '../../../server/context';
+import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 
@@ -16,19 +16,16 @@ describe('getSavedItems', () => {
   const server = new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
     context: ({ req }) => {
-      const executionContext: IContext = {
-        userId: '1',
-        apiId: '0',
-        headers: undefined,
+      return new ContextManager({
+        request: {
+          headers: { userid: '1', apiid: '0' },
+        },
         db: {
           readClient: readClient(),
           writeClient: writeClient(),
         },
         eventEmitter: null,
-        emitItemEvent: undefined,
-      };
-
-      return executionContext;
+      });
     },
   });
 
@@ -240,6 +237,7 @@ describe('getSavedItems', () => {
       'http://abc'
     );
   });
+
   it('should finish the backward pagination from the previous cursor, without overfetching', async () => {
     // The top of the stack is the last page when paginating in reverse
     const variables = {
@@ -260,6 +258,39 @@ describe('getSavedItems', () => {
     expect(res.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to.be
       .false;
     expect(res.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be.true;
+  });
+
+  it('can resolve a entity query for a SavedItem', async () => {
+    const RESOLVE_REFERENCE_QUERY = gql`
+      query ($_representations: [_Any!]!) {
+        _entities(representations: $_representations) {
+          ... on SavedItem {
+            url
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      _representations: [
+        {
+          __typename: 'SavedItem',
+          url: 'http://abc',
+        },
+        {
+          __typename: 'SavedItem',
+          url: 'http://def',
+        },
+      ],
+    };
+
+    const res = await server.executeOperation({
+      query: RESOLVE_REFERENCE_QUERY,
+      variables,
+    });
+
+    expect(res.data._entities[0].url).to.equal('http://abc');
+    expect(res.data._entities[1].url).to.equal('http://def');
   });
 
   describe('sort', () => {
