@@ -4,25 +4,23 @@ import { expect } from 'chai';
 import { buildFederatedSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
-import { IContext } from '../../../server/context';
+import { ContextManager } from '../../../server/context';
 
 describe(' tags query tests - sad path validation', () => {
   const db = readClient();
   const server = new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
     context: ({ req }) => {
-      const executionContext: IContext = {
-        userId: '1',
-        apiId: '0',
-        headers: undefined,
+      return new ContextManager({
+        request: {
+          headers: { userid: '1', apiid: '0' },
+        },
         db: {
-          readClient: db,
+          readClient: readClient(),
           writeClient: writeClient(),
         },
         eventEmitter: null,
-        emitItemEvent: undefined,
-      };
-      return executionContext;
+      });
     },
   });
   const date = new Date('2020-10-03T10:20:30.000Z');

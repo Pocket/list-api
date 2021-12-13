@@ -8,6 +8,8 @@ import { IncomingHttpHeaders } from 'http';
 import { Knex } from 'knex';
 import { SavedItem } from '../types';
 import { TagDataService } from '../dataService/queryServices';
+import DataLoader from 'dataloader';
+import { createSavedItemsDataLoader } from '../dataLoader/savedItemsDataLoader';
 
 export interface IContext {
   userId: string;
@@ -18,6 +20,9 @@ export interface IContext {
     writeClient: Knex;
   };
   eventEmitter: ItemsEventEmitter;
+  dataLoaders: {
+    savedItems: DataLoader<any, any>;
+  };
 
   emitItemEvent(
     event: EventType,
@@ -59,6 +64,12 @@ export class ContextManager implements IContext {
 
   get db(): IContext['db'] {
     return this.config.db;
+  }
+
+  get dataLoaders(): IContext['dataLoaders'] {
+    return {
+      savedItems: createSavedItemsDataLoader(this),
+    };
   }
 
   get eventEmitter(): ItemsEventEmitter {
