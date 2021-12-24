@@ -12,7 +12,7 @@
     "lint-fix": "eslint --fix \"src/**/*.ts\""
   },
   "dependencies": {
-    "@aws-sdk/client-kinesis": "3.41.0",
+    "@aws-sdk/client-kinesis": "3.45.0",
     "@aws-sdk/client-sqs": "3.43.0",
     "@graphql-tools/mock": "^8.4.3",
     "@graphql-tools/schema": "^8.3.1",
