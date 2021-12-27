@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-kinesis": "3.45.0",
-    "@aws-sdk/client-sqs": "3.43.0",
+    "@aws-sdk/client-sqs": "3.45.0",
     "@graphql-tools/mock": "^8.4.3",
     "@graphql-tools/schema": "^8.3.1",
     "@pocket-tools/apollo-utils": "^2.0.0",
@@ -25,7 +25,7 @@
     "apollo-server-express": "^3.3.0",
     "apollo-server-plugin-base": "^3.2.0",
     "apollo-server-plugin-response-cache": "^3.4.0",
-    "aws-sdk": "^2.1025.0",
+    "aws-sdk": "^2.1048.0",
     "aws-xray-sdk-core": "^3.3.4",
     "aws-xray-sdk-express": "^3.3.4",
     "dataloader": "2.0.0",
