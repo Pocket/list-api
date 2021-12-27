@@ -23,7 +23,7 @@
     "@snowplow/node-tracker": "3.1.6",
     "apollo-server": "^3.3.0",
     "apollo-server-express": "^3.3.0",
-    "apollo-server-plugin-base": "^3.2.0",
+    "apollo-server-plugin-base": "^3.4.0",
     "apollo-server-plugin-response-cache": "^3.4.0",
     "aws-sdk": "^2.1048.0",
     "aws-xray-sdk-core": "^3.3.4",
