@@ -29,7 +29,7 @@
     "aws-xray-sdk-core": "^3.3.4",
     "aws-xray-sdk-express": "^3.3.4",
     "dataloader": "2.0.0",
-    "graphql": "^15.7.2",
+    "graphql": "^15.8.0",
     "graphql-depth-limit": "1.1.0",
     "graphql-tools": "^8.2.0",
     "knex": "^0.95.14",
