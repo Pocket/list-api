@@ -11,9 +11,7 @@ import {
   SavedItemDataService,
   TagDataService,
 } from '../dataService/queryServices';
-import {
-  validatePagination
-} from './utils'
+import { validatePagination } from './utils';
 import { IContext } from '../server/context';
 
 /**

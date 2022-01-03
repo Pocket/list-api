@@ -124,6 +124,7 @@ export type SavedItemUpsertInput = {
 };
 
 export const defaultPage = 30;
+export const maxPageSize = 100;
 
 /**
  * Keeping the arbitrary numbers consistent with this enum

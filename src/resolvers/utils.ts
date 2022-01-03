@@ -2,7 +2,7 @@
  * Returns a savedItemMap from the list of tags.
  * @param tags list of tags from which savedItem keys are generated.
  */
-import { defaultPage, PaginationInput } from '../types';
+import { defaultPage, maxPageSize, PaginationInput } from '../types';
 
 export function getSavedItemMapFromTags(tags) {
   const savedItemMap = {};
@@ -40,7 +40,7 @@ export function validatePagination(pagination: PaginationInput) {
       throw new Error('invalid before cursor');
     }
 
-    if(!pagination.last) {
+    if (!pagination.last) {
       pagination.last = defaultPage;
     }
   }
@@ -51,7 +51,7 @@ export function validatePagination(pagination: PaginationInput) {
       throw new Error('invalid after cursor');
     }
 
-    if(!pagination.first) {
+    if (!pagination.first) {
       pagination.first = defaultPage;
     }
   }
@@ -62,6 +62,14 @@ export function validatePagination(pagination: PaginationInput) {
 
   if (pagination.last <= 0) {
     pagination.last = defaultPage;
+  }
+
+  if (pagination.first > maxPageSize) {
+    pagination.first = maxPageSize;
+  }
+
+  if (pagination.last > maxPageSize) {
+    pagination.last = maxPageSize;
   }
 
   return pagination;
