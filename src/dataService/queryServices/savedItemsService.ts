@@ -177,7 +177,7 @@ export class SavedItemDataService {
     // TODO: Implement filter and sort
     // TODO: Add sensible defaults and a limit if none is provided (naked before/after)
     if (pagination == null) {
-      pagination = { first: 30 };
+      pagination = { first: config.pagination.defaultPageSize };
     }
     const sortOrder = sort?.sortOrder ?? 'DESC';
     const sortColumn = this.sortMap[sort?.sortBy] ?? '_createdAt';

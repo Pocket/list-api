@@ -11,6 +11,7 @@ import {
   SavedItemDataService,
   TagDataService,
 } from '../dataService/queryServices';
+import { validatePagination } from './utils';
 import { IContext } from '../server/context';
 
 /**
@@ -42,6 +43,7 @@ export function savedItems(
   },
   context: IContext
 ): Promise<SavedItemConnection> {
+  validatePagination(args.pagination);
   return new SavedItemDataService(context).getSavedItems(
     args.filter,
     args.sort,
@@ -62,6 +64,7 @@ export async function tags(
   },
   context: IContext
 ): Promise<TagConnection> {
+  validatePagination(args.pagination);
   return await new TagDataService(context).getTagsByUser(
     parent.id,
     args.pagination
