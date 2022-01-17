@@ -1,3 +1,5 @@
+import { PaginationInput } from '@pocket-tools/apollo-utils';
+
 export type User = {
   id: string;
 };
@@ -77,12 +79,7 @@ export type TagEdge = {
   node: Tag;
 };
 
-export type PaginationInput = {
-  after?: string;
-  before?: string;
-  first?: number;
-  last?: number;
-};
+export type Pagination = PaginationInput;
 
 export enum SavedItemsContentType {
   VIDEO = 'VIDEO',

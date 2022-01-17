@@ -3,7 +3,7 @@ import { knexPaginator as paginate } from '@pocket/apollo-cursor-pagination';
 import { IContext } from '../../server/context';
 import { cleanAndValidateTag, mysqlTimeString } from '../utils';
 import {
-  PaginationInput,
+  Pagination,
   SavedItem,
   SavedItemConnection,
   SavedItemEdge,
@@ -172,7 +172,7 @@ export class SavedItemDataService {
   public getSavedItems(
     filter?: SavedItemsFilter,
     sort?: SavedItemsSort,
-    pagination?: PaginationInput
+    pagination?: Pagination
   ): Promise<SavedItemConnection> {
     // TODO: Implement filter and sort
     // TODO: Add sensible defaults and a limit if none is provided (naked before/after)

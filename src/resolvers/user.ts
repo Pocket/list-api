@@ -1,5 +1,5 @@
 import {
-  PaginationInput,
+  Pagination,
   SavedItem,
   SavedItemConnection,
   SavedItemsFilter,
@@ -11,8 +11,9 @@ import {
   SavedItemDataService,
   TagDataService,
 } from '../dataService/queryServices';
-import { validatePagination } from './utils';
+import { validatePagination } from '@pocket-tools/apollo-utils'
 import { IContext } from '../server/context';
+import config from '../config';
 
 /**
  * Get saved item by ID
@@ -39,11 +40,13 @@ export function savedItems(
   args: {
     filter: SavedItemsFilter;
     sort: SavedItemsSort;
-    pagination: PaginationInput;
+    pagination: Pagination;
   },
   context: IContext
 ): Promise<SavedItemConnection> {
-  validatePagination(args.pagination);
+  validatePagination(args.pagination,
+    config.pagination.defaultPageSize,
+    config.pagination.maxPageSize);
   return new SavedItemDataService(context).getSavedItems(
     args.filter,
     args.sort,
@@ -60,11 +63,13 @@ export function savedItems(
 export async function tags(
   parent: User,
   args: {
-    pagination: PaginationInput;
+    pagination: Pagination;
   },
   context: IContext
 ): Promise<TagConnection> {
-  validatePagination(args.pagination);
+  validatePagination(args.pagination,
+    config.pagination.defaultPageSize,
+    config.pagination.maxPageSize);
   return await new TagDataService(context).getTagsByUser(
     parent.id,
     args.pagination
