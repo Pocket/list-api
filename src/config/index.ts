@@ -81,6 +81,6 @@ export default {
   parserVersion: process.env.PARSER_VERSION || 'v3beta',
   pagination: {
     defaultPageSize: 30,
-    maxPageSize: 100
-  }
+    maxPageSize: 100,
+  },
 };
