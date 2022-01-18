@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 import { IContext } from '../../server/context';
 import { knexPaginator as paginate } from '@pocket/apollo-cursor-pagination';
-import { PaginationInput, Tag, TagEdge } from '../../types';
+import { Pagination, Tag, TagEdge } from '../../types';
 import { TagObjectMapper } from '../tagObjectMapper';
 import { cleanAndValidateTag } from '../utils';
 import config from '../../config';
@@ -89,7 +89,7 @@ export class TagDataService {
 
   public async getTagsByUser(
     userId: string,
-    pagination?: PaginationInput
+    pagination?: Pagination
   ): Promise<any> {
     pagination = pagination ?? { first: config.pagination.defaultPageSize };
     const query = this.getItemsByTagsAndUser();
