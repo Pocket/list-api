@@ -133,7 +133,7 @@ export class SavedItemDataService {
     pagination: Pagination,
     filter: SavedItemsFilter,
     sort: SavedItemsSort
-  ): Promise<any> {
+  ): Promise<SavedItemConnection> {
     const query = this.buildQuery()
       .where({ user_id: this.userId })
       .whereIn('item_id', itemIds);
@@ -249,7 +249,7 @@ export class SavedItemDataService {
   }
 
   /**
-   * Build filter statments from SavedItemsFilter for pagination
+   * Build filter statements from SavedItemsFilter for pagination
    * The database entities don't nicely map onto the GraphQL objects
    * so this very explicit way may be the most clear and maintainable.
    * @param baseQuery the base query for selecting a user's list

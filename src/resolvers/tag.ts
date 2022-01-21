@@ -1,4 +1,4 @@
-import { SavedItem } from '../types';
+import { SavedItemConnection } from '../types';
 import { IContext } from '../server/context';
 import { SavedItemDataService } from '../dataService/queryServices/savedItemsService';
 import { validatePagination } from '@pocket-tools/apollo-utils';
@@ -13,7 +13,7 @@ export async function tagsSavedItems(
   parent: any,
   args,
   context: IContext
-): Promise<SavedItem[]> {
+): Promise<SavedItemConnection> {
   args.pagination = validatePagination(args.pagination);
   const savedItemDataService = new SavedItemDataService(context);
   return await savedItemDataService.getSavedItemsForListOfIds(
