@@ -31,6 +31,10 @@ describe('tags query tests - happy path', () => {
   const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');
   const unixDate1 = getUnixTimestamp(date1);
+  const date2 = new Date('2022-10-03T10:20:30.000Z');
+  const unixDate2 = getUnixTimestamp(date1);
+  const date3 = new Date('2023-10-03T10:20:30.000Z');
+  const unixDate3 = getUnixTimestamp(date1);
 
   const GET_TAG_CONNECTION = gql`
     query getTags($id: ID!, $pagination: PaginationInput) {
@@ -61,12 +65,14 @@ describe('tags query tests - happy path', () => {
     }
   `;
 
-  afterAll(async () => {
-    await db.destroy();
+  afterEach(async () => {
+    //await db.destroy();
   });
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await db('list').truncate();
+    await db('item_tags').truncate();
+
     await db('list').insert([
       {
         user_id: 1,
@@ -92,15 +98,44 @@ describe('tags query tests - happy path', () => {
         time_added: date,
         time_updated: date,
         time_read: date,
-        time_favorited: date,
+        time_favorited: date1,
         api_id: '0',
         status: 0,
         favorite: 1,
         api_id_updated: '0',
       },
+      {
+        user_id: 1,
+        item_id: 3,
+        resolved_id: 3,
+        given_url: 'http://winter.sports',
+        title: 'winter sports',
+        time_added: date,
+        time_updated: date,
+        time_read: date,
+        time_favorited: date2,
+        api_id: '0',
+        status: 0,
+        favorite: 1,
+        api_id_updated: '0',
+      },
+      {
+        user_id: 1,
+        item_id: 4,
+        resolved_id: 4,
+        given_url: 'http://summer.sports',
+        title: 'summer sports',
+        time_added: date,
+        time_updated: date,
+        time_read: date,
+        time_favorited: date3,
+        api_id: '0',
+        status: 0,
+        favorite: 0,
+        api_id_updated: '0',
+      },
     ]);
 
-    await db('item_tags').truncate();
     await db('item_tags').insert([
       {
         user_id: 1,
@@ -152,6 +187,26 @@ describe('tags query tests - happy path', () => {
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       },
+      {
+        user_id: 1,
+        item_id: 3,
+        tag: 'adventure',
+        status: 1,
+        time_added: date,
+        time_updated: date,
+        api_id: 'apiid',
+        api_id_updated: 'updated_api_id',
+      },
+      {
+        user_id: 1,
+        item_id: 4,
+        tag: 'adventure',
+        status: 1,
+        time_added: date,
+        time_updated: date,
+        api_id: 'apiid',
+        api_id_updated: 'updated_api_id',
+      },
     ]);
   });
 
@@ -176,7 +231,17 @@ describe('tags query tests - happy path', () => {
                   _version
                   _deletedAt
                   savedItems {
-                    url
+                    edges {
+                      cursor
+                      node {
+                        url
+                        item {
+                          ... on Item {
+                            givenUrl
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -222,14 +287,21 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
   });
 
-  it('return list of SavedItems for Tags', async () => {
+  it('return list of paginated SavedItems for Tags', async () => {
     const variables = {
       id: '1',
       pagination: { first: 2 },
+      itemPagination: { first: 2 },
     };
 
     const GET_TAGS_SAVED_ITEMS = gql`
-      query getTags($id: ID!, $pagination: PaginationInput) {
+      query getTags(
+        $id: ID!
+        $pagination: PaginationInput
+        $itemPagination: PaginationInput
+        $filter: SavedItemsFilter
+        $sort: SavedItemsSort
+      ) {
         _entities(representations: { id: $id, __typename: "User" }) {
           ... on User {
             tags(pagination: $pagination) {
@@ -238,9 +310,25 @@ describe('tags query tests - happy path', () => {
                 node {
                   id
                   name
-                  savedItems {
-                    id
-                    url
+                  savedItems(pagination: $itemPagination) {
+                    edges {
+                      cursor
+                      node {
+                        url
+                        item {
+                          ... on Item {
+                            givenUrl
+                          }
+                        }
+                      }
+                    }
+                    pageInfo {
+                      startCursor
+                      endCursor
+                      hasNextPage
+                      hasPreviousPage
+                    }
+                    totalCount
                   }
                 }
               }
@@ -266,8 +354,14 @@ describe('tags query tests - happy path', () => {
       'adventure'
     );
     expect(
-      res.data?._entities[0].tags.edges[0].node.savedItems[0].url
-    ).to.equal('http://tagtest');
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
+    ).to.equal('http://summer.sports');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
+    ).equals(3);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
+    ).equals(2);
   });
 
   it('should return list of Tags for User for first n values', async () => {

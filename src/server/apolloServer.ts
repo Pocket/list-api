@@ -55,7 +55,6 @@ export function getServer(contextFactory: ContextFactory): ApolloServer {
         ? ApolloServerPluginLandingPageDisabled()
         : ApolloServerPluginLandingPageGraphQLPlayground(),
     ],
-    formatError: errorHandler,
     introspection: process.env.NODE_ENV === 'production' ? false : true,
     context: ({ req }) => contextFactory(req),
   });

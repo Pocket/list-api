@@ -125,16 +125,65 @@ export class SavedItemDataService {
    * Fetch a list of saved items for the list of Ids.
    * @param itemIds the savedItem ID to fetch
    */
-  public async getSavedItemsForListOfIds(itemIds: string[]): Promise<any> {
-    const query = this.buildQuery()
+  public async getSavedItemsForListOfIds(
+    itemIds: string[],
+    pagination: Pagination,
+    filter: SavedItemsFilter,
+    sort: SavedItemsSort
+  ): Promise<any> {
+    let query = this.buildQuery()
       .where({ user_id: this.userId })
       .whereIn('item_id', itemIds);
 
-    const dbResult = await query;
-    dbResult?.map(
-      (row) => (row.status = SavedItemDataService.statusMap[row.status])
+    return this.getPaginatedItemsForQuery(query, pagination, filter, sort);
+  }
+
+  private async getPaginatedItemsForQuery(
+    query: any,
+    pagination: Pagination,
+    filter: SavedItemsFilter,
+    sort: SavedItemsSort
+  ): Promise<SavedItemConnection> {
+    if (pagination == null) {
+      pagination = { first: config.pagination.defaultPageSize };
+    }
+
+    const sortOrder = sort?.sortOrder ?? 'DESC';
+    const sortColumn = this.sortMap[sort?.sortBy] ?? '_createdAt';
+
+    query = query.orderBy(
+      sortColumn,
+      sortOrder.toLowerCase(),
+      'item_id',
+      'asc'
+    ); // item_id sort is to resolve ties with stable sort (e.g. null sort field)
+
+    if (filter != null) {
+      query = this.buildFilterQuery(query, filter);
+    }
+    return await paginate(
+      // Need to use a subquery in order to order by derived fields ('archivedAt')
+      this.readDb.select('*').from(query.as('page_query')),
+      {
+        first: pagination?.first,
+        last: pagination?.last,
+        before: pagination?.before,
+        after: pagination?.after,
+        orderBy: sortColumn,
+        orderDirection: sortOrder,
+      },
+      {
+        primaryKey: 'item_id',
+        modifyEdgeFn: (edge): SavedItemEdge => ({
+          ...edge,
+          //Format the node to conform to our SavedItem type.
+          node: {
+            ...edge.node,
+            status: SavedItemDataService.statusMap[edge.node.status],
+          },
+        }),
+      }
     );
-    return dbResult;
   }
 
   /**
@@ -174,43 +223,8 @@ export class SavedItemDataService {
     sort?: SavedItemsSort,
     pagination?: Pagination
   ): Promise<SavedItemConnection> {
-    // TODO: Implement filter and sort
-    // TODO: Add sensible defaults and a limit if none is provided (naked before/after)
-    if (pagination == null) {
-      pagination = { first: config.pagination.defaultPageSize };
-    }
-    const sortOrder = sort?.sortOrder ?? 'DESC';
-    const sortColumn = this.sortMap[sort?.sortBy] ?? '_createdAt';
-    let baseQuery = this.buildQuery()
-      .where('user_id', this.userId)
-      // Pagination requires a stable sort
-      .orderBy(sortColumn, sortOrder.toLowerCase(), 'item_id', 'asc'); // item_id sort is to resolve ties with stable sort (e.g. null sort field)
-    if (filter != null) {
-      baseQuery = this.buildFilterQuery(baseQuery, filter);
-    }
-    return paginate(
-      // Need to use a subquery in order to order by derived fields ('archivedAt')
-      this.readDb.select('*').from(baseQuery.as('page_query')),
-      {
-        first: pagination?.first,
-        last: pagination?.last,
-        before: pagination?.before,
-        after: pagination?.after,
-        orderBy: sortColumn,
-        orderDirection: sortOrder,
-      },
-      {
-        primaryKey: 'item_id',
-        modifyEdgeFn: (edge): SavedItemEdge => ({
-          ...edge,
-          //Format the node to conform to our SavedItem type.
-          node: {
-            ...edge.node,
-            status: SavedItemDataService.statusMap[edge.node.status],
-          },
-        }),
-      }
-    );
+    let baseQuery = this.buildQuery().where('user_id', this.userId);
+    return this.getPaginatedItemsForQuery(baseQuery, pagination, filter, sort);
   }
 
   /**
