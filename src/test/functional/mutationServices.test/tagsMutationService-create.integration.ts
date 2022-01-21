@@ -234,7 +234,7 @@ describe('Mutation for Tag: ', () => {
       input: [
         { savedItemId: 0, name: 'İnanç' },
         { savedItemId: 0, name: '𡞰' },
-        { savedItemId: 0, name: '(╯°□°)╯︵ ┻━┻' },
+        { savedItemId: 1, name: '(╯°□°)╯︵ ┻━┻' },
       ],
     };
     const res = await server.executeOperation({
@@ -249,7 +249,15 @@ describe('Mutation for Tag: ', () => {
       '𡞰',
       '(╯°□°)╯︵ ┻━┻',
     ]);
-    data.forEach((t) => expect(t.savedItems.edges[0].node.id).equals('0'));
+    expect(
+      data.find((t) => t.name == '(╯°□°)╯︵ ┻━┻').savedItems.edges[0].node.id
+    ).equals('1');
+    expect(data.find((t) => t.name == '𡞰').savedItems.edges[0].node.id).equals(
+      '0'
+    );
+    expect(
+      data.find((t) => t.name == 'i̇nanç').savedItems.edges[0].node.id
+    ).equals('0');
   });
 
   it('should not fail on duplicates', async () => {
