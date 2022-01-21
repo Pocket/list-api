@@ -13,8 +13,7 @@ export async function tags(
   args,
   context: IContext
 ): Promise<Tag[]> {
-  const t = new TagDataService(context).getTagsByUserItem(parent.id);
-  return t;
+  return new TagDataService(context).getTagsByUserItem(parent.id);
 }
 
 /**

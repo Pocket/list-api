@@ -85,7 +85,7 @@ describe('tags query tests - happy path', () => {
         time_read: date,
         time_favorited: date,
         api_id: 'apiid',
-        status: 0,
+        status: 1,
         favorite: 1,
         api_id_updated: 'apiid',
       },
@@ -115,7 +115,7 @@ describe('tags query tests - happy path', () => {
         time_read: date,
         time_favorited: date2,
         api_id: '0',
-        status: 0,
+        status: 1,
         favorite: 1,
         api_id_updated: '0',
       },
@@ -130,8 +130,8 @@ describe('tags query tests - happy path', () => {
         time_read: date,
         time_favorited: date3,
         api_id: '0',
-        status: 0,
-        favorite: 0,
+        status: 1,
+        favorite: 1,
         api_id_updated: '0',
       },
     ]);
@@ -210,6 +210,61 @@ describe('tags query tests - happy path', () => {
     ]);
   });
 
+  const GET_TAGS_SAVED_ITEMS = gql`
+    query getTags(
+      $id: ID!
+      $pagination: PaginationInput
+      $itemPagination: PaginationInput
+      $filter: SavedItemsFilter
+      $sort: SavedItemsSort
+    ) {
+      _entities(representations: { id: $id, __typename: "User" }) {
+        ... on User {
+          tags(pagination: $pagination) {
+            edges {
+              cursor
+              node {
+                id
+                name
+                savedItems(
+                  pagination: $itemPagination
+                  filter: $filter
+                  sort: $sort
+                ) {
+                  edges {
+                    cursor
+                    node {
+                      url
+                      item {
+                        ... on Item {
+                          givenUrl
+                        }
+                      }
+                    }
+                  }
+                  pageInfo {
+                    startCursor
+                    endCursor
+                    hasNextPage
+                    hasPreviousPage
+                  }
+                  totalCount
+                }
+              }
+            }
+            pageInfo {
+              startCursor
+              endCursor
+              hasNextPage
+              hasPreviousPage
+            }
+            totalCount
+          }
+        }
+      }
+    }
+  `;
+
   it('return list of Tags for SavedItem', async () => {
     const variables = {
       userId: '1',
@@ -242,6 +297,13 @@ describe('tags query tests - happy path', () => {
                         }
                       }
                     }
+                    pageInfo {
+                      startCursor
+                      endCursor
+                      hasNextPage
+                      hasPreviousPage
+                    }
+                    totalCount
                   }
                 }
               }
@@ -285,65 +347,66 @@ describe('tags query tests - happy path', () => {
     ).toString();
     expect(tagId1).to.equal('zebra');
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
+    expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
+    expect(
+      res.data?._entities[0].savedItemById.tags[0].savedItems.edges.length
+    ).equals(2);
+    expect(
+      res.data?._entities[0].savedItemById.tags[0].savedItems.edges[0].node.url
+    ).equals('http://tagtest');
+    expect(
+      res.data?._entities[0].savedItemById.tags[0].savedItems.totalCount
+    ).equals(2);
+    expect(
+      res.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
+        .hasNextPage
+    ).is.false;
+    expect(
+      res.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
+        .hasPreviousPage
+    ).is.false;
   });
 
   it('return list of paginated SavedItems for Tags', async () => {
     const variables = {
       id: '1',
       pagination: { first: 2 },
-      itemPagination: { first: 2 },
+      itemPagination: { after: 'NF8qXzE2MDE3MjA0MzA', first: 2 },
     };
 
-    const GET_TAGS_SAVED_ITEMS = gql`
-      query getTags(
-        $id: ID!
-        $pagination: PaginationInput
-        $itemPagination: PaginationInput
-        $filter: SavedItemsFilter
-        $sort: SavedItemsSort
-      ) {
-        _entities(representations: { id: $id, __typename: "User" }) {
-          ... on User {
-            tags(pagination: $pagination) {
-              edges {
-                cursor
-                node {
-                  id
-                  name
-                  savedItems(pagination: $itemPagination) {
-                    edges {
-                      cursor
-                      node {
-                        url
-                        item {
-                          ... on Item {
-                            givenUrl
-                          }
-                        }
-                      }
-                    }
-                    pageInfo {
-                      startCursor
-                      endCursor
-                      hasNextPage
-                      hasPreviousPage
-                    }
-                    totalCount
-                  }
-                }
-              }
-              pageInfo {
-                startCursor
-                endCursor
-                hasNextPage
-                hasPreviousPage
-              }
-              totalCount
-            }
-          }
-        }
-      }
-    `;
+    const res = await server.executeOperation({
+      query: GET_TAGS_SAVED_ITEMS,
+      variables,
+    });
+
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
+      'adventure'
+    );
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
+    ).to.equal('http://winter.sports');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
+    ).equals(3);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
+    ).equals(2);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo.hasNextPage
+    ).is.false;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo
+        .hasPreviousPage
+    ).is.true;
+  });
+
+  it('return paginated SavedItems, when filtered by archived', async () => {
+    const variables = {
+      id: '1',
+      pagination: { first: 2 },
+      itemPagination: { last: 10 },
+      filter: { isArchived: true },
+    };
 
     const res = await server.executeOperation({
       query: GET_TAGS_SAVED_ITEMS,
@@ -357,8 +420,55 @@ describe('tags query tests - happy path', () => {
       res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
     ).to.equal('http://summer.sports');
     expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[1].node.url
+    ).to.equal('http://winter.sports');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
+    ).equals(2);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
+    ).equals(2);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo.hasNextPage
+    ).is.false;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo
+        .hasPreviousPage
+    ).is.false;
+  });
+
+  it('return paginated SavedItems in ASC order when sorted by favorited items', async () => {
+    const variables = {
+      id: '1',
+      pagination: { first: 2 },
+      itemPagination: { before: 'NF8qXzE2OTYzMjg0MzA=', last: 10 },
+      sort: { sortBy: 'FAVORITED_AT', sortOrder: 'ASC' },
+    };
+
+    const res = await server.executeOperation({
+      query: GET_TAGS_SAVED_ITEMS,
+      variables,
+    });
+
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
+      'adventure'
+    );
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
+    ).to.equal('http://tagtest');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[1].node.url
+    ).to.equal('http://winter.sports');
+    expect(
       res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
     ).equals(3);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo.hasNextPage
+    ).is.true;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo
+        .hasPreviousPage
+    ).is.false;
     expect(
       res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
     ).equals(2);
