@@ -122,8 +122,11 @@ export class SavedItemDataService {
   }
 
   /**
-   * Fetch a list of saved items for the list of Ids.
+   * Fetch paginated list of saved items for the list of Item Ids.
    * @param itemIds the savedItem ID to fetch
+   * @param pagination pagination inputs
+   * @param filter filter options for savedItems
+   * @param sort sort options for savedItems
    */
   public async getSavedItemsForListOfIds(
     itemIds: string[],
@@ -131,13 +134,20 @@ export class SavedItemDataService {
     filter: SavedItemsFilter,
     sort: SavedItemsSort
   ): Promise<any> {
-    let query = this.buildQuery()
+    const query = this.buildQuery()
       .where({ user_id: this.userId })
       .whereIn('item_id', itemIds);
 
     return this.getPaginatedItemsForQuery(query, pagination, filter, sort);
   }
 
+  /**
+   * Fetch paginated list of savedItems for the given query
+   * @param query baseQuery for fetching savedItems
+   * @param pagination pagination inputs
+   * @param filter filter options for savedItems
+   * @param sort sort options for savedItems
+   */
   private async getPaginatedItemsForQuery(
     query: any,
     pagination: Pagination,
@@ -223,7 +233,7 @@ export class SavedItemDataService {
     sort?: SavedItemsSort,
     pagination?: Pagination
   ): Promise<SavedItemConnection> {
-    let baseQuery = this.buildQuery().where('user_id', this.userId);
+    const baseQuery = this.buildQuery().where('user_id', this.userId);
     return this.getPaginatedItemsForQuery(baseQuery, pagination, filter, sort);
   }
 

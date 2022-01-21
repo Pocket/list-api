@@ -32,9 +32,7 @@ describe('tags query tests - happy path', () => {
   const date1 = new Date('2021-10-03T10:20:30.000Z');
   const unixDate1 = getUnixTimestamp(date1);
   const date2 = new Date('2022-10-03T10:20:30.000Z');
-  const unixDate2 = getUnixTimestamp(date1);
   const date3 = new Date('2023-10-03T10:20:30.000Z');
-  const unixDate3 = getUnixTimestamp(date1);
 
   const GET_TAG_CONNECTION = gql`
     query getTags($id: ID!, $pagination: PaginationInput) {
@@ -65,11 +63,11 @@ describe('tags query tests - happy path', () => {
     }
   `;
 
-  afterEach(async () => {
-    //await db.destroy();
+  afterAll(async () => {
+    await db.destroy();
   });
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     await db('list').truncate();
     await db('item_tags').truncate();
 
@@ -265,7 +263,7 @@ describe('tags query tests - happy path', () => {
     }
   `;
 
-  it('return list of Tags for SavedItem', async () => {
+  it('return list of Tags and paginated savedItems for SavedItem', async () => {
     const variables = {
       userId: '1',
       itemId: '1',

@@ -64,7 +64,9 @@ export function savedItems(
  */
 export async function tags(
   parent: User,
-  args,
+  args: {
+    pagination: Pagination;
+  },
   context: IContext
 ): Promise<TagConnection> {
   args.pagination = validatePagination(

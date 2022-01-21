@@ -9,7 +9,6 @@ import { validatePagination } from '@pocket-tools/apollo-utils';
  * @param args
  * @param context
  */
-//todo: function to change
 export async function tagsSavedItems(
   parent: any,
   args,
