@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
 import { IContext } from '../../server/context';
-import { knexPaginator as paginate } from '@pocket/apollo-cursor-pagination';
+import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-pagination';
 import { Pagination, Tag, TagEdge } from '../../types';
 import { TagObjectMapper } from '../tagObjectMapper';
 import { cleanAndValidateTag } from '../utils';
