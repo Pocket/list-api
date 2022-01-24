@@ -139,9 +139,14 @@ describe('updateTag Mutation: ', () => {
         _createdAt
         _updatedAt
         savedItems {
-          id
-          url
-          _updatedAt
+          edges {
+            cursor
+            node {
+              id
+              url
+              _updatedAt
+            }
+          }
         }
       }
     }
@@ -157,8 +162,22 @@ describe('updateTag Mutation: ', () => {
       };
 
       const expectedSavedItems = [
-        { id: '0', url: 'http://0', _updatedAt: getUnixTimestamp(updateDate) },
-        { id: '1', url: 'http://1', _updatedAt: getUnixTimestamp(updateDate) },
+        {
+          node: {
+            id: '0',
+            url: 'http://0',
+            _updatedAt: getUnixTimestamp(updateDate),
+          },
+          cursor: 'MF8qXzE2MDE3Mzg0MzA=',
+        },
+        {
+          node: {
+            id: '1',
+            url: 'http://1',
+            _updatedAt: getUnixTimestamp(updateDate),
+          },
+          cursor: 'MV8qXzE2MDE3Mzg0MzA=',
+        },
       ];
 
       const res = await server.executeOperation({
@@ -171,7 +190,7 @@ describe('updateTag Mutation: ', () => {
       expect(res.data.updateTag._updatedAt).equals(
         getUnixTimestamp(updateDate)
       );
-      expect(res.data.updateTag.savedItems).to.deep.equalInAnyOrder(
+      expect(res.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
         expectedSavedItems
       );
     }
@@ -204,8 +223,22 @@ describe('updateTag Mutation: ', () => {
     });
 
     const expectedSavedItems = [
-      { id: '0', url: 'http://0', _updatedAt: getUnixTimestamp(updateDate) },
-      { id: '1', url: 'http://1', _updatedAt: getUnixTimestamp(updateDate) },
+      {
+        node: {
+          id: '0',
+          url: 'http://0',
+          _updatedAt: getUnixTimestamp(updateDate),
+        },
+        cursor: 'MF8qXzE2MDE3Mzg0MzA=',
+      },
+      {
+        node: {
+          id: '1',
+          url: 'http://1',
+          _updatedAt: getUnixTimestamp(updateDate),
+        },
+        cursor: 'MV8qXzE2MDE3Mzg0MzA=',
+      },
     ];
 
     const QueryOldTags = await db('item_tags').select().where({ tag: 'zebra' });
@@ -214,7 +247,7 @@ describe('updateTag Mutation: ', () => {
     expect(res.data.updateTag.name).equals('existing_tag');
     expect(res.data.updateTag._createdAt).equals(unixDate);
     expect(res.data.updateTag._updatedAt).equals(getUnixTimestamp(updateDate));
-    expect(res.data.updateTag.savedItems).to.deep.equalInAnyOrder(
+    expect(res.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
       expectedSavedItems
     );
     expect(QueryOldTags.length).equals(0);

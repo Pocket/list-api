@@ -40,8 +40,14 @@ describe('Mutation for Tag: ', () => {
     mutation createTags($input: [TagCreateInput!]!) {
       createTags(input: $input) {
         name
-        savedItems {
-          id
+        savedItems(sort: { sortBy: CREATED_AT, sortOrder: ASC }) {
+          edges {
+            cursor
+            node {
+              url
+              id
+            }
+          }
         }
       }
     }
@@ -100,8 +106,13 @@ describe('Mutation for Tag: ', () => {
           _version
           _deletedAt
           savedItems {
-            id
-            _updatedAt
+            edges {
+              cursor
+              node {
+                id
+                url
+              }
+            }
           }
         }
       }
@@ -122,6 +133,7 @@ describe('Mutation for Tag: ', () => {
     expect(Buffer.from(data.id, 'base64').toString()).to.equal('zeta');
     expect(data._deletedAt).to.be.null;
     expect(data._version).to.be.null;
+    expect(data.savedItems.edges[0].node.id).equals('0');
   });
 
   // This test is broken and should be fixed
@@ -155,10 +167,8 @@ describe('Mutation for Tag: ', () => {
     const data = res.data.createTags;
     expect(data.length).to.equal(1);
     expect(data[0].name).to.equal('char');
-    expect(data[0].savedItems).to.deep.equalInAnyOrder([
-      { id: '0' },
-      { id: '1' },
-    ]);
+    expect(data[0].savedItems.edges[0].node.id).equals('0');
+    expect(data[0].savedItems.edges[1].node.id).equals('1');
   });
 
   it('createTags should emit ADD_TAGS event on success', async () => {
@@ -197,26 +207,26 @@ describe('Mutation for Tag: ', () => {
       query: createTagsMutation,
       variables,
     });
-    const expectedData = [
-      { name: 'bajeena', savedItems: [{ id: '0' }] },
-      { name: 'quattro', savedItems: [{ id: '0' }] },
-    ];
     expect(res.errors).to.be.undefined;
     const data = res.data.createTags;
     expect(data.length).to.equal(2);
-    expect(data).to.deep.equalInAnyOrder(expectedData);
+    expect(data[0].name).equals('bajeena');
+    expect(data[1].name).equals('quattro');
+    expect(data[0].savedItems.edges[0].node.id).equals('0');
+    expect(data[1].savedItems.edges[0].node.id).equals('0');
   });
   it('should handle emojis', async () => {
     const variables = {
       input: [{ savedItemId: 0, name: '🤪😒' }],
     };
-    const expectedData = [{ name: '🤪😒', savedItems: [{ id: '0' }] }];
     const res = await server.executeOperation({
       query: createTagsMutation,
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data.createTags).to.deep.equal(expectedData);
+    const data = res.data.createTags;
+    expect(data[0].name).equals('🤪😒');
+    expect(data[0].savedItems.edges[0].node.id).equals('0');
   });
 
   it('should handle other unicode, non-ascii chars', async () => {
@@ -231,15 +241,23 @@ describe('Mutation for Tag: ', () => {
       query: createTagsMutation,
       variables,
     });
-    const expectedData = [
-      { name: 'i̇nanç', savedItems: [{ id: '0' }] },
-      { name: '𡞰', savedItems: [{ id: '0' }] },
-      { name: '(╯°□°)╯︵ ┻━┻', savedItems: [{ id: '1' }] },
-    ];
     expect(res.errors).to.be.undefined;
     const data = res.data.createTags;
     expect(data.length).to.equal(3);
-    expect(data).to.deep.equalInAnyOrder(expectedData);
+    expect(data.map((t) => t.name)).deep.equalInAnyOrder([
+      'i̇nanç',
+      '𡞰',
+      '(╯°□°)╯︵ ┻━┻',
+    ]);
+    expect(
+      data.find((t) => t.name == '(╯°□°)╯︵ ┻━┻').savedItems.edges[0].node.id
+    ).equals('1');
+    expect(data.find((t) => t.name == '𡞰').savedItems.edges[0].node.id).equals(
+      '0'
+    );
+    expect(
+      data.find((t) => t.name == 'i̇nanç').savedItems.edges[0].node.id
+    ).equals('0');
   });
 
   it('should not fail on duplicates', async () => {
@@ -255,9 +273,9 @@ describe('Mutation for Tag: ', () => {
       variables,
     });
     expect(res.errors).to.undefined;
-    expect(res.data.createTags).to.deep.equal([
-      { name: 'kamille', savedItems: [{ id: '0' }] },
-    ]);
+    const data = res.data.createTags;
+    expect(data[0].name).equals('kamille');
+    expect(data[0].savedItems.edges[0].node.id).equals('0');
   });
   it('should not fail on batch input with duplicated values', async () => {
     const variables = {
@@ -271,9 +289,9 @@ describe('Mutation for Tag: ', () => {
       variables,
     });
     expect(res.errors).to.undefined;
-    expect(res.data.createTags).to.deep.equal([
-      { name: 'kamille', savedItems: [{ id: '0' }] },
-    ]);
+    const data = res.data.createTags;
+    expect(data[0].name).equals('kamille');
+    expect(data[0].savedItems.edges[0].node.id).equals('0');
   });
   it('should ignore attempted insert of duplicated tags, but complete rest of batch', async () => {
     await db('item_tags').insert({
@@ -293,7 +311,13 @@ describe('Mutation for Tag: ', () => {
           _createdAt
           _updatedAt
           savedItems {
-            id
+            edges {
+              cursor
+              node {
+                id
+                url
+              }
+            }
           }
         }
       }
@@ -310,20 +334,14 @@ describe('Mutation for Tag: ', () => {
       variables,
     });
     expect(res.errors).to.undefined;
-    expect(res.data.createTags).to.deep.equalInAnyOrder([
-      {
-        name: 'kamille',
-        savedItems: [{ id: '0' }],
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
-      },
-      {
-        name: 'reccoa',
-        savedItems: [{ id: '0' }],
-        _createdAt: getUnixTimestamp(date),
-        _updatedAt: getUnixTimestamp(date1),
-      },
-    ]);
+    const data = res.data.createTags;
+    const reccoa = data.find((t) => t.name == 'reccoa');
+    expect(reccoa._createdAt).equals(getUnixTimestamp(date));
+    expect(reccoa._updatedAt).equals(getUnixTimestamp(date1));
+    const kamille = data.find((t) => t.name == 'kamille');
+    expect(kamille._createdAt).equals(getUnixTimestamp(updateDate));
+    expect(kamille._updatedAt).equals(getUnixTimestamp(updateDate));
+    data.forEach((t) => expect(t.savedItems.edges[0].node.id).equals('0'));
   });
   it('should log the tag mutation', async () => {
     const variables = {

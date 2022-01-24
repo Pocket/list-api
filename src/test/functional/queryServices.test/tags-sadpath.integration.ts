@@ -99,8 +99,12 @@ describe(' tags query tests - sad path validation', () => {
                   id
                   name
                   savedItems {
-                    id
-                    url
+                    edges {
+                      cursor
+                      node {
+                        url
+                      }
+                    }
                   }
                 }
               }
