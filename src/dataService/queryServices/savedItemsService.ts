@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { knexPaginator as paginate } from '@pocket/apollo-cursor-pagination';
+import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-pagination';
 import { IContext } from '../../server/context';
 import { cleanAndValidateTag, mysqlTimeString } from '../utils';
 import {
