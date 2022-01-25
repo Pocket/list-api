@@ -4,40 +4,37 @@ import { IContext } from '../server/context';
 import { SavedItem } from '../types';
 
 /**
- * Reorders saved items based on the URLs that are received to
- * keep the response in the same order of urls as requested
+ * Reorders savedItems based on the id that are received to
+ * keep the response in the same order of savedItemIds as requested
  * by the Apollo Gateway (Client API)
- * @param urls
+ * @param ids
  * @param savedItems
  */
-export function reorderSavedItemsByUrls(
-  urls: string[],
-  savedItems: SavedItem[]
-) {
-  const urlToSavedItemMap = savedItems.reduce((acc, savedItem) => {
+export function reorderSavedItemsByIds(ids: string[], savedItems: SavedItem[]) {
+  const idToSavedItemMap = savedItems.reduce((acc, savedItem) => {
     return {
       ...acc,
-      [savedItem.url]: savedItem,
+      [savedItem.id]: savedItem,
     };
   }, {});
 
-  return urls.map((url) => urlToSavedItemMap[url]);
+  return ids.map((id) => idToSavedItemMap[id]);
 }
 
 /**
- * Batch loader function to get saved items by URLs
+ * Batch loader function to get savedItems by id.
  * @param context
- * @param urls
+ * @param ids list of savedItem ids.
  */
-export async function batchGetSavedItemsByUrls(
+export async function batchGetSavedItemsByIds(
   context: IContext,
-  urls: string[]
+  ids: string[]
 ) {
   const savedItems = await new SavedItemDataService(
     context
-  ).batchGetSavedItemsByGivenUrls(urls);
+  ).batchGetSavedItemsByGivenIds(ids);
 
-  return reorderSavedItemsByUrls(urls, savedItems);
+  return reorderSavedItemsByIds(ids, savedItems);
 }
 
 /**
@@ -45,7 +42,7 @@ export async function batchGetSavedItemsByUrls(
  * @param context
  */
 export function createSavedItemsDataLoader(context: IContext) {
-  return new DataLoader((urls: string[]) =>
-    batchGetSavedItemsByUrls(context, urls)
+  return new DataLoader((ids: string[]) =>
+    batchGetSavedItemsByIds(context, ids)
   );
 }

@@ -265,7 +265,7 @@ describe('getSavedItems', () => {
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
           ... on SavedItem {
-            url
+            id
           }
         }
       }
@@ -275,11 +275,11 @@ describe('getSavedItems', () => {
       _representations: [
         {
           __typename: 'SavedItem',
-          url: 'http://abc',
+          id: '1',
         },
         {
           __typename: 'SavedItem',
-          url: 'http://def',
+          id: '2',
         },
       ],
     };
@@ -289,8 +289,8 @@ describe('getSavedItems', () => {
       variables,
     });
 
-    expect(res.data._entities[0].url).to.equal('http://abc');
-    expect(res.data._entities[1].url).to.equal('http://def');
+    expect(res.data._entities[0].id).to.equal('1');
+    expect(res.data._entities[1].id).to.equal('2');
   });
 
   describe('sort', () => {

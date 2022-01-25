@@ -24,7 +24,7 @@ describe('context', () => {
     };
 
     const batchQueryFnSpy =
-      (SavedItemDataService.prototype.batchGetSavedItemsByGivenUrls = jest
+      (SavedItemDataService.prototype.batchGetSavedItemsByGivenIds = jest
         .fn()
         .mockResolvedValue([savedItem]));
 
@@ -39,12 +39,10 @@ describe('context', () => {
       eventEmitter: null,
     });
 
-    const savedItems = await context.dataLoaders.savedItems.load(
-      'dont-care.com'
-    );
+    const savedItems = await context.dataLoaders.savedItems.load('1');
 
     expect(context.dataLoaders.savedItems).to.be.instanceof(DataLoader);
-    expect(batchQueryFnSpy.mock.calls[0][0]).to.deep.equal(['dont-care.com']);
+    expect(batchQueryFnSpy.mock.calls[0][0]).to.deep.equal(['1']);
     expect(savedItems).to.deep.equal(savedItem);
   });
 });

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { SavedItem } from '../types';
-import { reorderSavedItemsByUrls } from './savedItemsDataLoader';
+import { reorderSavedItemsByIds } from './savedItemsDataLoader';
 
 describe('savedItemsDataLoader', () => {
   it('can reorder a list of saved items based on a given list of urls', () => {
@@ -29,8 +29,8 @@ describe('savedItemsDataLoader', () => {
       },
     ];
 
-    const reorderedSavedItems = reorderSavedItemsByUrls(
-      ['dont-care-too.com', 'dont-care.com', 'not-found.com'],
+    const reorderedSavedItems = reorderSavedItemsByIds(
+      ['2', '1', '3'],
       savedItems
     );
 

@@ -60,7 +60,7 @@ describe('SavedItemsService', () => {
 
     const savedItems = await new SavedItemDataService(
       context
-    ).batchGetSavedItemsByGivenUrls(['https://abc', 'https://def']);
+    ).batchGetSavedItemsByGivenIds(['1', '2']);
 
     expect(savedItems[0].url).to.equal('https://abc');
     expect(savedItems[1].url).to.equal('https://def');

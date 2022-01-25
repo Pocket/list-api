@@ -128,7 +128,7 @@ export class SavedItemDataService {
    * @param filter filter options for savedItems
    * @param sort sort options for savedItems
    */
-  public async getSavedItemsForListOfIds(
+  public async getPaginatedSavedItemsForListOfIds(
     itemIds: string[],
     pagination: Pagination,
     filter: SavedItemsFilter,
@@ -210,14 +210,12 @@ export class SavedItemDataService {
 
   /**
    * Fetch all SavedItems via a list of unique URLs from a user's list
-   * @param givenUrls the URLs of the items to fetch
+   * @param itemIds the id of the items to fetch
    */
-  public batchGetSavedItemsByGivenUrls(
-    givenUrls: string[]
-  ): Promise<SavedItem[]> {
+  public batchGetSavedItemsByGivenIds(itemIds: string[]): Promise<SavedItem[]> {
     const query = this.buildQuery()
       .where({ user_id: this.userId })
-      .whereIn('given_url', givenUrls);
+      .whereIn('item_id', itemIds);
 
     return query.then(SavedItemDataService.convertDbResultStatus);
   }
