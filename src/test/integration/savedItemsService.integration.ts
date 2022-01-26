@@ -60,6 +60,26 @@ describe('SavedItemsService', () => {
 
     const savedItems = await new SavedItemDataService(
       context
+    ).batchGetSavedItemsByGivenUrls(['https://abc', 'https://def']);
+
+    expect(savedItems[0].url).to.equal('https://abc');
+    expect(savedItems[1].url).to.equal('https://def');
+  });
+
+  it('fetches saved items for multiple ids for the same user', async () => {
+    const context = new ContextManager({
+      request: {
+        headers: { userid: '1', apiid: '0' },
+      },
+      db: {
+        readClient: readClient(),
+        writeClient: writeClient(),
+      },
+      eventEmitter: null,
+    });
+
+    const savedItems = await new SavedItemDataService(
+      context
     ).batchGetSavedItemsByGivenIds(['1', '2']);
 
     expect(savedItems[0].url).to.equal('https://abc');

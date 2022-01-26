@@ -35,7 +35,7 @@ export async function batchGetSavedItemsByUrls(
 ) {
   const savedItems = await new SavedItemDataService(
     context
-  ).batchGetSavedItemsByGivenUrl(urls);
+  ).batchGetSavedItemsByGivenUrls(urls);
 
   return reorderSavedItemsByUrls(urls, savedItems);
 }
@@ -75,7 +75,7 @@ export async function batchGetSavedItemsByIds(
 }
 
 /**
- * Creates a dataloader for saved items
+ * Creates a dataloader for saved items to fetch by id
  * @param context
  */
 export function createSavedItemsDataLoaderById(context: IContext) {
@@ -85,7 +85,7 @@ export function createSavedItemsDataLoaderById(context: IContext) {
 }
 
 /**
- * Creates a dataloader for saved items
+ * Creates a dataloader for saved items to fetch by Url
  * @param context
  */
 export function createSavedItemsDataLoaderUrls(context: IContext) {

@@ -47,7 +47,7 @@ describe('context', () => {
 
   it('creates a data loader for saved items on initialization', async () => {
     const batchQueryFnSpy =
-      (SavedItemDataService.prototype.batchGetSavedItemsByGivenUrl = jest
+      (SavedItemDataService.prototype.batchGetSavedItemsByGivenUrls = jest
         .fn()
         .mockResolvedValue([savedItem]));
 

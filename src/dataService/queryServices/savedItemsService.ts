@@ -209,7 +209,7 @@ export class SavedItemDataService {
   }
 
   /**
-   * Fetch all SavedItems via a list of unique URLs from a user's list
+   * Fetch all SavedItems via a list of unique ids from a user's list
    * @param itemIds the id of the items to fetch
    */
   public batchGetSavedItemsByGivenIds(itemIds: string[]): Promise<SavedItem[]> {
@@ -224,7 +224,7 @@ export class SavedItemDataService {
    * Fetch all SavedItems via a list of unique URLs from a user's list
    * @param urls the URLs of the items to fetch
    */
-  public batchGetSavedItemsByGivenUrl(urls: string[]): Promise<SavedItem[]> {
+  public batchGetSavedItemsByGivenUrls(urls: string[]): Promise<SavedItem[]> {
     const query = this.buildQuery()
       .where({ user_id: this.userId })
       .whereIn('given_url', urls);
