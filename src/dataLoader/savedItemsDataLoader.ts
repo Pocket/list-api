@@ -15,10 +15,8 @@ export function reorderSavedItemsByUrls(
   savedItems: SavedItem[]
 ) {
   const urlToSavedItemMap = savedItems.reduce((acc, savedItem) => {
-    return {
-      ...acc,
-      [savedItem.url]: savedItem,
-    };
+    acc[savedItem.url] = savedItem;
+    return acc;
   }, {});
 
   return urls.map((url) => urlToSavedItemMap[url]);
@@ -49,10 +47,8 @@ export async function batchGetSavedItemsByUrls(
  */
 export function reorderSavedItemsByIds(ids: string[], savedItems: SavedItem[]) {
   const idToSavedItemMap = savedItems.reduce((acc, savedItem) => {
-    return {
-      ...acc,
-      [savedItem.id]: savedItem,
-    };
+    acc[savedItem.id] = savedItem;
+    return acc;
   }, {});
 
   return ids.map((id) => idToSavedItemMap[id]);

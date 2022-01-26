@@ -13,7 +13,7 @@ export function savedItem(
   args,
   context: IContext
 ): Promise<SavedItem> {
-  return new SavedItemDataService(context).getSavedItemByGivenUrls(
+  return new SavedItemDataService(context).getSavedItemByGivenUrl(
     parent.givenUrl
   );
 }

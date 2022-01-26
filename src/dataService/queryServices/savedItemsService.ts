@@ -200,7 +200,7 @@ export class SavedItemDataService {
    * Fetch a single SavedItem via its unique URL from a user's list
    * @param givenUrl the URL of the item to fetch
    */
-  public getSavedItemByGivenUrls(givenUrl: string): Promise<SavedItem> {
+  public getSavedItemByGivenUrl(givenUrl: string): Promise<SavedItem> {
     const query = this.buildQuery()
       .where({ user_id: this.userId, given_url: givenUrl })
       .first();

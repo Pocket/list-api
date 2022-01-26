@@ -30,7 +30,7 @@ describe('savedItemsDataLoader', () => {
       },
     },
   ];
-  it('can reorder a list of saved items based on a given list of urls', () => {
+  it('can reorder a list of saved items based on a given list of ids', () => {
     const reorderedSavedItems = reorderSavedItemsByIds(
       ['2', '1', '3'],
       savedItems
