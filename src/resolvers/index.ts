@@ -39,7 +39,11 @@ export const resolvers = {
     tags: savedItemTags,
     item,
     __resolveReference: async (savedItem, context: IContext) => {
-      return await context.dataLoaders.savedItems.load(savedItem.id);
+      if (savedItem.id) {
+        return await context.dataLoaders.savedItemsById.load(savedItem.id);
+      } else {
+        return await context.dataLoaders.savedItemsByUrl.load(savedItem.url);
+      }
     },
   },
   Tag: {

@@ -260,7 +260,7 @@ describe('getSavedItems', () => {
     expect(res.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be.true;
   });
 
-  it('can resolve a entity query for a SavedItem', async () => {
+  it('can resolve a entity query for a SavedItem by Id', async () => {
     const RESOLVE_REFERENCE_QUERY = gql`
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
@@ -291,6 +291,39 @@ describe('getSavedItems', () => {
 
     expect(res.data._entities[0].id).to.equal('1');
     expect(res.data._entities[1].id).to.equal('2');
+  });
+
+  it('can resolve a entity query for a SavedItem by Url', async () => {
+    const RESOLVE_REFERENCE_QUERY = gql`
+      query ($_representations: [_Any!]!) {
+        _entities(representations: $_representations) {
+          ... on SavedItem {
+            url
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      _representations: [
+        {
+          __typename: 'SavedItem',
+          url: 'http://abc',
+        },
+        {
+          __typename: 'SavedItem',
+          url: 'http://def',
+        },
+      ],
+    };
+
+    const res = await server.executeOperation({
+      query: RESOLVE_REFERENCE_QUERY,
+      variables,
+    });
+
+    expect(res.data._entities[0].url).to.equal('http://abc');
+    expect(res.data._entities[1].url).to.equal('http://def');
   });
 
   describe('sort', () => {
