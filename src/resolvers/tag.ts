@@ -16,7 +16,7 @@ export async function tagsSavedItems(
 ): Promise<SavedItemConnection> {
   args.pagination = validatePagination(args.pagination);
   const savedItemDataService = new SavedItemDataService(context);
-  return await savedItemDataService.getSavedItemsForListOfIds(
+  return await savedItemDataService.getPaginatedSavedItemsForListOfIds(
     parent.savedItems,
     args.pagination,
     args.filter,
