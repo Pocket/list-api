@@ -34,7 +34,7 @@
     "graphql-tools": "^8.2.0",
     "knex": "^0.95.14",
     "locutus": "2.0.15",
-    "luxon": "2.2.0",
+    "luxon": "2.3.0",
     "mysql": "^2.18.1"
   },
   "devDependencies": {
