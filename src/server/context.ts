@@ -36,13 +36,20 @@ export interface IContext {
 }
 
 export class ContextManager implements IContext {
+  public readonly dataLoaders: IContext['dataLoaders'];
+
   constructor(
     private config: {
       request: any;
       db: { readClient: Knex; writeClient: Knex };
       eventEmitter: ItemsEventEmitter;
     }
-  ) {}
+  ) {
+    this.dataLoaders = {
+      savedItemsById: createSavedItemsDataLoaderById(this),
+      savedItemsByUrl: createSavedItemsDataLoaderUrls(this),
+    };
+  }
 
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
@@ -68,13 +75,6 @@ export class ContextManager implements IContext {
 
   get db(): IContext['db'] {
     return this.config.db;
-  }
-
-  get dataLoaders(): IContext['dataLoaders'] {
-    return {
-      savedItemsById: createSavedItemsDataLoaderById(this),
-      savedItemsByUrl: createSavedItemsDataLoaderUrls(this),
-    };
   }
 
   get eventEmitter(): ItemsEventEmitter {

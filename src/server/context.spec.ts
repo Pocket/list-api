@@ -62,8 +62,8 @@ describe('context', () => {
     });
 
     // Referencing the loader 2x should return the same object
-    const loader = context.dataLoaders.savedItems;
-    const loaderAgain = context.dataLoaders.savedItems;
+    const loader = context.dataLoaders.savedItemsByUrl;
+    const loaderAgain = context.dataLoaders.savedItemsByUrl;
     await loader.load('dont-care.com');
     // At this point both loaders should have filled cache since referencing same object
     expect(Array.from((loader as any)._cacheMap.keys())).to.contain(
