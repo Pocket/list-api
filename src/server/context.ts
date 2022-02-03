@@ -9,10 +9,7 @@ import { Knex } from 'knex';
 import { SavedItem } from '../types';
 import { TagDataService } from '../dataService/queryServices';
 import DataLoader from 'dataloader';
-import {
-  createSavedItemsDataLoaderById,
-  createSavedItemsDataLoaderUrls,
-} from '../dataLoader/savedItemsDataLoader';
+import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 
 export interface IContext {
   userId: string;
@@ -24,8 +21,8 @@ export interface IContext {
   };
   eventEmitter: ItemsEventEmitter;
   dataLoaders: {
-    savedItemsById: DataLoader<any, any>;
-    savedItemsByUrl: DataLoader<any, any>;
+    savedItemsById: DataLoader<string, SavedItem>;
+    savedItemsByUrl: DataLoader<string, SavedItem>;
   };
 
   emitItemEvent(
@@ -45,10 +42,7 @@ export class ContextManager implements IContext {
       eventEmitter: ItemsEventEmitter;
     }
   ) {
-    this.dataLoaders = {
-      savedItemsById: createSavedItemsDataLoaderById(this),
-      savedItemsByUrl: createSavedItemsDataLoaderUrls(this),
-    };
+    this.dataLoaders = createSavedItemDataLoaders(this);
   }
 
   get headers(): { [key: string]: any } {

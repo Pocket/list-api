@@ -30,7 +30,7 @@ export function reorderSavedItemsByUrls(
 export async function batchGetSavedItemsByUrls(
   context: IContext,
   urls: string[]
-) {
+): Promise<SavedItem[]> {
   const savedItems = await new SavedItemDataService(
     context
   ).batchGetSavedItemsByGivenUrls(urls);
@@ -62,7 +62,7 @@ export function reorderSavedItemsByIds(ids: string[], savedItems: SavedItem[]) {
 export async function batchGetSavedItemsByIds(
   context: IContext,
   ids: string[]
-) {
+): Promise<SavedItem[]> {
   const savedItems = await new SavedItemDataService(
     context
   ).batchGetSavedItemsByGivenIds(ids);
@@ -71,21 +71,29 @@ export async function batchGetSavedItemsByIds(
 }
 
 /**
- * Creates a dataloader for saved items to fetch by id
- * @param context
+ * Create dataloaders to cache and batch requests for SavedItem made
+ * in a single tick of the application.
+ * There are two loaders for SavedItems which are differentiated by
+ * keys: one accesses the SavedItem by ID, and one by URL. Each loader
+ * fills the cache of the other when loading from either key (since they
+ * refer to the same object, just via alternative keys).
+ * That way resolving the same object by alternative key does not result
+ * in duplicate fetches.
+ * @param context IContext object with database connection. Should
+ * be freshly created for every GraphQL request.
  */
-export function createSavedItemsDataLoaderById(context: IContext) {
-  return new DataLoader((ids: string[]) =>
-    batchGetSavedItemsByIds(context, ids)
-  );
-}
-
-/**
- * Creates a dataloader for saved items to fetch by Url
- * @param context
- */
-export function createSavedItemsDataLoaderUrls(context: IContext) {
-  return new DataLoader((urls: string[]) =>
-    batchGetSavedItemsByUrls(context, urls)
-  );
+export function createSavedItemDataLoaders(
+  context: IContext
+): IContext['dataLoaders'] {
+  const byIdLoader = new DataLoader(async (ids: string[]) => {
+    const items = await batchGetSavedItemsByIds(context, ids);
+    items.forEach((item) => byUrlLoader.prime(item.url, item));
+    return items;
+  });
+  const byUrlLoader = new DataLoader(async (urls: string[]) => {
+    const items = await batchGetSavedItemsByUrls(context, urls);
+    items.forEach((item) => byIdLoader.prime(item.id, item));
+    return items;
+  });
+  return { savedItemsById: byIdLoader, savedItemsByUrl: byUrlLoader };
 }
