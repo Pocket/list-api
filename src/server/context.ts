@@ -9,10 +9,7 @@ import { Knex } from 'knex';
 import { SavedItem } from '../types';
 import { TagDataService } from '../dataService/queryServices';
 import DataLoader from 'dataloader';
-import {
-  createSavedItemsDataLoaderById,
-  createSavedItemsDataLoaderUrls,
-} from '../dataLoader/savedItemsDataLoader';
+import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 
 export interface IContext {
   userId: string;
@@ -24,8 +21,8 @@ export interface IContext {
   };
   eventEmitter: ItemsEventEmitter;
   dataLoaders: {
-    savedItemsById: DataLoader<any, any>;
-    savedItemsByUrl: DataLoader<any, any>;
+    savedItemsById: DataLoader<string, SavedItem>;
+    savedItemsByUrl: DataLoader<string, SavedItem>;
   };
 
   emitItemEvent(
@@ -36,13 +33,17 @@ export interface IContext {
 }
 
 export class ContextManager implements IContext {
+  public readonly dataLoaders: IContext['dataLoaders'];
+
   constructor(
     private config: {
       request: any;
       db: { readClient: Knex; writeClient: Knex };
       eventEmitter: ItemsEventEmitter;
     }
-  ) {}
+  ) {
+    this.dataLoaders = createSavedItemDataLoaders(this);
+  }
 
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
@@ -68,13 +69,6 @@ export class ContextManager implements IContext {
 
   get db(): IContext['db'] {
     return this.config.db;
-  }
-
-  get dataLoaders(): IContext['dataLoaders'] {
-    return {
-      savedItemsById: createSavedItemsDataLoaderById(this),
-      savedItemsByUrl: createSavedItemsDataLoaderUrls(this),
-    };
   }
 
   get eventEmitter(): ItemsEventEmitter {
