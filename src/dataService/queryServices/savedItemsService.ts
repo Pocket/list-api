@@ -326,6 +326,7 @@ export class SavedItemDataService {
     const highlightSubquery = this.readDb('user_annotations')
       .select('user_id as hl_user_id', 'item_id as hl_item_id')
       .where('user_id', this.userId)
+      .andWhere('status', 1)
       .groupBy('hl_user_id', 'hl_item_id')
       .as('highlights');
 
