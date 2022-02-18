@@ -149,11 +149,19 @@ describe('getSavedItems filter', () => {
         user_id: 1,
         item_id: 1,
         annotation_id: 1,
+        status: 1,
       },
       {
         user_id: 1,
         item_id: 1,
         annotation_id: 2,
+        status: 1,
+      },
+      {
+        user_id: 1,
+        item_id: 2,
+        annotation_id: 3,
+        status: 0, // deleted highlight
       },
     ]);
     await db.raw('TRUNCATE TABLE readitla_b.items_extended');
@@ -319,7 +327,7 @@ describe('getSavedItems filter', () => {
     ).to.equal(false);
   });
 
-  it('should return highlighted items', async () => {
+  it('should return highlighted items with active (non-deleted) highlights only', async () => {
     const variables = {
       id: '1',
       filter: { isHighlighted: true },
@@ -335,7 +343,7 @@ describe('getSavedItems filter', () => {
     );
   });
 
-  it('should return non-highlighted items', async () => {
+  it('should return non-highlighted items (or items with only deleted highlights)', async () => {
     const variables = {
       id: '1',
       filter: { isHighlighted: false },
