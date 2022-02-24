@@ -7,7 +7,7 @@ import chai, { expect } from 'chai';
 import { ContextManager } from '../../../server/context';
 import sinon from 'sinon';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
-import { UsersMetaService } from '../../../dataService/mutationServices';
+import { UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import chaiDateTime from 'chai-datetime';
@@ -18,7 +18,7 @@ chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('updateTag Mutation: ', () => {
-  const db = readClient();
+  const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
   const server = new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
@@ -54,7 +54,7 @@ describe('updateTag Mutation: ', () => {
   });
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
     await writeClient().destroy();
     clock.restore();
   });

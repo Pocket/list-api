@@ -3,7 +3,7 @@ import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
-import { UsersMetaService } from '../../../dataService/mutationServices';
+import { UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';

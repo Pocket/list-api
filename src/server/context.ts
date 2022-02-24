@@ -7,7 +7,7 @@ import {
 import { IncomingHttpHeaders } from 'http';
 import { Knex } from 'knex';
 import { SavedItem } from '../types';
-import { TagDataService } from '../dataService/queryServices';
+import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 
@@ -104,7 +104,10 @@ export class ContextManager implements IContext {
   ): BasicItemEventPayloadWithContext {
     const tagsFn = async () => {
       return (
-        await new TagDataService(this).getTagsByUserItem((await savedItem).id)
+        await new TagDataService(
+          this,
+          new SavedItemDataService(this)
+        ).getTagsByUserItem((await savedItem).id)
       ).map((tag) => tag.name);
     };
     return {

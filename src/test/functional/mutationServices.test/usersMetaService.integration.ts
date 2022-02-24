@@ -1,6 +1,6 @@
 import { readClient, writeClient } from '../../../database/client';
 import chai, { expect } from 'chai';
-import { UsersMetaService } from '../../../dataService/mutationServices';
+import { UsersMetaService } from '../../../dataService';
 import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import { mysqlTimeString } from '../../../dataService/utils';
@@ -31,7 +31,8 @@ describe('UsersMetaService ', () => {
   });
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
+    await writeClient().destroy();
   });
 
   it('inserts a record for tags and deletes old record', async () => {

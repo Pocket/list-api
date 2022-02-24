@@ -73,7 +73,8 @@ async function setUpSavedItem(db: Knex, date: Date) {
 }
 
 describe('Delete/Undelete SavedItem: ', () => {
-  const db = readClient();
+  //using write client as mutation will use write client to read as well.
+  const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
   const userId = '1';
   const server = new ApolloServer({
@@ -100,7 +101,7 @@ describe('Delete/Undelete SavedItem: ', () => {
   let clock;
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
     await writeClient().destroy();
     clock.restore();
   });

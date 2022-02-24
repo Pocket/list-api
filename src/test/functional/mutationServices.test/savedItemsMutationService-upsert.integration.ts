@@ -58,8 +58,8 @@ function getServer(
 }
 
 describe('UpsertSavedItem Mutation', () => {
-  const db = readClient();
-  const writeDb = writeClient();
+  const db = writeClient();
+  const readDb = readClient();
   const itemsEventEmitter = new ItemsEventEmitter();
   const sqsEventsToListen = Object.values(config.aws.sqs.publisherQueue.events);
   new SqsListener(
@@ -68,7 +68,7 @@ describe('UpsertSavedItem Mutation', () => {
     config.aws.sqs.publisherQueue.url,
     sqsEventsToListen
   );
-  const server = getServer('1', db, writeDb, itemsEventEmitter);
+  const server = getServer('1', readDb, db, itemsEventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);
   const dateNow = new Date('2021-10-06 03:22:00');
@@ -82,8 +82,8 @@ describe('UpsertSavedItem Mutation', () => {
   });
 
   afterAll(async () => {
-    await db.destroy();
-    await writeDb.destroy();
+    await readClient().destroy();
+    await writeClient().destroy();
     clock.restore();
     nock.cleanAll();
   });

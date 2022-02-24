@@ -8,7 +8,7 @@ import { ContextManager } from '../../../server/context';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
 import sinon from 'sinon';
-import { UsersMetaService } from '../../../dataService/mutationServices';
+import { UsersMetaService } from '../../../dataService';
 import chaiDateTime from 'chai-datetime';
 import { BasicItemEventPayload, EventType } from '../../../businessEvents';
 
@@ -16,7 +16,7 @@ chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('Mutation for Tag deletions: ', () => {
-  const db = readClient();
+  const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
   const dbTagsQuery = db('item_tags').select('tag').pluck('tag');
   const listUpdatedQuery = db('list').select('time_updated');
@@ -46,7 +46,7 @@ describe('Mutation for Tag deletions: ', () => {
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
     await writeClient().destroy();
   });
 

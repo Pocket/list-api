@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ContextManager, IContext } from './context';
 import { Knex } from 'knex';
 import DataLoader from 'dataloader';
-import { SavedItemDataService } from '../dataService/queryServices';
+import { SavedItemDataService } from '../dataService';
 import { SavedItem } from '../types';
 
 jest.mock('../dataService/queryServices');

@@ -14,7 +14,8 @@ import { getUnixTimestamp } from '../../../utils';
 chai.use(chaiDateTime);
 
 describe('Update Mutation for SavedItem: ', () => {
-  const db = readClient();
+  //using write client as mutation will use write client to read as well.
+  const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
   const server = new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
@@ -40,7 +41,7 @@ describe('Update Mutation for SavedItem: ', () => {
   let clock;
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
     await writeClient().destroy();
     clock.restore();
   });

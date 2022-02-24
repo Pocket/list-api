@@ -10,14 +10,7 @@ import {
 } from '../types';
 import { IContext } from '../server/context';
 import { ParserCaller } from '../externalCaller/parserCaller';
-import {
-  SavedItemMutationService,
-  TagMutationService,
-} from '../dataService/mutationServices';
-import {
-  SavedItemDataService,
-  TagDataService,
-} from '../dataService/queryServices';
+import { SavedItemDataService, TagDataService } from '../dataService';
 import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { decodeBase64ToPlainText } from '../dataService/utils';
@@ -40,11 +33,11 @@ export async function upsertSavedItem(
   context: IContext
 ): Promise<SavedItem> {
   const savedItemUpsertInput: SavedItemUpsertInput = args.input;
-  const itemDataService = new SavedItemDataService(context);
+  const savedItemDataService = new SavedItemDataService(context);
 
   try {
     const item = await ParserCaller.getOrCreateItem(savedItemUpsertInput.url);
-    const existingItem = await itemDataService.getSavedItemById(
+    const existingItem = await savedItemDataService.getSavedItemById(
       item.itemId.toString()
     );
     // Keep track of whether the request was originally to favorite an item,
@@ -55,11 +48,8 @@ export async function upsertSavedItem(
     if (existingItem != null && !savedItemUpsertInput.isFavorite) {
       savedItemUpsertInput.isFavorite = existingItem.isFavorite;
     }
-    await new SavedItemMutationService(context).upsertSavedItem(
-      item,
-      savedItemUpsertInput
-    );
-    const upsertedItem = await itemDataService.getSavedItemById(
+    await savedItemDataService.upsertSavedItem(item, savedItemUpsertInput);
+    const upsertedItem = await savedItemDataService.getSavedItemById(
       item.itemId.toString()
     );
 
@@ -99,13 +89,9 @@ export async function updateSavedItemFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  await new SavedItemMutationService(context).updateSavedItemFavoriteProperty(
-    args.id,
-    true
-  );
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.id
-  );
+  const savedItemService = await new SavedItemDataService(context);
+  await savedItemService.updateSavedItemFavoriteProperty(args.id, true);
+  const savedItem = savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
   return savedItem;
 }
@@ -121,13 +107,9 @@ export async function updateSavedItemUnFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  await new SavedItemMutationService(context).updateSavedItemFavoriteProperty(
-    args.id,
-    false
-  );
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.id
-  );
+  const savedItemService = await new SavedItemDataService(context);
+  await savedItemService.updateSavedItemFavoriteProperty(args.id, false);
+  const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
   return savedItem;
 }
@@ -143,13 +125,9 @@ export async function updateSavedItemArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  await new SavedItemMutationService(context).updateSavedItemArchiveProperty(
-    args.id,
-    true
-  );
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.id
-  );
+  const savedItemService = await new SavedItemDataService(context);
+  await savedItemService.updateSavedItemArchiveProperty(args.id, true);
+  const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
   return savedItem;
 }
@@ -165,13 +143,9 @@ export async function updateSavedItemUnArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  await new SavedItemMutationService(context).updateSavedItemArchiveProperty(
-    args.id,
-    false
-  );
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.id
-  );
+  const savedItemService = await new SavedItemDataService(context);
+  await savedItemService.updateSavedItemArchiveProperty(args.id, false);
+  const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.UNARCHIVE_ITEM, savedItem);
   return savedItem;
 }
@@ -188,10 +162,9 @@ export async function deleteSavedItem(
   context: IContext
 ): Promise<string> {
   // TODO: setup a process to delete saved items X number of days after deleted
-  await new SavedItemMutationService(context).deleteSavedItem(args.id);
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.id
-  );
+  const savedItemService = await new SavedItemDataService(context);
+  await savedItemService.deleteSavedItem(args.id);
+  const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
   return args.id;
 }
@@ -210,8 +183,9 @@ export async function updateSavedItemUnDelete(
   // TODO: when there is a process in place to permanently delete a saved item,
   // check if saved item exists before attempting to undelete.
   // TODO: Implement item undelete action
-  await new SavedItemMutationService(context).updateSavedItemUnDelete(args.id);
-  return new SavedItemDataService(context).getSavedItemById(args.id);
+  const savedItemService = await new SavedItemDataService(context);
+  await savedItemService.updateSavedItemUnDelete(args.id);
+  return savedItemService.getSavedItemById(args.id);
 }
 
 /**
@@ -226,6 +200,7 @@ export async function updateSavedItemTags(
   args: { input: SavedItemTagUpdateInput },
   context: IContext
 ): Promise<SavedItem> {
+  const savedItemService = await new SavedItemDataService(context);
   if (args.input.tagIds.length <= 0) {
     throw new UserInputError(
       'SavedItemTagUpdateInput.tagIds cannot be empty. use mutation updateSavedItemRemoveTags to' +
@@ -234,19 +209,17 @@ export async function updateSavedItemTags(
   }
 
   if (
-    (await new SavedItemDataService(context).getSavedItemById(
-      args.input.savedItemId
-    )) == null
+    (await savedItemService.getSavedItemById(args.input.savedItemId)) == null
   ) {
     throw new NotFoundError(
       `SavedItem Id ${args.input.savedItemId} does not exist`
     );
   }
 
-  await new TagMutationService(context).updateSavedItemTags(args.input);
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.input.savedItemId
+  await new TagDataService(context, savedItemService).updateSavedItemTags(
+    args.input
   );
+  const savedItem = savedItemService.getSavedItemById(args.input.savedItemId);
   context.emitItemEvent(
     EventType.REPLACE_TAGS,
     savedItem,
@@ -269,18 +242,14 @@ export async function updateSavedItemRemoveTags(
   args: { savedItemId: string },
   context: IContext
 ): Promise<SavedItem> {
-  const tagsCleared = await new TagDataService(context).getTagsByUserItem(
-    args.savedItemId
-  );
+  const savedItemService = await new SavedItemDataService(context);
+  const tagDataService = await new TagDataService(context, savedItemService);
+  const tagsCleared = await tagDataService.getTagsByUserItem(args.savedItemId);
 
   //clear first, so we can get rid of noisy data if savedItem doesn't exist.
-  await new TagMutationService(context).updateSavedItemRemoveTags(
-    args.savedItemId
-  );
+  await tagDataService.updateSavedItemRemoveTags(args.savedItemId);
 
-  const savedItem = await new SavedItemDataService(context).getSavedItemById(
-    args.savedItemId
-  );
+  const savedItem = savedItemService.getSavedItemById(args.savedItemId);
 
   if (savedItem == null) {
     throw new NotFoundError(`SavedItem Id ${args.savedItemId} does not exist`);
@@ -303,15 +272,17 @@ export async function createTags(
   const uniqueTagNames = [
     ...new Set(args.input.map((tagInput) => tagInput.name)),
   ];
+  const savedItemService = new SavedItemDataService(context);
+  const tagDataService = new TagDataService(context, savedItemService);
 
-  await new TagMutationService(context).insertTags(args.input);
-  const tags = await new TagDataService(context).getTagsByName(uniqueTagNames);
+  await tagDataService.insertTags(args.input);
+  const tags = await tagDataService.getTagsByName(uniqueTagNames);
 
   const savedItemMap = getSavedItemMapFromTags(tags);
   for (const savedItemId in savedItemMap) {
     context.emitItemEvent(
       EventType.ADD_TAGS,
-      new SavedItemDataService(context).getSavedItemById(savedItemId),
+      savedItemService.getSavedItemById(savedItemId),
       savedItemMap[savedItemId].map((tag) => tag.name)
     );
   }
@@ -328,16 +299,16 @@ export async function deleteSavedItemTags(
   context: IContext
 ): Promise<SavedItemTagAssociation[]> {
   try {
-    const associations = await new TagMutationService(
-      context
-    ).deleteSavedItemAssociations(args.input);
+    const savedItemService = await new SavedItemDataService(context);
+    const tagDataService = await new TagDataService(context, savedItemService);
+    const associations = await tagDataService.deleteSavedItemAssociations(
+      args.input
+    );
 
     for (const association of args.input) {
       context.emitItemEvent(
         EventType.REMOVE_TAGS,
-        new SavedItemDataService(context).getSavedItemById(
-          association.savedItemId
-        ),
+        savedItemService.getSavedItemById(association.savedItemId),
         association.tagIds.map((id) => decodeBase64ToPlainText(id))
       );
     }
@@ -362,7 +333,10 @@ export async function deleteTag(
   args: { id: string },
   context: IContext
 ): Promise<string> {
-  await new TagMutationService(context).deleteTagObject(args.id);
+  await new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  ).deleteTagObject(args.id);
   return args.id;
 }
 
@@ -377,10 +351,14 @@ export async function updateTag(
   args: { input: TagUpdateInput },
   context: IContext
 ): Promise<Tag> {
+  const tagDataService = new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  );
   const oldTagName = decodeBase64ToPlainText(args.input.id);
   let oldTagDetails;
   try {
-    oldTagDetails = await new TagDataService(context).getTagByName(oldTagName);
+    oldTagDetails = await tagDataService.getTagByName(oldTagName);
   } catch {
     const error = `Tag Id does not exist ${args.input.id}`;
     console.log(error);
@@ -388,11 +366,8 @@ export async function updateTag(
   }
 
   try {
-    await new TagMutationService(context).updateTagByUser(
-      args.input,
-      oldTagDetails.savedItems
-    );
-    return await new TagDataService(context).getTagByName(args.input.name);
+    await tagDataService.updateTagByUser(args.input, oldTagDetails.savedItems);
+    return await tagDataService.getTagByName(args.input.name);
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
