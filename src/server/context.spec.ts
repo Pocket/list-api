@@ -5,7 +5,7 @@ import DataLoader from 'dataloader';
 import { SavedItemDataService } from '../dataService';
 import { SavedItem } from '../types';
 
-jest.mock('../dataService/queryServices');
+jest.mock('../dataService');
 
 describe('context', () => {
   const savedItem: SavedItem = {
