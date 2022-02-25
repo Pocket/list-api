@@ -547,7 +547,7 @@ export class SavedItemDataService {
   public async updateSavedItemUnDelete(itemId) {
     this.db = this.writeDb;
 
-    const query: any = this.getSavedItemTimeRead(itemId);
+    const query: any = await this.getSavedItemTimeRead(itemId);
 
     // This is a check to determine if the saved item was previously archived. Fun, right?
     const status =

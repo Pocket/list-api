@@ -249,7 +249,7 @@ export async function updateSavedItemRemoveTags(
   //clear first, so we can get rid of noisy data if savedItem doesn't exist.
   await tagDataService.updateSavedItemRemoveTags(args.savedItemId);
 
-  const savedItem = savedItemService.getSavedItemById(args.savedItemId);
+  const savedItem = await savedItemService.getSavedItemById(args.savedItemId);
 
   if (savedItem == null) {
     throw new NotFoundError(`SavedItem Id ${args.savedItemId} does not exist`);
