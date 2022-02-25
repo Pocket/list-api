@@ -4,6 +4,7 @@ import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-paginatio
 import {
   DeleteSavedItemTagsInput,
   Pagination,
+  SavedItem,
   SavedItemTagAssociation,
   SavedItemTagUpdateInput,
   Tag,
@@ -23,16 +24,20 @@ import { SavedItemDataService } from './savedItemsService';
 
 export class TagDataService {
   private db: Knex;
-  private writeDb: Knex;
   private readonly userId: string;
   private readonly apiId: string;
   private tagGroupQuery: Knex.QueryBuilder;
   private readonly savedItemService: SavedItemDataService;
   private readonly usersMetaService: UsersMetaService;
 
-  constructor(context: IContext, savedItemDataService: SavedItemDataService) {
-    this.db = context.db.readClient;
-    this.writeDb = context.db.writeClient;
+  constructor(
+    context: IContext,
+    savedItemDataService: SavedItemDataService,
+    db: Knex = context.db.readClient
+    //note: for mutations, please pass the writeClient,
+    //otherwise there will be replication lags.
+  ) {
+    this.db = db;
     this.userId = context.userId;
     this.apiId = context.apiId;
     this.savedItemService = savedItemDataService;
@@ -173,9 +178,7 @@ export class TagDataService {
    * is actually in the user's list (no foreign key constraint).
    */
   public async insertTags(tagInputs: TagCreateInput[]): Promise<void> {
-    this.db = this.writeDb;
-
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.insertTagAndUpdateSavedItem(tagInputs, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
@@ -185,8 +188,6 @@ export class TagDataService {
     tagInputs: TagCreateInput[],
     trx: Knex.Transaction<any, any[]>
   ) {
-    this.db = this.writeDb;
-
     const cleanedTagInput = tagInputs.map((tagInput) => {
       return {
         name: cleanAndValidateTag(tagInput.name),
@@ -221,8 +222,6 @@ export class TagDataService {
   public async deleteSavedItemAssociations(
     input: DeleteSavedItemTagsInput[]
   ): Promise<SavedItemTagAssociation[]> {
-    this.db = this.writeDb;
-
     // Explode itemIds list keyed on savedItem into savedItem:itemId
     const associations: SavedItemTagAssociation[] = input.flatMap(
       (savedItemGroup) =>
@@ -231,7 +230,7 @@ export class TagDataService {
           tagId: tagId,
         }))
     );
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       const tagDeleteSubquery = trx('item_tags')
         .andWhere('user_id', this.userId)
         .delete();
@@ -259,14 +258,12 @@ export class TagDataService {
    * @param id The ID of the tag to delete
    */
   public async deleteTagObject(id: string): Promise<void> {
-    this.db = this.writeDb;
-
     const tagName = decodeBase64ToPlainText(id);
-    const affectedItems = await this.writeDb('item_tags')
+    const affectedItems = await this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .pluck('item_id');
     if (affectedItems.length > 0) {
-      await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+      await this.db.transaction(async (trx: Knex.Transaction) => {
         await this.deleteTagsByName(tagName).transacting(trx);
         await this.savedItemService
           .updateListItemMany(affectedItems)
@@ -285,11 +282,9 @@ export class TagDataService {
     tagUpdateInput: TagUpdateInput,
     itemIds: string[]
   ): Promise<void> {
-    this.db = this.writeDb;
-
     const oldTagName = decodeBase64ToPlainText(tagUpdateInput.id);
     const newTagName = cleanAndValidateTag(tagUpdateInput.name);
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await trx.raw(
         `update ignore item_tags set tag=:newTagName, time_updated=:_updatedAt where user_id = :userId and tag=:oldTagName`,
         {
@@ -311,14 +306,13 @@ export class TagDataService {
    * explicitly check if savedItemId exist before replacing the tags. So right now, we can
    * create tags for a non-existent savedItem.
    * @param savedItemTagUpdateInput gets savedItemId and the input tagIds
+   * @return savedItem savedItem whose tag got updated
    * todo: make a check if savedItemId exist before deleting.
    */
   public async updateSavedItemTags(
     savedItemTagUpdateInput: SavedItemTagUpdateInput
-  ): Promise<void> {
-    this.db = this.writeDb;
-
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+  ): Promise<SavedItem> {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.deleteTagsByItemId(
         savedItemTagUpdateInput.savedItemId
       ).transacting(trx);
@@ -334,38 +328,39 @@ export class TagDataService {
       await this.insertTagAndUpdateSavedItem(tagCreateInput, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
+
+    return await this.savedItemService.getSavedItemById(
+      savedItemTagUpdateInput.savedItemId
+    );
   }
 
   /**
    * deletes all the tags associated with the given savedItem id.
    * if the tag is associated only with the give itemId, then the tag
    * will be deleted too.
-   * //todo: make a check if savedItemId exist before deleting.
    * @param savedItemId
+   * @returns savedItem savedItem whose tag got removed.
    */
   public async updateSavedItemRemoveTags(savedItemId: string): Promise<any> {
-    this.db = this.writeDb;
-
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    //clear first, so we can get rid of noisy data if savedItem doesn't exist.
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.deleteTagsByItemId(savedItemId).transacting(trx);
       await this.savedItemService
         .updateListItemOne(savedItemId)
         .transacting(trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
+
+    return await this.savedItemService.getSavedItemById(savedItemId);
   }
 
   private deleteTagsByItemId(itemId: string): Knex.QueryBuilder {
-    this.db = this.writeDb;
-
     return this.db('item_tags')
       .where({ user_id: this.userId, item_id: itemId })
       .del();
   }
 
   private deleteTagsByName(tagName: string): Knex.QueryBuilder {
-    this.db = this.writeDb;
-
     return this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .del();

@@ -40,7 +40,6 @@ export class SavedItemDataService {
     [SavedItemStatus.HIDDEN]: 'HIDDEN',
   };
   private db: Knex;
-  private writeDb: Knex;
   private readonly userId: string;
   private readonly apiId: string;
 
@@ -51,9 +50,13 @@ export class SavedItemDataService {
     ARCHIVED_AT: 'archivedAt', // this is a derived field
   };
 
-  constructor(context: IContext) {
-    this.db = context.db.readClient;
-    this.writeDb = context.db.writeClient;
+  constructor(
+    context: IContext,
+    db: Knex = context.db.readClient
+    //note: for mutations, please pass the writeClient,
+    //otherwise there will be replication lags.
+  ) {
+    this.db = db;
     this.userId = context.userId;
     this.apiId = context.apiId;
   }
@@ -446,16 +449,15 @@ export class SavedItemDataService {
    * in the table ('time_updated', etc.)
    * @param itemId the item ID to update
    * @param favorite whether the item is a favorite or not
+   * @returns savedItem savedItem that got updated
    */
   public async updateSavedItemFavoriteProperty(
     itemId: string,
     favorite: boolean
-  ): Promise<void> {
-    this.db = this.writeDb;
-
+  ): Promise<SavedItem> {
     const timestamp = SavedItemDataService.formatDate(new Date());
     const timeFavorited = favorite ? timestamp : '0000-00-00 00:00:00';
-    await this.writeDb('list')
+    await this.db('list')
       .update({
         favorite: +favorite,
         time_favorited: timeFavorited,
@@ -463,6 +465,8 @@ export class SavedItemDataService {
         api_id_updated: this.apiId,
       })
       .where({ item_id: itemId, user_id: this.userId });
+
+    return await this.getSavedItemById(itemId);
   }
 
   /**
@@ -470,20 +474,19 @@ export class SavedItemDataService {
    * and the auditing fields in the table ('time_updated', etc.)
    * @param itemId the item ID to update
    * @param archived whether the item is a favorite or not
+   * @returns savedItem savedItem that got updated
    */
   public async updateSavedItemArchiveProperty(
     itemId: string,
     archived: boolean
-  ): Promise<void> {
-    this.db = this.writeDb;
-
+  ): Promise<SavedItem> {
     const timestamp = SavedItemDataService.formatDate(new Date());
     const timeArchived = archived ? timestamp : '0000-00-00 00:00:00';
     const status = archived ? 1 : 0;
     // TODO: Do we care if this makes an update that doesn't change the status?
     // e.g. archiving an already archived item will update
     //    time_read, time_upated, api_id_updated; but not status
-    await this.writeDb('list')
+    await this.db('list')
       .update({
         status: status,
         time_read: timeArchived,
@@ -491,6 +494,8 @@ export class SavedItemDataService {
         api_id_updated: this.apiId,
       })
       .where({ item_id: itemId, user_id: this.userId });
+
+    return await this.getSavedItemById(itemId);
   }
 
   /**
@@ -501,9 +506,7 @@ export class SavedItemDataService {
    * @param itemId
    */
   public async deleteSavedItem(itemId) {
-    this.db = this.writeDb;
-
-    const transaction = await this.writeDb.transaction();
+    const transaction = await this.db.transaction();
     try {
       // remove tags for saved item
       await transaction('item_tags').delete().where({
@@ -544,9 +547,7 @@ export class SavedItemDataService {
    * which status the item is assigned when moved from the deleted state.
    * @param itemId
    */
-  public async updateSavedItemUnDelete(itemId) {
-    this.db = this.writeDb;
-
+  public async updateSavedItemUnDelete(itemId): Promise<SavedItem> {
     const query: any = await this.getSavedItemTimeRead(itemId);
 
     // This is a check to determine if the saved item was previously archived. Fun, right?
@@ -555,32 +556,33 @@ export class SavedItemDataService {
         ? SavedItemStatus.UNREAD
         : SavedItemStatus.ARCHIVED;
 
-    await this.writeDb('list')
+    await this.db('list')
       .update({
         status,
         time_updated: SavedItemDataService.formatDate(new Date()),
         api_id_updated: this.apiId,
       })
       .where({ item_id: itemId, user_id: this.userId });
+
+    return await this.getSavedItemById(itemId);
   }
 
   /**
    * @param item
    * @param savedItemUpsertInput
+   * @returns savedItem
    */
   public async upsertSavedItem(
     item: ItemResponse,
     savedItemUpsertInput: SavedItemUpsertInput
-  ): Promise<any> {
-    this.db = this.writeDb;
-
+  ): Promise<SavedItem> {
     const currentDate = SavedItemDataService.formatDate(new Date());
     const givenTimestamp = new Date(savedItemUpsertInput.timestamp * 1000);
     const givenDate = savedItemUpsertInput.timestamp
       ? SavedItemDataService.formatDate(givenTimestamp)
       : currentDate;
     //`returning` is not supported for mysql in knex
-    await this.writeDb('list')
+    await this.db('list')
       .insert({
         user_id: parseInt(this.userId),
         item_id: item.itemId,
@@ -600,6 +602,8 @@ export class SavedItemDataService {
       })
       .onConflict()
       .merge();
+
+    return await this.getSavedItemById(item.itemId.toString());
   }
 
   /**
@@ -630,9 +634,7 @@ export class SavedItemDataService {
    * queries. That's why it's private :)
    */
   private listItemUpdateBuilder(): Knex.QueryBuilder {
-    this.db = this.writeDb;
-
-    return this.writeDb('list')
+    return this.db('list')
       .update({
         time_updated: SavedItemDataService.formatDate(new Date()),
         api_id_updated: this.apiId,

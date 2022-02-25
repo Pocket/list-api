@@ -33,7 +33,7 @@ export async function upsertSavedItem(
   context: IContext
 ): Promise<SavedItem> {
   const savedItemUpsertInput: SavedItemUpsertInput = args.input;
-  const savedItemDataService = new SavedItemDataService(context);
+  const savedItemDataService = createSavedItemWithWriteDatabaseClient(context);
 
   try {
     const item = await ParserCaller.getOrCreateItem(savedItemUpsertInput.url);
@@ -48,9 +48,9 @@ export async function upsertSavedItem(
     if (existingItem != null && !savedItemUpsertInput.isFavorite) {
       savedItemUpsertInput.isFavorite = existingItem.isFavorite;
     }
-    await savedItemDataService.upsertSavedItem(item, savedItemUpsertInput);
-    const upsertedItem = await savedItemDataService.getSavedItemById(
-      item.itemId.toString()
+    const upsertedItem = await savedItemDataService.upsertSavedItem(
+      item,
+      savedItemUpsertInput
     );
 
     if (upsertedItem == undefined) {
@@ -89,9 +89,12 @@ export async function updateSavedItemFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = await new SavedItemDataService(context);
-  await savedItemService.updateSavedItemFavoriteProperty(args.id, true);
-  const savedItem = savedItemService.getSavedItemById(args.id);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
+    args.id,
+    true
+  );
+  //const savedItem = savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
   return savedItem;
 }
@@ -107,9 +110,12 @@ export async function updateSavedItemUnFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = await new SavedItemDataService(context);
-  await savedItemService.updateSavedItemFavoriteProperty(args.id, false);
-  const savedItem = await savedItemService.getSavedItemById(args.id);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
+    args.id,
+    false
+  );
+  //const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
   return savedItem;
 }
@@ -125,9 +131,11 @@ export async function updateSavedItemArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = await new SavedItemDataService(context);
-  await savedItemService.updateSavedItemArchiveProperty(args.id, true);
-  const savedItem = await savedItemService.getSavedItemById(args.id);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
+    args.id,
+    true
+  );
   context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
   return savedItem;
 }
@@ -143,9 +151,11 @@ export async function updateSavedItemUnArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = await new SavedItemDataService(context);
-  await savedItemService.updateSavedItemArchiveProperty(args.id, false);
-  const savedItem = await savedItemService.getSavedItemById(args.id);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
+    args.id,
+    false
+  );
   context.emitItemEvent(EventType.UNARCHIVE_ITEM, savedItem);
   return savedItem;
 }
@@ -162,7 +172,7 @@ export async function deleteSavedItem(
   context: IContext
 ): Promise<string> {
   // TODO: setup a process to delete saved items X number of days after deleted
-  const savedItemService = await new SavedItemDataService(context);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
   await savedItemService.deleteSavedItem(args.id);
   const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
@@ -183,9 +193,9 @@ export async function updateSavedItemUnDelete(
   // TODO: when there is a process in place to permanently delete a saved item,
   // check if saved item exists before attempting to undelete.
   // TODO: Implement item undelete action
-  const savedItemService = await new SavedItemDataService(context);
-  await savedItemService.updateSavedItemUnDelete(args.id);
-  return savedItemService.getSavedItemById(args.id);
+  return await createSavedItemWithWriteDatabaseClient(
+    context
+  ).updateSavedItemUnDelete(args.id);
 }
 
 /**
@@ -200,7 +210,7 @@ export async function updateSavedItemTags(
   args: { input: SavedItemTagUpdateInput },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = await new SavedItemDataService(context);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
   if (args.input.tagIds.length <= 0) {
     throw new UserInputError(
       'SavedItemTagUpdateInput.tagIds cannot be empty. use mutation updateSavedItemRemoveTags to' +
@@ -216,10 +226,10 @@ export async function updateSavedItemTags(
     );
   }
 
-  await new TagDataService(context, savedItemService).updateSavedItemTags(
-    args.input
-  );
-  const savedItem = savedItemService.getSavedItemById(args.input.savedItemId);
+  const savedItem = await new TagDataService(
+    context,
+    savedItemService
+  ).updateSavedItemTags(args.input);
   context.emitItemEvent(
     EventType.REPLACE_TAGS,
     savedItem,
@@ -242,14 +252,13 @@ export async function updateSavedItemRemoveTags(
   args: { savedItemId: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = await new SavedItemDataService(context);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
   const tagDataService = await new TagDataService(context, savedItemService);
   const tagsCleared = await tagDataService.getTagsByUserItem(args.savedItemId);
 
-  //clear first, so we can get rid of noisy data if savedItem doesn't exist.
-  await tagDataService.updateSavedItemRemoveTags(args.savedItemId);
-
-  const savedItem = await savedItemService.getSavedItemById(args.savedItemId);
+  const savedItem = await tagDataService.updateSavedItemRemoveTags(
+    args.savedItemId
+  );
 
   if (savedItem == null) {
     throw new NotFoundError(`SavedItem Id ${args.savedItemId} does not exist`);
@@ -272,7 +281,7 @@ export async function createTags(
   const uniqueTagNames = [
     ...new Set(args.input.map((tagInput) => tagInput.name)),
   ];
-  const savedItemService = new SavedItemDataService(context);
+  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
   const tagDataService = new TagDataService(context, savedItemService);
 
   await tagDataService.insertTags(args.input);
@@ -299,7 +308,7 @@ export async function deleteSavedItemTags(
   context: IContext
 ): Promise<SavedItemTagAssociation[]> {
   try {
-    const savedItemService = await new SavedItemDataService(context);
+    const savedItemService = createSavedItemWithWriteDatabaseClient(context);
     const tagDataService = await new TagDataService(context, savedItemService);
     const associations = await tagDataService.deleteSavedItemAssociations(
       args.input
@@ -335,7 +344,7 @@ export async function deleteTag(
 ): Promise<string> {
   await new TagDataService(
     context,
-    new SavedItemDataService(context)
+    createSavedItemWithWriteDatabaseClient(context)
   ).deleteTagObject(args.id);
   return args.id;
 }
@@ -353,7 +362,7 @@ export async function updateTag(
 ): Promise<Tag> {
   const tagDataService = new TagDataService(
     context,
-    new SavedItemDataService(context)
+    createSavedItemWithWriteDatabaseClient(context)
   );
   const oldTagName = decodeBase64ToPlainText(args.input.id);
   let oldTagDetails;
@@ -375,4 +384,8 @@ export async function updateTag(
       `updateTag: server error while updating tag ${JSON.stringify(args.input)}`
     );
   }
+}
+
+function createSavedItemWithWriteDatabaseClient(context: IContext) {
+  return new SavedItemDataService(context, context.db.writeClient);
 }
