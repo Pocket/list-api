@@ -33,7 +33,8 @@ export async function upsertSavedItem(
   context: IContext
 ): Promise<SavedItem> {
   const savedItemUpsertInput: SavedItemUpsertInput = args.input;
-  const savedItemDataService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemDataService =
+    createSavedItemDataServiceWithWriteDbClient(context);
 
   try {
     const item = await ParserCaller.getOrCreateItem(savedItemUpsertInput.url);
@@ -89,7 +90,7 @@ export async function updateSavedItemFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
   const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
     args.id,
     true
@@ -110,7 +111,7 @@ export async function updateSavedItemUnFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
   const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
     args.id,
     false
@@ -131,7 +132,7 @@ export async function updateSavedItemArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
   const savedItem = await savedItemService.updateSavedItemArchiveProperty(
     args.id,
     true
@@ -151,7 +152,7 @@ export async function updateSavedItemUnArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
   const savedItem = await savedItemService.updateSavedItemArchiveProperty(
     args.id,
     false
@@ -172,7 +173,7 @@ export async function deleteSavedItem(
   context: IContext
 ): Promise<string> {
   // TODO: setup a process to delete saved items X number of days after deleted
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
   await savedItemService.deleteSavedItem(args.id);
   const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
@@ -193,7 +194,7 @@ export async function updateSavedItemUnDelete(
   // TODO: when there is a process in place to permanently delete a saved item,
   // check if saved item exists before attempting to undelete.
   // TODO: Implement item undelete action
-  return await createSavedItemWithWriteDatabaseClient(
+  return await createSavedItemDataServiceWithWriteDbClient(
     context
   ).updateSavedItemUnDelete(args.id);
 }
@@ -210,7 +211,7 @@ export async function updateSavedItemTags(
   args: { input: SavedItemTagUpdateInput },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
   if (args.input.tagIds.length <= 0) {
     throw new UserInputError(
       'SavedItemTagUpdateInput.tagIds cannot be empty. use mutation updateSavedItemRemoveTags to' +
@@ -226,7 +227,7 @@ export async function updateSavedItemTags(
     );
   }
 
-  const savedItem = await new TagDataService(
+  const savedItem = await createTagDataServiceWithWriteDatabaseClient(
     context,
     savedItemService
   ).updateSavedItemTags(args.input);
@@ -252,8 +253,11 @@ export async function updateSavedItemRemoveTags(
   args: { savedItemId: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
-  const tagDataService = await new TagDataService(context, savedItemService);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
+  const tagDataService = await createTagDataServiceWithWriteDatabaseClient(
+    context,
+    savedItemService
+  );
   const tagsCleared = await tagDataService.getTagsByUserItem(args.savedItemId);
 
   const savedItem = await tagDataService.updateSavedItemRemoveTags(
@@ -281,8 +285,11 @@ export async function createTags(
   const uniqueTagNames = [
     ...new Set(args.input.map((tagInput) => tagInput.name)),
   ];
-  const savedItemService = createSavedItemWithWriteDatabaseClient(context);
-  const tagDataService = new TagDataService(context, savedItemService);
+  const savedItemService = createSavedItemDataServiceWithWriteDbClient(context);
+  const tagDataService = createTagDataServiceWithWriteDatabaseClient(
+    context,
+    savedItemService
+  );
 
   await tagDataService.insertTags(args.input);
   const tags = await tagDataService.getTagsByName(uniqueTagNames);
@@ -308,8 +315,12 @@ export async function deleteSavedItemTags(
   context: IContext
 ): Promise<SavedItemTagAssociation[]> {
   try {
-    const savedItemService = createSavedItemWithWriteDatabaseClient(context);
-    const tagDataService = await new TagDataService(context, savedItemService);
+    const savedItemService =
+      createSavedItemDataServiceWithWriteDbClient(context);
+    const tagDataService = createTagDataServiceWithWriteDatabaseClient(
+      context,
+      savedItemService
+    );
     const associations = await tagDataService.deleteSavedItemAssociations(
       args.input
     );
@@ -342,9 +353,9 @@ export async function deleteTag(
   args: { id: string },
   context: IContext
 ): Promise<string> {
-  await new TagDataService(
+  await createTagDataServiceWithWriteDatabaseClient(
     context,
-    createSavedItemWithWriteDatabaseClient(context)
+    createSavedItemDataServiceWithWriteDbClient(context)
   ).deleteTagObject(args.id);
   return args.id;
 }
@@ -360,9 +371,9 @@ export async function updateTag(
   args: { input: TagUpdateInput },
   context: IContext
 ): Promise<Tag> {
-  const tagDataService = new TagDataService(
+  const tagDataService = createTagDataServiceWithWriteDatabaseClient(
     context,
-    createSavedItemWithWriteDatabaseClient(context)
+    createSavedItemDataServiceWithWriteDbClient(context)
   );
   const oldTagName = decodeBase64ToPlainText(args.input.id);
   let oldTagDetails;
@@ -386,6 +397,13 @@ export async function updateTag(
   }
 }
 
-function createSavedItemWithWriteDatabaseClient(context: IContext) {
+function createSavedItemDataServiceWithWriteDbClient(context: IContext) {
   return new SavedItemDataService(context, context.db.writeClient);
+}
+
+function createTagDataServiceWithWriteDatabaseClient(
+  context: IContext,
+  savedItemService: SavedItemDataService
+) {
+  return new TagDataService(context, savedItemService, context.db.writeClient);
 }
