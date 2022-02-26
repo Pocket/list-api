@@ -13,31 +13,16 @@ import config from '../../../config';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from './serverUti';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('updateTag Mutation: ', () => {
   const db = writeClient();
+  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
-  const server = new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
-    context: () => {
-      return new ContextManager({
-        request: {
-          headers: {
-            userid: '1',
-            apiid: '0',
-          },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: eventEmitter,
-      });
-    },
-  });
+  const server = getServer('1', readDb, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding

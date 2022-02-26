@@ -10,6 +10,7 @@ import sinon from 'sinon';
 import { Knex } from 'knex';
 import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from './serverUti';
 
 chai.use(chaiDateTime);
 
@@ -75,26 +76,10 @@ async function setUpSavedItem(db: Knex, date: Date) {
 describe('Delete/Undelete SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
+  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
   const userId = '1';
-  const server = new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
-    context: () => {
-      return new ContextManager({
-        request: {
-          headers: {
-            userid: userId,
-            apiid: '0',
-          },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: eventEmitter,
-      });
-    },
-  });
+  const server = getServer('1', readDb, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30');
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
