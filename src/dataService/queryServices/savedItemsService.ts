@@ -247,6 +247,76 @@ export class SavedItemDataService {
     return this.getPaginatedItemsForQuery(baseQuery, pagination, filter, sort);
   }
 
+  public async getSavedItemsTemp() {
+    const res = await this.readDb.transaction(async (trx) => {
+      await trx.raw(
+        'CREATE TEMPORARY TABLE `temp_getlist` ' +
+          '(' +
+          '`item_id` int(10) unsigned NOT NULL, ' +
+          '        `resolved_id` int(10) unsigned NOT NULL, ' +
+          /*
+           * Setting VARCHAR length for given_url to 5,000. This is a hack to get it
+           * reasonably high to prevent url from getting truncated since the
+           * corresponding column in the db has a TEXT data type, and mysql
+           * temporary tables do not support BLOB/TEXT
+           */
+          '`given_url` varchar(5000) COLLATE utf8_unicode_ci NOT NULL, ' +
+          '`given_title` varchar(75) COLLATE utf8_unicode_ci NOT NULL, ' +
+          '`favorite` tinyint(3) unsigned NOT NULL, ' +
+          '`status` tinyint(3) unsigned NOT NULL, ' +
+          '`time_added` int(10), ' +
+          '`time_updated` int(10), ' +
+          '`time_read` int(10), ' +
+          '`time_favorited` int(10) ' +
+          ') ENGINE = MEMORY'
+      );
+      await trx.raw(
+        'INSERT INTO `temp_getlist` SELECT l.item_id, l.resolved_id, l.given_url, l.title, l.favorite, l.status, UNIX_TIMESTAMP(l.time_added) AS time_added, UNIX_TIMESTAMP(l.time_updated) AS time_updated, UNIX_TIMESTAMP(l.time_read) AS time_read, UNIX_TIMESTAMP(l.time_favorited) AS time_favorited ' +
+          'FROM list l IGNORE INDEX (time_updated, time_added) ' +
+          'JOIN readitla_b.items_extended e ON (l.resolved_id = e.extended_item_id) ' +
+          'WHERE l.user_id = ? AND l.status IN (0,1) AND e.is_article = 1 ' +
+          'ORDER BY l.time_added DESC ' +
+          'LIMIT 0, 30 ',
+        this.userId
+      );
+      const res = await trx('temp_getlist').select(
+        'given_url AS url',
+        'item_id AS id',
+        'resolved_id AS resolvedId', // for determining if an item is pending
+        'favorite as isFavorite',
+        this.readDb.raw(
+          'CASE WHEN favorite = 1 THEN time_favorited ELSE null END as favoritedAt '
+        ),
+        'status',
+        this.readDb.raw(
+          `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN true ELSE false END as isArchived`
+        ),
+        'time_added as _createdAt',
+        'time_updated as _updatedAt',
+        this.readDb.raw(
+          `CASE WHEN status = ${SavedItemStatus.DELETED} THEN time_updated ELSE null END as _deletedAt`
+        ),
+        this.readDb.raw(
+          `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN time_updated ELSE null END as archivedAt`
+        )
+      );
+      return res.map((_) => SavedItemDataService.convertDbResultStatus(_));
+    });
+    const edges: SavedItemEdge[] = res.map((_) => {
+      return { node: _ as unknown as SavedItem, cursor: 'abcfakecursor' };
+    });
+    return {
+      edges: edges,
+      pageInfo: {
+        endCursor: 'fake',
+        startCursor: 'fake2',
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+      totalCount: 120,
+    };
+  }
+
   /**
    * Get time read for a saved item
    * @param itemId
@@ -290,7 +360,16 @@ export class SavedItemDataService {
       }
     }
     if (filter.status != null) {
-      baseQuery.andWhere('status', SavedItemStatus[filter.status]);
+      if (filter.status.toString() === 'VISIBLE') {
+        baseQuery.andWhere(function () {
+          this.whereIn('status', [
+            SavedItemStatus['UNREAD'],
+            SavedItemStatus['ARCHIVED'],
+          ]);
+        });
+      } else {
+        baseQuery.andWhere('status', SavedItemStatus[filter.status]);
+      }
     }
     if (filter.isHighlighted != null) {
       this.isHighlightedFilter(baseQuery, filter.isHighlighted);

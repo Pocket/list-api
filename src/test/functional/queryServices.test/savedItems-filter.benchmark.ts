@@ -118,6 +118,33 @@ const GET_SAVED_ITEMS = gql`
   }
 `;
 
+const GET_SAVED_ITEMS_TEMP = gql`
+  query getSavedItemTemp($id: ID!, $filter: SavedItemsFilter) {
+    _entities(representations: { id: $id, __typename: "User" }) {
+      ... on User {
+        savedItemsTemp(pagination: { first: 30 }, filter: $filter) {
+          edges {
+            node {
+              url
+              item {
+                ... on Item {
+                  savedItem {
+                    id
+                    status
+                    isFavorite
+                    tags {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 describe('big list generator', () => {
   const db = readClient();
   beforeAll(async () => {
@@ -194,6 +221,18 @@ describe('big list generator', () => {
         });
       await timeIt(query, 'no filter 50k')();
     }, 10000000);
+    it('baseline select by status=unread: 50k', async () => {
+      const variables = {
+        id: '1',
+        filter: { status: 'UNREAD' },
+      };
+      const query = async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables,
+        });
+      await timeIt(query, 'status=unread filter 50k')();
+    }, 10000000);
     it('article filter performance: 50k', async () => {
       const variables = {
         id: '1',
@@ -218,9 +257,56 @@ describe('big list generator', () => {
         });
       await timeIt(query, 'favorite filter 50k')();
     }, 10000000);
+    it('highlighted filter performance: 50k', async () => {
+      const variables = {
+        id: '1',
+        filter: { isHighlighted: true },
+      };
+      const query = async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables,
+        });
+      await timeIt(query, 'highlight filter 50k')();
+    }, 10000000);
+    it('status=unread, article filter performance: 50k', async () => {
+      const variables = {
+        id: '1',
+        filter: { contentType: 'ARTICLE', status: 'UNREAD' },
+      };
+      const query = async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables,
+        });
+      await timeIt(query, 'status=unread, article filter 50k')();
+    }, 10000000);
+    it('status=visible, article filter 50k', async () => {
+      const variables = {
+        id: '1',
+        filter: { contentType: 'ARTICLE', status: 'VISIBLE' },
+      };
+      const query = async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables,
+        });
+      await timeIt(query, 'status=visible, article filter 50k')();
+    }, 10000000);
+    it('temp table, status=visible, article filter 50k', async () => {
+      const variables = {
+        id: '1',
+      };
+      const query = async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS_TEMP,
+          variables,
+        });
+      await timeIt(
+        query,
+        'temp table, status=visible, article filter 50k',
+        20
+      )();
+    }, 10000000);
   });
-  //   describe('performance testing', async () => {
-  //     const myFun = () => db('list').select();
-  //     await timeIt(myFun, 'select * from list')();
-  //   });
 });

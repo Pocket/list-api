@@ -57,6 +57,30 @@ export function savedItems(
 }
 
 /**
+ * Get paginated saved items
+ * @param parent
+ * @param args
+ * @param context
+ */
+export async function savedItemsTemp(
+  parent: User,
+  args: {
+    filter: SavedItemsFilter;
+    sort: SavedItemsSort;
+    pagination: Pagination;
+  },
+  context: IContext
+): Promise<any> {
+  args.pagination = validatePagination(
+    args.pagination,
+    config.pagination.defaultPageSize,
+    config.pagination.maxPageSize
+  );
+  const res = await new SavedItemDataService(context).getSavedItemsTemp();
+  return res;
+}
+
+/**
  * Get user tags
  * @param parent
  * @param args

@@ -1,4 +1,9 @@
-import { savedItemById, savedItems, tags as userTags } from './user';
+import {
+  savedItemById,
+  savedItems,
+  tags as userTags,
+  savedItemsTemp,
+} from './user';
 import { savedItem } from './item';
 import { item, tags as savedItemTags } from './savedItem';
 
@@ -30,6 +35,7 @@ export const resolvers = {
   User: {
     savedItemById,
     savedItems,
+    savedItemsTemp,
     tags: userTags,
   },
   Item: {

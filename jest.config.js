@@ -9,7 +9,7 @@ process.env.AWS_DEFAULT_REGION = 'us-east-1';
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['**/?(*.)+(spec|integration).[jt]s?(x)'],
+  testMatch: ['**/?(*.)+(spec|integration|benchmark).[jt]s?(x)'],
   testPathIgnorePatterns: ['/dist/'],
   testTimeout: 10000,
 };

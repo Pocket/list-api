@@ -213,6 +213,7 @@ enum SavedItemStatusFilter {
   UNREAD
   ARCHIVED
   HIDDEN
+  VISIBLE # unread or archived
 }
 """
 Input field for filtering a user's list
@@ -421,6 +422,12 @@ extend type User @key(fields: "id") {
   Get a general paginated listing of all SavedItems for the user
   """
   savedItems(
+    filter: SavedItemsFilter
+    sort: SavedItemsSort
+    pagination: PaginationInput
+  ): SavedItemConnection
+
+  savedItemsTemp(
     filter: SavedItemsFilter
     sort: SavedItemsSort
     pagination: PaginationInput
