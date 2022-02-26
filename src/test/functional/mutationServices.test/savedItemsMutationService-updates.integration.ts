@@ -6,7 +6,7 @@ import sinon from 'sinon';
 import { EventType } from '../../../businessEvents';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from './serverUti';
+import { getServer } from './testServerUtil';
 
 chai.use(chaiDateTime);
 

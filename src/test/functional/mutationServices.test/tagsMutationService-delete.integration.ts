@@ -1,17 +1,13 @@
 import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
-import { ContextManager } from '../../../server/context';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
 import sinon from 'sinon';
 import { UsersMetaService } from '../../../dataService';
 import chaiDateTime from 'chai-datetime';
 import { BasicItemEventPayload, EventType } from '../../../businessEvents';
-import { getServer } from './serverUti';
+import { getServer } from './testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);

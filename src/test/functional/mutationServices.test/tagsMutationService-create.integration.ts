@@ -8,7 +8,7 @@ import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import { EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from './serverUti';
+import { getServer } from './testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 
