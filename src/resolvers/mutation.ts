@@ -95,7 +95,6 @@ export async function updateSavedItemFavorite(
     args.id,
     true
   );
-  //const savedItem = savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
   return savedItem;
 }
@@ -116,7 +115,6 @@ export async function updateSavedItemUnFavorite(
     args.id,
     false
   );
-  //const savedItem = await savedItemService.getSavedItemById(args.id);
   context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
   return savedItem;
 }

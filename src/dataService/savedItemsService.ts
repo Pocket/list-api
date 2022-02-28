@@ -32,6 +32,10 @@ type DbResult = {
   api_id_updated?: number;
 };
 
+/***
+ * class that handles the read and write from `readitla-temp.list` table
+ * note: for mutations, please pass the writeClient, otherwise there will be replication lags.
+ */
 export class SavedItemDataService {
   private static statusMap = {
     [SavedItemStatus.UNREAD]: 'UNREAD',

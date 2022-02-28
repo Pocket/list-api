@@ -22,6 +22,10 @@ import config from '../config';
 import { UsersMetaService } from './usersMetaService';
 import { SavedItemDataService } from './savedItemsService';
 
+/***
+ * class that handles the read and write from `readitla-temp.item_tags` table.
+ * note: for mutations, please pass the writeClient, otherwise there will be replication lags.
+ */
 export class TagDataService {
   private db: Knex;
   private readonly userId: string;
