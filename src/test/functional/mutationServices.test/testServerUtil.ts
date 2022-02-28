@@ -1,6 +1,7 @@
 import { Knex } from 'knex';
 import { ItemsEventEmitter } from '../../../businessEvents';
 import { ApolloServer } from 'apollo-server-express';
+import { ApolloServerPluginInlineTrace } from 'apollo-server-core';
 import { buildFederatedSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
@@ -14,6 +15,7 @@ export function getServer(
 ) {
   return new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
+    plugins: [ApolloServerPluginInlineTrace],
     context: () => {
       return new ContextManager({
         request: {
