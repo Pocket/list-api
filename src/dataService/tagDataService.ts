@@ -369,4 +369,15 @@ export class TagDataService {
       .where({ user_id: this.userId, tag: tagName })
       .del();
   }
+
+  public static createTagDataServiceWithWriteDbClient(
+    context: IContext,
+    savedItemService: SavedItemDataService
+  ) {
+    return new TagDataService(
+      context,
+      savedItemService,
+      context.db.writeClient
+    );
+  }
 }
