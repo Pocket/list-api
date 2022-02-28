@@ -646,7 +646,7 @@ export class SavedItemDataService {
       .andWhere('user_id', this.userId);
   }
 
-  public static createSavedItemDataServiceWithWriteDbClient(context: IContext) {
+  public static getWriteDbClient(context: IContext) {
     return new SavedItemDataService(context, context.db.writeClient);
   }
 }

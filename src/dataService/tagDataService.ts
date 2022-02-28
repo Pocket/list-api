@@ -370,7 +370,7 @@ export class TagDataService {
       .del();
   }
 
-  public static createTagDataServiceWithWriteDbClient(
+  public static getWriteDbClient(
     context: IContext,
     savedItemService: SavedItemDataService
   ) {
