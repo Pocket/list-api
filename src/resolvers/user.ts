@@ -76,7 +76,10 @@ export async function savedItemsTemp(
     config.pagination.defaultPageSize,
     config.pagination.maxPageSize
   );
-  const res = await new SavedItemDataService(context).getSavedItemsTemp();
+  // const res = await new SavedItemDataService(context).getSavedItemsTemp();
+  const res = await new SavedItemDataService(
+    context
+  ).getSavedItemsTempPaginator(args.filter, args.sort, args.pagination);
   return res;
 }
 

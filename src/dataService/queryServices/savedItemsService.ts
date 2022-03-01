@@ -81,8 +81,10 @@ export class SavedItemDataService {
    * Will eventually be extended for building filter, sorts, etc. for different pagination, etc.
    * For now just to reuse the same query and reduce testing burden :)
    */
-  public buildQuery(): any {
-    return this.readDb('list').select(
+  public buildQuery(conn?: Knex, table?: string): any {
+    const db = conn ?? this.readDb;
+    const from = table ?? 'list';
+    return db(from).select(
       'given_url AS url',
       'item_id AS id',
       'resolved_id AS resolvedId', // for determining if an item is pending
@@ -245,6 +247,135 @@ export class SavedItemDataService {
   ): Promise<SavedItemConnection> {
     const baseQuery = this.buildQuery().where('user_id', this.userId);
     return this.getPaginatedItemsForQuery(baseQuery, pagination, filter, sort);
+  }
+
+  public async getSavedItemsTempPaginator(
+    filter?: SavedItemsFilter,
+    sort?: SavedItemsSort,
+    pagination?: Pagination
+  ) {
+    this.readDb.raw(
+      'COUNT(*) as count ' +
+        'FROM list l IGNORE INDEX (time_updated) ' +
+        'JOIN readitla_b.items_extended e ON (l.resolved_id = e.extended_item_id) ' +
+        `WHERE l.user_id = ? AND l.status IN (0,1) AND e.is_article = 1 and time_added = ('${createdAt}')` +
+        'ORDER BY l.time_added DESC, l.item_id ASC '
+    );
+    const res = await this.readDb.transaction(async (trx) => {
+      await trx.raw(
+        'CREATE TEMPORARY TABLE `temp_getlist` ' +
+          '(' +
+          '`seq` int NOT NULL AUTO_INCREMENT PRIMARY KEY, ' +
+          '`item_id` int(10) unsigned NOT NULL, ' +
+          '`resolved_id` int(10) unsigned NOT NULL, ' +
+          /*
+           * Setting VARCHAR length for given_url to 5,000. This is a hack to get it
+           * reasonably high to prevent url from getting truncated since the
+           * corresponding column in the db has a TEXT data type, and mysql
+           * temporary tables do not support BLOB/TEXT
+           */
+          '`given_url` varchar(5000) COLLATE utf8_unicode_ci NOT NULL, ' +
+          '`given_title` varchar(75) COLLATE utf8_unicode_ci NOT NULL, ' +
+          '`favorite` tinyint(3) unsigned NOT NULL, ' +
+          '`status` tinyint(3) unsigned NOT NULL, ' +
+          '`time_added` int(10), ' +
+          '`time_updated` int(10), ' +
+          '`time_read` int(10), ' +
+          '`time_favorited` int(10) ' +
+          ') ENGINE = MEMORY'
+      );
+      if (pagination.first && pagination.after == null) {
+        await trx.raw(
+          'INSERT INTO `temp_getlist` (item_id, resolved_id, given_url, given_title, favorite, status, time_added, time_updated, time_read, time_favorited) ' +
+            'SELECT l.item_id, l.resolved_id, l.given_url, l.title, l.favorite, l.status, UNIX_TIMESTAMP(l.time_added) AS time_added, UNIX_TIMESTAMP(l.time_updated) AS time_updated, UNIX_TIMESTAMP(l.time_read) AS time_read, UNIX_TIMESTAMP(l.time_favorited) AS time_favorited ' +
+            'FROM list l IGNORE INDEX (time_updated, time_added) ' +
+            'JOIN readitla_b.items_extended e ON (l.resolved_id = e.extended_item_id) ' +
+            `WHERE l.user_id = ? AND l.status IN (0,1) AND e.is_article = 1 ` +
+            'ORDER BY l.time_added DESC, l.item_id ASC ' +
+            'LIMIT 0, 30 ',
+          this.userId
+        );
+      } else {
+        const [itemId, createdAtStr] = pagination.after.split('|');
+        const createdAt = mysqlTimeString(
+          new Date(parseInt(createdAtStr) * 1000),
+          config.database.tz
+        );
+        // This gets the old cursor element + any colliding keys
+        // No limit on this since it's hopefully unusual for time_added collisions...
+        await trx.raw(
+          'INSERT INTO `temp_getlist` (item_id, resolved_id, given_url, given_title, favorite, status, time_added, time_updated, time_read, time_favorited) ' +
+            'SELECT l.item_id, l.resolved_id, l.given_url, l.title, l.favorite, l.status, UNIX_TIMESTAMP(l.time_added) AS time_added, UNIX_TIMESTAMP(l.time_updated) AS time_updated, UNIX_TIMESTAMP(l.time_read) AS time_read, UNIX_TIMESTAMP(l.time_favorited) AS time_favorited ' +
+            'FROM list l IGNORE INDEX (time_updated) ' +
+            'JOIN readitla_b.items_extended e ON (l.resolved_id = e.extended_item_id) ' +
+            `WHERE l.user_id = ? AND l.status IN (0,1) AND e.is_article = 1 and time_added = ('${createdAt}')` +
+            'ORDER BY l.time_added DESC, l.item_id ASC ',
+          this.userId
+        );
+        // Remove anything before the item_id
+        const prevCursorSeq = (
+          await trx('temp_getlist').where('item_id', itemId).pluck('seq')
+        )[0];
+        await trx('temp_getlist').where('seq', '<=', prevCursorSeq).del();
+        const currCount = (await trx('temp_getlist')
+          .count('* as count')
+          .first()
+          .then((_) => _?.count ?? 0)) as number;
+        // worry about fetching extra ones for hasNextPage later
+        const limit = 30 - currCount;
+        if (limit > 0) {
+          // Now we insert more with a limit
+          await trx.raw(
+            'INSERT INTO `temp_getlist` (item_id, resolved_id, given_url, given_title, favorite, status, time_added, time_updated, time_read, time_favorited) ' +
+              'SELECT l.item_id, l.resolved_id, l.given_url, l.title, l.favorite, l.status, UNIX_TIMESTAMP(l.time_added) AS time_added, UNIX_TIMESTAMP(l.time_updated) AS time_updated, UNIX_TIMESTAMP(l.time_read) AS time_read, UNIX_TIMESTAMP(l.time_favorited) AS time_favorited ' +
+              'FROM list l IGNORE INDEX (time_updated) ' +
+              'JOIN readitla_b.items_extended e ON (l.resolved_id = e.extended_item_id) ' +
+              `WHERE l.user_id = ? AND l.status IN (0,1) AND e.is_article = 1 and time_added < ('${createdAt}')` +
+              'ORDER BY l.time_added DESC, l.item_id ASC ' +
+              `LIMIT ${limit}`,
+            this.userId
+          );
+        }
+      }
+      const res = await trx('temp_getlist').select(
+        'given_url AS url',
+        'item_id AS id',
+        'resolved_id AS resolvedId', // for determining if an item is pending
+        'favorite as isFavorite',
+        this.readDb.raw(
+          'CASE WHEN favorite = 1 THEN time_favorited ELSE null END as favoritedAt '
+        ),
+        'status',
+        this.readDb.raw(
+          `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN true ELSE false END as isArchived`
+        ),
+        'time_added as _createdAt',
+        'time_updated as _updatedAt',
+        this.readDb.raw(
+          `CASE WHEN status = ${SavedItemStatus.DELETED} THEN time_updated ELSE null END as _deletedAt`
+        ),
+        this.readDb.raw(
+          `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN time_updated ELSE null END as archivedAt`
+        )
+      );
+      return res.map((_) => SavedItemDataService.convertDbResultStatus(_));
+    });
+    const edges: SavedItemEdge[] = res.map((_: any) => {
+      return {
+        node: _,
+        cursor: _.id + '|' + _._createdAt,
+      };
+    });
+    return {
+      edges: edges,
+      pageInfo: {
+        endCursor: edges[edges.length - 1].cursor,
+        startCursor: edges[0].cursor,
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+      totalCount: 120,
+    };
   }
 
   public async getSavedItemsTemp() {

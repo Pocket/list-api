@@ -18,7 +18,7 @@ function timeIt(callback, name, times = 20) {
     let max = 0;
     while (n < times) {
       const start = Date.now();
-      await callback(...args);
+      const res = await callback(...args);
       const end = Date.now();
       const time = end - start;
       timeRecords[n] = time;
@@ -119,10 +119,17 @@ const GET_SAVED_ITEMS = gql`
 `;
 
 const GET_SAVED_ITEMS_TEMP = gql`
-  query getSavedItemTemp($id: ID!, $filter: SavedItemsFilter) {
+  query getSavedItemTemp(
+    $id: ID!
+    $filter: SavedItemsFilter
+    $pagination: PaginationInput
+  ) {
     _entities(representations: { id: $id, __typename: "User" }) {
       ... on User {
-        savedItemsTemp(pagination: { first: 30 }, filter: $filter) {
+        savedItemsTemp(pagination: $pagination, filter: $filter) {
+          pageInfo {
+            endCursor
+          }
           edges {
             node {
               url
@@ -296,11 +303,23 @@ describe('big list generator', () => {
     it('temp table, status=visible, article filter 50k', async () => {
       const variables = {
         id: '1',
+        pagination: { first: 30 },
+        filter: { contentType: 'ARTICLE', status: 'VISIBLE' },
       };
+      const initialRes = await server.executeOperation({
+        query: GET_SAVED_ITEMS_TEMP,
+        variables,
+      });
+      const cursor =
+        initialRes.data._entities?.[0].savedItemsTemp.pageInfo.endCursor;
       const query = async () =>
         await server.executeOperation({
           query: GET_SAVED_ITEMS_TEMP,
-          variables,
+          variables: {
+            id: '1',
+            pagination: { first: 30, after: cursor },
+            filter: { contentType: 'ARTICLE', status: 'VISIBLE' },
+          },
         });
       await timeIt(
         query,
@@ -308,5 +327,9 @@ describe('big list generator', () => {
         20
       )();
     }, 10000000);
+    it('just count a list', async () => {
+      await timeIt(() => db('list').count('*'), 'just counting', 100)();
+    });
+    // it('temp table with pagination, status=visible, article filter 50k');
   });
 });
