@@ -1,43 +1,24 @@
 import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
-import { ContextManager } from '../../../server/context';
 import sinon from 'sinon';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
-import { UsersMetaService } from '../../../dataService/mutationServices';
+import { UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from './testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('updateTag Mutation: ', () => {
-  const db = readClient();
+  const db = writeClient();
+  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
-  const server = new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
-    context: () => {
-      return new ContextManager({
-        request: {
-          headers: {
-            userid: '1',
-            apiid: '0',
-          },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: eventEmitter,
-      });
-    },
-  });
+  const server = getServer('1', readDb, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
@@ -54,7 +35,7 @@ describe('updateTag Mutation: ', () => {
   });
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
     await writeClient().destroy();
     clock.restore();
   });

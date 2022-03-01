@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { SavedItemDataService } from '../dataService/queryServices';
+import { SavedItemDataService } from '../dataService';
 import { IContext } from '../server/context';
 import { SavedItem } from '../types';
 

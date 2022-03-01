@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import { readClient, writeClient } from '../../database/client';
-import { SavedItemDataService } from '../../dataService/queryServices';
+import { SavedItemDataService } from '../../dataService';
 import { ContextManager } from '../../server/context';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 

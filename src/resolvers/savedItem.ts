@@ -1,5 +1,5 @@
 import { Item, PendingItem, PendingItemStatus, SavedItem, Tag } from '../types';
-import { TagDataService } from '../dataService/queryServices';
+import { SavedItemDataService, TagDataService } from '../dataService';
 import { IContext } from '../server/context';
 
 /**
@@ -13,7 +13,10 @@ export async function tags(
   args,
   context: IContext
 ): Promise<Tag[]> {
-  return new TagDataService(context).getTagsByUserItem(parent.id);
+  return new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  ).getTagsByUserItem(parent.id);
 }
 
 /**

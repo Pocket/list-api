@@ -1,6 +1,6 @@
 import { SavedItemConnection } from '../types';
 import { IContext } from '../server/context';
-import { SavedItemDataService } from '../dataService/queryServices/savedItemsService';
+import { SavedItemDataService } from '../dataService/savedItemsService';
 import { validatePagination } from '@pocket-tools/apollo-utils';
 
 /**

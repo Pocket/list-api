@@ -1,46 +1,28 @@
 import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
-import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
 import { EventType } from '../../../businessEvents';
 import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from './testServerUtil';
 
 chai.use(chaiDateTime);
 
 describe('Update Mutation for SavedItem: ', () => {
-  const db = readClient();
+  //using write client as mutation will use write client to read as well.
+  const db = writeClient();
+  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
-  const server = new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
-    context: () => {
-      return new ContextManager({
-        request: {
-          headers: {
-            userid: '1',
-            apiid: '0',
-          },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: eventEmitter,
-      });
-    },
-  });
+  const server = getServer('1', readDb, db, eventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
 
   afterAll(async () => {
-    await db.destroy();
+    await readClient().destroy();
     await writeClient().destroy();
     clock.restore();
   });

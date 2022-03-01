@@ -1,34 +1,155 @@
 import { Knex } from 'knex';
-import { IContext } from '../../server/context';
+import { IContext } from '../server/context';
+import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-pagination';
 import {
   DeleteSavedItemTagsInput,
+  Pagination,
+  SavedItem,
   SavedItemTagAssociation,
-  TagCreateInput,
-  TagUpdateInput,
   SavedItemTagUpdateInput,
-} from '../../types';
+  Tag,
+  TagCreateInput,
+  TagEdge,
+  TagUpdateInput,
+} from '../types';
+import { TagObjectMapper } from './tagObjectMapper';
 import {
   cleanAndValidateTag,
   decodeBase64ToPlainText,
   mysqlTimeString,
-} from '../utils';
-import { SavedItemMutationService } from './savedItemsMutationService';
+} from './utils';
+import config from '../config';
 import { UsersMetaService } from './usersMetaService';
-import config from '../../config';
+import { SavedItemDataService } from './savedItemsService';
 
-export class TagMutationService {
-  private writeDb: Knex;
+/***
+ * class that handles the read and write from `readitla-temp.item_tags` table.
+ * note: for mutations, please pass the writeClient, otherwise there will be replication lags.
+ */
+export class TagDataService {
+  private db: Knex;
   private readonly userId: string;
   private readonly apiId: string;
-  private readonly savedItemService: SavedItemMutationService;
+  private tagGroupQuery: Knex.QueryBuilder;
+  private readonly savedItemService: SavedItemDataService;
   private readonly usersMetaService: UsersMetaService;
 
-  constructor(context: IContext) {
-    this.writeDb = context.db.writeClient;
+  constructor(
+    context: IContext,
+    savedItemDataService: SavedItemDataService,
+    db: Knex = context.db.readClient
+    //note: for mutations, please pass the writeClient,
+    //otherwise there will be replication lags.
+  ) {
+    this.db = db;
     this.userId = context.userId;
     this.apiId = context.apiId;
-    this.savedItemService = new SavedItemMutationService(context);
+    this.savedItemService = savedItemDataService;
     this.usersMetaService = new UsersMetaService(context);
+  }
+
+  private getTagsByUserSubQuery(): any {
+    return this.db('item_tags')
+      .select(
+        'user_id AS userId',
+        'tag as name',
+        'tag',
+        this.db.raw(`TO_BASE64(tag) as id`),
+        this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
+        this.db.raw('UNIX_TIMESTAMP(MIN(time_added)) as _createdAt'),
+        this.db.raw('UNIX_TIMESTAMP(MAX(time_updated)) as _updatedAt'),
+        this.db.raw('NULL as _deletedAt'),
+        this.db.raw('NULL as _version')
+        //TODO: add version and deletedAt feature to tag
+        //tagId need to return primary key id, when tag entity table is implemented in db.
+      )
+      .where({ user_id: parseInt(this.userId) })
+      .groupBy('tag');
+  }
+
+  private getItemsByTagsAndUser(): any {
+    return this.db
+      .select('*')
+      .from(this.getTagsByUserSubQuery().as('subQuery_tags'))
+      .orderBy('tag');
+    // need a stable sort for pagination; this is not client-configurable
+    //note: time added and time updated are mostly null in the database.
+    //so set them as optional field.
+  }
+
+  /**
+   * For a given item_id, retrieves tags
+   * and list of itemIds associated with it.
+   * @param itemId
+   */
+  public async getTagsByUserItem(itemId: string): Promise<Tag[]> {
+    const subQueryName = 'subQuery_tags';
+    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
+
+    const getTagsForItemQuery = this.db('item_tags')
+      .select(`${subQueryName}.*`)
+      .where({
+        user_id: parseInt(this.userId),
+        item_id: itemId,
+      });
+
+    const result = await getTagsForItemQuery.join(
+      getItemIdsForEveryTag,
+      function () {
+        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
+      }
+    );
+
+    return result.map(TagObjectMapper.mapDbModelToDomainEntity);
+  }
+
+  public async getTagsByName(names: string[]): Promise<any> {
+    const cleanTags = names.map(cleanAndValidateTag);
+    const tags = await this.getTagsByUserSubQuery().andWhere(function () {
+      this.whereIn('tag', cleanTags);
+    });
+    return tags.map(TagObjectMapper.mapDbModelToDomainEntity);
+  }
+
+  public async getTagByName(tagName: string): Promise<Tag> {
+    const result = await this.getTagsByUserSubQuery().where(
+      'tag',
+      cleanAndValidateTag(tagName)
+    );
+    return TagObjectMapper.mapDbModelToDomainEntity(result[0]);
+  }
+
+  public async getTagsByUser(
+    userId: string,
+    pagination?: Pagination
+  ): Promise<any> {
+    pagination = pagination ?? { first: config.pagination.defaultPageSize };
+    const query = this.getItemsByTagsAndUser();
+    const result = await paginate(
+      query,
+      {
+        first: pagination?.first,
+        last: pagination?.last,
+        before: pagination?.before,
+        after: pagination?.after,
+        orderBy: 'tag',
+        orderDirection: 'ASC',
+      },
+      {
+        primaryKey: 'tag',
+        modifyEdgeFn: (edge): TagEdge => ({
+          ...edge,
+          node: {
+            ...edge.node,
+          },
+        }),
+      }
+    );
+
+    for (const edge of result.edges) {
+      edge.node = TagObjectMapper.mapDbModelToDomainEntity(edge.node);
+    }
+    return result;
   }
 
   /**
@@ -61,7 +182,7 @@ export class TagMutationService {
    * is actually in the user's list (no foreign key constraint).
    */
   public async insertTags(tagInputs: TagCreateInput[]): Promise<void> {
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.insertTagAndUpdateSavedItem(tagInputs, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
@@ -78,7 +199,7 @@ export class TagMutationService {
       };
     });
     // Deduplicate after cleaning, since cleaning could cause duplication
-    const tagSet = TagMutationService.deduplicateTagInput(cleanedTagInput);
+    const tagSet = TagDataService.deduplicateTagInput(cleanedTagInput);
 
     const timestamp = mysqlTimeString(new Date(), config.database.tz);
 
@@ -113,7 +234,7 @@ export class TagMutationService {
           tagId: tagId,
         }))
     );
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       const tagDeleteSubquery = trx('item_tags')
         .andWhere('user_id', this.userId)
         .delete();
@@ -142,11 +263,11 @@ export class TagMutationService {
    */
   public async deleteTagObject(id: string): Promise<void> {
     const tagName = decodeBase64ToPlainText(id);
-    const affectedItems = await this.writeDb('item_tags')
+    const affectedItems = await this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .pluck('item_id');
     if (affectedItems.length > 0) {
-      await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+      await this.db.transaction(async (trx: Knex.Transaction) => {
         await this.deleteTagsByName(tagName).transacting(trx);
         await this.savedItemService
           .updateListItemMany(affectedItems)
@@ -167,7 +288,7 @@ export class TagMutationService {
   ): Promise<void> {
     const oldTagName = decodeBase64ToPlainText(tagUpdateInput.id);
     const newTagName = cleanAndValidateTag(tagUpdateInput.name);
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await trx.raw(
         `update ignore item_tags set tag=:newTagName, time_updated=:_updatedAt where user_id = :userId and tag=:oldTagName`,
         {
@@ -189,12 +310,13 @@ export class TagMutationService {
    * explicitly check if savedItemId exist before replacing the tags. So right now, we can
    * create tags for a non-existent savedItem.
    * @param savedItemTagUpdateInput gets savedItemId and the input tagIds
+   * @return savedItem savedItem whose tag got updated
    * todo: make a check if savedItemId exist before deleting.
    */
   public async updateSavedItemTags(
     savedItemTagUpdateInput: SavedItemTagUpdateInput
-  ): Promise<void> {
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+  ): Promise<SavedItem> {
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.deleteTagsByItemId(
         savedItemTagUpdateInput.savedItemId
       ).transacting(trx);
@@ -210,34 +332,52 @@ export class TagMutationService {
       await this.insertTagAndUpdateSavedItem(tagCreateInput, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
+
+    return await this.savedItemService.getSavedItemById(
+      savedItemTagUpdateInput.savedItemId
+    );
   }
 
   /**
    * deletes all the tags associated with the given savedItem id.
    * if the tag is associated only with the give itemId, then the tag
    * will be deleted too.
-   * //todo: make a check if savedItemId exist before deleting.
    * @param savedItemId
+   * @returns savedItem savedItem whose tag got removed.
    */
   public async updateSavedItemRemoveTags(savedItemId: string): Promise<any> {
-    await this.writeDb.transaction(async (trx: Knex.Transaction) => {
+    //clear first, so we can get rid of noisy data if savedItem doesn't exist.
+    await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.deleteTagsByItemId(savedItemId).transacting(trx);
       await this.savedItemService
         .updateListItemOne(savedItemId)
         .transacting(trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
+
+    return await this.savedItemService.getSavedItemById(savedItemId);
   }
 
   private deleteTagsByItemId(itemId: string): Knex.QueryBuilder {
-    return this.writeDb('item_tags')
+    return this.db('item_tags')
       .where({ user_id: this.userId, item_id: itemId })
       .del();
   }
 
   private deleteTagsByName(tagName: string): Knex.QueryBuilder {
-    return this.writeDb('item_tags')
+    return this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .del();
+  }
+
+  public static getWriteDbClient(
+    context: IContext,
+    savedItemService: SavedItemDataService
+  ) {
+    return new TagDataService(
+      context,
+      savedItemService,
+      context.db.writeClient
+    );
   }
 }

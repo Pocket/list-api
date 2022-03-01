@@ -7,10 +7,7 @@ import {
   TagConnection,
   User,
 } from '../types';
-import {
-  SavedItemDataService,
-  TagDataService,
-} from '../dataService/queryServices';
+import { SavedItemDataService, TagDataService } from '../dataService';
 import { validatePagination } from '@pocket-tools/apollo-utils';
 import { IContext } from '../server/context';
 import config from '../config';
@@ -74,8 +71,8 @@ export async function tags(
     config.pagination.defaultPageSize,
     config.pagination.maxPageSize
   );
-  return await new TagDataService(context).getTagsByUser(
-    parent.id,
-    args.pagination
-  );
+  return await new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  ).getTagsByUser(parent.id, args.pagination);
 }

@@ -1,10 +1,6 @@
 import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
-import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import nock from 'nock';
 import config from '../../../config';
@@ -15,11 +11,11 @@ import {
   SQSEvents,
   SqsListener,
 } from '../../../businessEvents';
-import { Knex } from 'knex';
 import { ReceiveMessageCommand } from '@aws-sdk/client-sqs';
 import { sqs } from '../../../aws/sqs';
 import sinon from 'sinon';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from './testServerUtil';
 
 chai.use(chaiDateTime);
 
@@ -31,35 +27,9 @@ function mockParserGetItemRequest(urlToParse: string, data: any) {
     .persist();
 }
 
-function getServer(
-  userId: string,
-  readClient: Knex,
-  writeClient: Knex,
-  eventEmitter: ItemsEventEmitter
-) {
-  return new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
-    context: () => {
-      return new ContextManager({
-        request: {
-          headers: {
-            userid: userId,
-            apiid: '0',
-          },
-        },
-        db: {
-          readClient: readClient,
-          writeClient: writeClient,
-        },
-        eventEmitter: eventEmitter,
-      });
-    },
-  });
-}
-
 describe('UpsertSavedItem Mutation', () => {
-  const db = readClient();
-  const writeDb = writeClient();
+  const db = writeClient();
+  const readDb = readClient();
   const itemsEventEmitter = new ItemsEventEmitter();
   const sqsEventsToListen = Object.values(config.aws.sqs.publisherQueue.events);
   new SqsListener(
@@ -68,7 +38,7 @@ describe('UpsertSavedItem Mutation', () => {
     config.aws.sqs.publisherQueue.url,
     sqsEventsToListen
   );
-  const server = getServer('1', db, writeDb, itemsEventEmitter);
+  const server = getServer('1', readDb, db, itemsEventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);
   const dateNow = new Date('2021-10-06 03:22:00');
@@ -82,8 +52,8 @@ describe('UpsertSavedItem Mutation', () => {
   });
 
   afterAll(async () => {
-    await db.destroy();
-    await writeDb.destroy();
+    await readClient().destroy();
+    await writeClient().destroy();
     clock.restore();
     nock.cleanAll();
   });
@@ -127,6 +97,10 @@ describe('UpsertSavedItem Mutation', () => {
         {
           url: 'http://addingtoqueue.com',
           itemId: 25,
+        },
+        {
+          url: 'http://write-client.com',
+          itemId: 50,
         },
       ];
       mockRequestData.forEach(({ url, itemId }) =>
@@ -601,9 +575,44 @@ describe('UpsertSavedItem Mutation', () => {
         });
         expect(eventTracker.callCount).to.equal(0);
       });
+
+      //this test passes.
+      // note, for some reason - if we have a test with null readClient,
+      // then the following test/test suite fails to run
+      //this somehow sets the db to null for the following test suite - so commenting this out
+      /*it('should use write database client for all mutation call', async () => {
+        //passing read client as null
+        const writeServer = getServer(
+          '1',
+          null,
+          writeClient(),
+          itemsEventEmitter
+        );
+        const variables = {
+          url: 'http://write-client.com',
+        };
+        const ADD_AN_ITEM = gql`
+          mutation addAnItem($url: String!) {
+            upsertSavedItem(input: { url: $url }) {
+              id
+              url
+              _createdAt
+              _updatedAt
+            }
+          }
+        `;
+        const mutationResult = await writeServer.executeOperation({
+          query: ADD_AN_ITEM,
+          variables,
+        });
+
+        expect(mutationResult.data?.upsertSavedItem.url).to.equal(
+          variables.url
+        );
+      }); */
     });
   });
-  describe('sad paths', function () {
+  describe('sad path', function () {
     it('should return error for invalid url', async () => {
       mockParserGetItemRequest('abcde1234', {
         item: {

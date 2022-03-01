@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
-import { IContext } from '../../server/context';
-import { mysqlTimeString } from '../utils';
-import config from '../../config';
+import { IContext } from '../server/context';
+import { mysqlTimeString } from './utils';
+import config from '../config';
 
 export class UsersMetaService {
   private static propertiesMap = {
