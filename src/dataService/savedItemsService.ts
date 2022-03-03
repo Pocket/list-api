@@ -280,11 +280,7 @@ export class SavedItemDataService {
    * @param filter a SavedItemsFilter object containing instructions for filtering
    * a user's list
    */
-  public buildFilterQuery(
-    baseQuery: any,
-    filter: SavedItemsFilter,
-    conn?: Knex | Knex.Transaction
-  ): any {
+  public buildFilterQuery(baseQuery: any, filter: SavedItemsFilter): any {
     // The base query will always have a 'where' statement selecting
     // the user ID, so use andWhere for all additional methods
     if (filter.updatedSince != null) {
@@ -311,7 +307,7 @@ export class SavedItemDataService {
       baseQuery.andWhere('status', SavedItemStatus[filter.status]);
     }
     if (filter.isHighlighted != null) {
-      this.isHighlightedFilter(baseQuery, filter.isHighlighted, conn);
+      this.isHighlightedFilter(baseQuery, filter.isHighlighted);
     }
     if (filter.contentType != null) {
       this.contentTypeFilter(baseQuery, filter.contentType);
@@ -319,7 +315,7 @@ export class SavedItemDataService {
     // Tags has to go last due to select distinct
     if (filter.tagNames != null && filter.tagNames.length > 0) {
       const cleanTags = filter.tagNames.map(cleanAndValidateTag);
-      return this.tagNameFilter(baseQuery, cleanTags, conn);
+      return this.tagNameFilter(baseQuery, cleanTags);
     }
     return baseQuery;
   }
@@ -339,11 +335,9 @@ export class SavedItemDataService {
    */
   private isHighlightedFilter(
     baseQuery: Knex,
-    isHighlighted: boolean,
-    conn?: Knex | Knex.Transaction
+    isHighlighted: boolean
   ): Promise<any> {
-    const db = conn ?? this.db;
-    const highlightSubquery = db('user_annotations')
+    const highlightSubquery = this.db('user_annotations')
       .select('user_id as hl_user_id', 'item_id as hl_item_id')
       .where('user_id', this.userId)
       .andWhere('status', 1)
@@ -367,7 +361,7 @@ export class SavedItemDataService {
             'list.item_id'
           );
         })
-        .andWhere(db.raw('highlights.hl_item_id is null'));
+        .andWhere(this.db.raw('highlights.hl_item_id is null'));
     }
   }
 
@@ -405,16 +399,12 @@ export class SavedItemDataService {
    * @param tagNames the desired tags to filter on; for untagged items,
    * include the string '_untagged_'
    */
-  private tagNameFilter(
-    baseQuery: Knex,
-    tagNames: string[],
-    conn?: Knex | Knex.Transaction
-  ): any {
+  private tagNameFilter(baseQuery: Knex, tagNames: string[]): any {
     if (tagNames.length === 0) {
       return baseQuery;
     }
-    const db = conn ?? this.db;
-    const tagsSubQuery = db('item_tags')
+
+    const tagsSubQuery = this.db('item_tags')
       .select(
         'tag as tag_tag',
         'user_id as tag_user_id',
@@ -446,7 +436,7 @@ export class SavedItemDataService {
     }
     // Tags are a many-to-one relationship with item, so need
     // to take distinct results after performing this join
-    return db.select('*').from(baseQuery.as('base')).distinct();
+    return this.db.select('*').from(baseQuery.as('base')).distinct();
   }
 
   /**
