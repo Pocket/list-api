@@ -13,7 +13,6 @@ export type PageInfo = {
 
 export type SavedItemConnection = {
   edges: SavedItemEdge[];
-  nodes: SavedItem[];
   pageInfo: PageInfo;
   totalCount: number;
 };

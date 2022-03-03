@@ -20,6 +20,7 @@ import {
 import { tagsSavedItems } from './tag';
 import { SavedItem } from '../types';
 import { IContext } from '../server/context';
+import { MyListService } from '../dataService/myListService';
 
 export const resolvers = {
   ItemResult: {
@@ -30,6 +31,13 @@ export const resolvers = {
   User: {
     savedItemById,
     savedItems,
+    savedItemsTemp: async (parent, args, context) => {
+      return await new MyListService(context).getSavedItems(
+        args.filter,
+        args.sort,
+        args.pagination
+      );
+    },
     tags: userTags,
   },
   Item: {

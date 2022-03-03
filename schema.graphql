@@ -426,6 +426,12 @@ extend type User @key(fields: "id") {
     pagination: PaginationInput
   ): SavedItemConnection
 
+savedItemsTemp(
+    filter: SavedItemsFilter
+    sort: SavedItemsSort
+    pagination: PaginationInput
+  ): SavedItemConnection
+
   """
   Get a paginated listing of all a user's Tags
   """
