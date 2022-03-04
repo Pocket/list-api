@@ -43,15 +43,15 @@ export class SavedItemDataService {
     [SavedItemStatus.DELETED]: 'DELETED',
     [SavedItemStatus.HIDDEN]: 'HIDDEN',
   };
-  public db: Knex;
+  private db: Knex;
   private readonly userId: string;
   private readonly apiId: string;
 
-  public sortMap = {
-    CREATED_AT: 'time_added',
-    UPDATED_AT: 'time_updated',
-    FAVORITED_AT: 'time_favorited',
-    ARCHIVED_AT: 'time_read',
+  private sortMap = {
+    CREATED_AT: '_createdAt',
+    UPDATED_AT: '_updatedAt',
+    FAVORITED_AT: 'favoritedAt',
+    ARCHIVED_AT: 'archivedAt', // this is a derived field
   };
 
   constructor(
@@ -173,7 +173,7 @@ export class SavedItemDataService {
     }
 
     const sortOrder = sort?.sortOrder ?? 'DESC';
-    const sortColumn = this.sortMap[sort?.sortBy] ?? 'time_added';
+    const sortColumn = this.sortMap[sort?.sortBy] ?? '_createdAt';
 
     query = query.orderBy(
       sortColumn,
@@ -280,7 +280,7 @@ export class SavedItemDataService {
    * @param filter a SavedItemsFilter object containing instructions for filtering
    * a user's list
    */
-  public buildFilterQuery(baseQuery: any, filter: SavedItemsFilter): any {
+  private buildFilterQuery(baseQuery: Knex, filter: SavedItemsFilter): any {
     // The base query will always have a 'where' statement selecting
     // the user ID, so use andWhere for all additional methods
     if (filter.updatedSince != null) {
@@ -436,7 +436,7 @@ export class SavedItemDataService {
     }
     // Tags are a many-to-one relationship with item, so need
     // to take distinct results after performing this join
-    return this.db.select(this.db.raw('distinct *')).from(baseQuery.as('base'));
+    return this.db.select('*').from(baseQuery.as('base')).distinct();
   }
 
   /**
