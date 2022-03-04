@@ -15,10 +15,11 @@ const GET_SAVED_ITEMS = gql`
   ) {
     _entities(representations: { id: $id, __typename: "User" }) {
       ... on User {
-        savedItemsTemp(pagination: $pagination, filter: $filter, sort: $sort) {
+        savedItems(pagination: $pagination, filter: $filter, sort: $sort) {
           edges {
             node {
               url
+              favoritedAt
             }
           }
           pageInfo {
@@ -32,7 +33,7 @@ const GET_SAVED_ITEMS = gql`
     }
   }
 `;
-describe('temp table with new list pagination', () => {
+describe.skip('temp table with new list pagination - benchmarking', () => {
   const db = readClient();
   const server = new ApolloServer({
     schema: buildFederatedSchema({ typeDefs, resolvers }),
@@ -49,13 +50,19 @@ describe('temp table with new list pagination', () => {
       });
     },
   });
+  const variables = {
+    id: '1',
+    filter: { contentType: 'ARTICLE' },
+    sort: { sortBy: 'CREATED_AT', sortOrder: 'DESC' },
+    pagination: { first: 30 },
+  };
 
   beforeAll(async () => {
     await Promise.all([
       db('list').truncate(),
       db('readitla_b.items_extended').truncate(),
     ]);
-    const seeder = seeds.mockList('1', { count: 1000, batchSize: 100 });
+    const seeder = seeds.mockList('1', { count: 50000, batchSize: 5000 });
     let batch = seeder.next();
     while (!batch.done) {
       await Promise.all([
@@ -68,26 +75,66 @@ describe('temp table with new list pagination', () => {
   afterAll(async () => {
     await db.destroy();
   });
-  it('works?', async () => {
-    const variables = {
-      id: '1',
-      filter: { contentType: 'ARTICLE' },
-      sort: { sortBy: 'CREATED_AT', sortOrder: 'DESC' },
-      pagination: { first: 30 },
-    };
+  it('first', async () => {
+    await timeIt(
+      async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables,
+        }),
+      { name: 'first', times: 20, printToConsole: true, returnValues: true }
+    )();
+  });
+  it('first/after', async () => {
     const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    console.log(JSON.stringify(res));
-    const cursor = res.data?._entities[0].savedItemsTemp.pageInfo.endCursor;
-    const nextRes = await server.executeOperation({
+    const cursor = res.data?._entities[0].savedItems.pageInfo.endCursor;
+    await timeIt(
+      async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables: {
+            ...variables,
+            pagination: { first: 30, after: cursor },
+          },
+        }),
+      { name: 'first/after', times: 20, returnValues: true }
+    )();
+  });
+  it('last', async () => {
+    await timeIt(
+      async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables: {
+            ...variables,
+            pagination: { last: 30 },
+          },
+        }),
+      { name: 'last', times: 20 }
+    )();
+  });
+  it('last/before', async () => {
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables: {
         ...variables,
-        pagination: { first: 30, after: cursor },
+        pagination: { last: 30 },
       },
     });
-    console.log(JSON.stringify(nextRes));
+    const cursor = res.data?._entities[0].savedItems.pageInfo.startCursor;
+    await timeIt(
+      async () =>
+        await server.executeOperation({
+          query: GET_SAVED_ITEMS,
+          variables: {
+            ...variables,
+            pagination: { last: 30, before: cursor },
+          },
+        }),
+      { name: 'last/before', times: 20 }
+    )();
   });
 });

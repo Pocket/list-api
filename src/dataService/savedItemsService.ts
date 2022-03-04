@@ -43,7 +43,7 @@ export class SavedItemDataService {
     [SavedItemStatus.DELETED]: 'DELETED',
     [SavedItemStatus.HIDDEN]: 'HIDDEN',
   };
-  private db: Knex;
+  public db: Knex;
   private readonly userId: string;
   private readonly apiId: string;
 
@@ -436,7 +436,7 @@ export class SavedItemDataService {
     }
     // Tags are a many-to-one relationship with item, so need
     // to take distinct results after performing this join
-    return this.db.select('*').from(baseQuery.as('base')).distinct();
+    return this.db.select(this.db.raw('distinct *')).from(baseQuery.as('base'));
   }
 
   /**

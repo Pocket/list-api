@@ -429,13 +429,12 @@ describe('getSavedItems', () => {
       {
         sortBy: 'ARCHIVED_AT',
         sortOrder: 'DESC',
-        expectedUrls: ['http://abc', 'http://ijk'],
+        expectedUrls: ['http://ijk', 'http://def'],
       },
       {
         sortBy: 'ARCHIVED_AT',
-        // Note that this will put non-archived items first (since they are set to time 0)
         sortOrder: 'ASC',
-        expectedUrls: ['http://def', 'http://ijk'],
+        expectedUrls: ['http://abc', 'http://def'],
       },
     ])(
       ' by $sortBy, $sortOrder works',
