@@ -372,7 +372,7 @@ enum SavedItemsSortBy {
 }
 
 """
-Input to sort fetched SavedItems
+Input to sort fetched SavedItems. If unspecified, defaults to CREATED_AT, ASC.
 """
 input SavedItemsSort {
   """
@@ -421,12 +421,6 @@ extend type User @key(fields: "id") {
   Get a general paginated listing of all SavedItems for the user
   """
   savedItems(
-    filter: SavedItemsFilter
-    sort: SavedItemsSort
-    pagination: PaginationInput
-  ): SavedItemConnection
-
-savedItemsTemp(
     filter: SavedItemsFilter
     sort: SavedItemsSort
     pagination: PaginationInput

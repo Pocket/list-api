@@ -12,6 +12,7 @@ import {
 import { cleanAndValidateTag, mysqlTimeString } from './utils';
 import config from '../config';
 import { PaginationInput } from '@pocket-tools/apollo-utils';
+import { UserInputError } from 'apollo-server-express';
 
 interface ListEntity {
   user_id?: number;
@@ -83,7 +84,10 @@ export class ListPaginationService {
 
   constructor(private readonly context: IContext) {}
 
-  // Transformer from DB result to GraphQL Schema
+  /**
+   * Transformer from DB result to GraphQL Schema
+   * @param entity ListEntity
+   */
   private static toGraphql(entity: ListEntity[]): SavedItemResult[];
   private static toGraphql(entity: ListEntity): SavedItemResult;
   private static toGraphql(
@@ -114,7 +118,12 @@ export class ListPaginationService {
     };
   }
 
-  private listTempTableQuery = (trx) =>
+  /**
+   * Utility method to create the list temp table within a transaction
+   * @param trx Open transaction object
+   * @returns Knex.Raw -- await this to create the table within a transaction
+   */
+  private listTempTableQuery = (trx: Knex.Transaction): Knex.Raw =>
     trx.raw(
       `CREATE TEMPORARY TABLE \`${this.tempTable}\` ` +
         '(' +
@@ -138,6 +147,11 @@ export class ListPaginationService {
         ') ENGINE = MEMORY'
     );
 
+  /**
+   * Utility method to create the highlights temp table within a transaction
+   * @param trx Open transaction object
+   * @returns Knex.Raw -- await this to create the table within a transaction
+   */
   private hlTempTableQuery = (trx) =>
     trx.raw(
       `CREATE TEMPORARY TABLE \`${this.highlightsTempTable}\` ` +
@@ -146,6 +160,11 @@ export class ListPaginationService {
         ') ENGINE = MEMORY'
     );
 
+  /**
+   * Utility method to create the tags temp table within a transaction
+   * @param trx Open transaction object
+   * @returns Knex.Raw -- await this to create the table within a transaction
+   */
   private tagsTempQuery = (trx) =>
     trx.raw(
       `CREATE TEMPORARY TABLE \`${this.tagsTempTable}\` ` +
@@ -154,11 +173,24 @@ export class ListPaginationService {
         ') ENGINE = MEMORY'
     );
 
+  /**
+   * Wrapper for creating temp tables; call this to make sure that the temp
+   * tables created are pushed into the the instance value for `tablesCreated`,
+   * so they can be cleaned up before the transaction exits.
+   * @param trx Open transaction object
+   * @param tableName the name of the temp table created
+   */
   private async createTempTable(trx: any, tableName: string): Promise<any> {
     this.tablesCreated.push(tableName);
     const res = await trx;
     return res;
   }
+  /**
+   * Returns a promise to clean up all temp tables created using `this.createTempTable`
+   * within a transaction
+   * @param trx Open transaction object
+   * @returns Promise to delete all tables created; await this to perform deletion
+   */
   private dropTempTables(trx: Knex.Transaction): any {
     return Promise.all(
       this.tablesCreated.map((tableName) =>
@@ -166,6 +198,10 @@ export class ListPaginationService {
       )
     );
   }
+  /**
+   * Private function to determine which pagination methods to call, and set up
+   * some shared temp table logic.
+   */
   private async paginatedResult(
     query: Knex.QueryBuilder,
     trx: Knex.Transaction,
@@ -207,6 +243,9 @@ export class ListPaginationService {
     }
   }
 
+  /**
+   * Handle first/last pagination.
+   */
   private async pageFirstLast(
     trx: Knex.Transaction,
     query: Knex.QueryBuilder,
@@ -232,11 +271,21 @@ export class ListPaginationService {
       .limit(pageSize + 1)
       .toString();
     await trx.raw(`${insertStatement} ${queryString}`);
-    return await trx(this.tempTable)
-      .select()
-      .orderBy(sortColumn, sortOrder.order);
+    const returnQuery = trx(this.tempTable).select();
+    if (pagination.last) {
+      // Need to reorder for last
+      returnQuery.orderBy([
+        { column: `${sortColumn}`, order: sortOrder.order },
+        { column: 'item_id' },
+      ]);
+    }
+    return await returnQuery;
   }
 
+  /**
+   * Handle before/after pagination.
+   * If the provided cursor does not exist, throws UserInputError.
+   */
   private async pageAfterorBefore(
     trx: Knex.Transaction,
     baseQuery: Knex.QueryBuilder,
@@ -284,6 +333,9 @@ export class ListPaginationService {
     // Remove anything prior and up to the cursor (inclusive)
     // Note that the reverse ordering from 'before' pagination
     // means that we don't have to change the direction of our removal
+    if (prevCursorSeq == null) {
+      throw new UserInputError('Cursor not found.');
+    }
     await trx(this.tempTable).where('seq', '<=', prevCursorSeq).del();
     // Compute how many we have in the table; if there are a lot of
     // collisions we may not even need to fetch more
@@ -303,23 +355,45 @@ export class ListPaginationService {
         .toString();
       await trx.raw(`${insertStatement} ${restOfQuery}`);
     }
-    return await trx(this.tempTable)
+    const returnQuery = trx(this.tempTable)
       .select()
-      .orderBy(sortColumn, sortOrder.order)
       .limit(pageSize + 1);
+    if (pagination.last) {
+      returnQuery.orderBy([
+        { column: sortColumn, order: sortOrder.order },
+        { column: 'item_id' },
+      ]);
+    }
+    return await returnQuery;
   }
 
+  /**
+   * Decode the pagination cursor
+   * @param cursor cursor (_*_ separated string of itemId and cursor value)
+   * @returns [itemId, cursorValue]
+   */
   private decodeCursor(cursor: string) {
     const [id, val] = Buffer.from(cursor, 'base64')
       .toString('utf8')
       .split('_*_');
     return [id, val === 'null' || val === 'undefined' ? null : val];
   }
-  private encodeCursor(itemId: number | string, epoch: number) {
+  /**
+   * Encode the pagination cursor
+   * @param itemId The itemId
+   * @param epoch The value of the timestamp field used for cursor, in seconds since epoch,
+   * or null/undefined if the value is null in the database (bad cursor!)
+   * @returns
+   */
+  private encodeCursor(itemId: number | string, epoch: number | null) {
     return Buffer.from(`${itemId}_*_${epoch}`).toString('base64');
   }
 
-  public async buildFilterQuery(
+  /**
+   * Build a filter query. If filtering by highlights or tags, will create
+   * temporary tables as a side effect, which is why this needs to be awaited.
+   */
+  private async buildFilterQuery(
     baseQuery: any,
     trx: Knex.Transaction,
     filter: SavedItemsFilter
@@ -362,6 +436,10 @@ export class ListPaginationService {
     }
   }
 
+  /**
+   * Filter by highlighted/not highlighted. Creates a temporary table as
+   * a side effect to optimize join.
+   */
   private async isHighlightedFilter(
     baseQuery: Knex,
     trx: Knex.Transaction,
@@ -396,7 +474,10 @@ export class ListPaginationService {
         .andWhere(trx.raw(`${this.highlightsTempTable}.item_id is null`));
     }
   }
-
+  /**
+   * Filter by specific tags, untagged items, or a combination of these.
+   * Creates a temporary table as a side effect to optimize join.
+   */
   private async tagNameFilter(
     baseQuery: Knex.QueryBuilder,
     trx: Knex.Transaction,
@@ -439,7 +520,7 @@ export class ListPaginationService {
       .select(trx.raw(`distinct lt.item_id as item_id`))
       .from(listTags.as('lt'))
       .toString();
-    const res = await trx.raw(`${insertStatement} ${insertQuery}`);
+    await trx.raw(`${insertStatement} ${insertQuery}`);
     baseQuery.join(
       this.tagsTempTable,
       'list.item_id',
@@ -447,6 +528,9 @@ export class ListPaginationService {
     );
   }
 
+  /**
+   * Add content type filter via cross-db join to base query.
+   */
   private contentTypeFilter(
     baseQuery: Knex,
     contentType: SavedItemsContentType
@@ -464,10 +548,22 @@ export class ListPaginationService {
     return baseQuery;
   }
 
+  /**
+   * Get a page of SavedItems
+   * @param filter filter rules for SavedItems
+   * @param sort how the SavedItems should be sorted;
+   * this has pagination implications
+   * @param pagination how the SavedItems should be paginated
+   * @param savedItemIds optionally, provide a list of savedItem IDs
+   * to limit the responses to. Used when resolving SavedItems on tags,
+   * since there may be many SavedItems associated to a single tag.
+   * @returns Promise<SavedItemConnection>
+   */
   public async getSavedItems(
     filter: SavedItemsFilter,
     sort: SavedItemsSort,
-    pagination: Pagination
+    pagination: Pagination,
+    savedItemIds?: string[]
   ): Promise<SavedItemConnection> {
     if (pagination == null) {
       pagination = { first: config.pagination.defaultPageSize };
@@ -482,6 +578,9 @@ export class ListPaginationService {
           'list.user_id',
           this.context.userId
         );
+        if (savedItemIds?.length) {
+          baseQuery.whereIn('list.item_id', savedItemIds);
+        }
         if (filter != null) {
           await this.buildFilterQuery(baseQuery, trx, filter);
         }
