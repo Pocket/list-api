@@ -22,8 +22,8 @@ describe('Update Mutation for SavedItem: ', () => {
   let clock;
 
   afterAll(async () => {
-    await readClient().destroy();
-    await writeClient().destroy();
+    await readDb.destroy();
+    await db.destroy();
     clock.restore();
   });
 
