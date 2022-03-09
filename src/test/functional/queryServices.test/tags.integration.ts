@@ -349,10 +349,9 @@ describe('tags query tests - happy path', () => {
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.edges.length
     ).equals(2);
-    // Default to itemId, asc on sort field collision
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.edges[0].node.url
-    ).equals('http://abc');
+    ).equals('http://tagtest');
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.totalCount
     ).equals(2);
@@ -365,69 +364,12 @@ describe('tags query tests - happy path', () => {
         .hasPreviousPage
     ).is.false;
   });
-  describe('should not allow before/after pagination', () => {
-    it('for array response', async () => {
-      const variables = {
-        userId: '1',
-        itemId: '1',
-        pagination: { before: 'emVicmFfKl8iemVicmEi', last: 10 },
-      };
-
-      const GET_PAGINATED_ITEMS = gql`
-        query getSavedItem(
-          $userId: ID!
-          $itemId: ID!
-          $pagination: PaginationInput
-        ) {
-          _entities(representations: { id: $userId, __typename: "User" }) {
-            ... on User {
-              savedItemById(id: $itemId) {
-                tags {
-                  ... on Tag {
-                    savedItems(pagination: $pagination) {
-                      totalCount
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const res = await server.executeOperation({
-        query: GET_PAGINATED_ITEMS,
-        variables,
-      });
-      expect(res.errors.length).to.be.above(0);
-      expect(res.errors[0].message).to.equal(
-        'Cannot specify a cursor on a nested paginated field.'
-      );
-    });
-    it('under paginated Tags', async () => {
-      const variables = {
-        id: '1',
-        pagination: { first: 2 },
-        sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
-        itemPagination: { first: 2, after: 'somecursor' },
-      };
-      const res = await server.executeOperation({
-        query: GET_TAGS_SAVED_ITEMS,
-        variables,
-      });
-      expect(res.errors.length).to.be.above(0);
-      expect(res.errors[0].message).to.equal(
-        'Cannot specify a cursor on a nested paginated field.'
-      );
-    });
-  });
 
   it('return list of paginated SavedItems for Tags', async () => {
     const variables = {
       id: '1',
       pagination: { first: 2 },
-      sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
-      itemPagination: { first: 2 },
+      itemPagination: { after: 'NF8qXzE2MDE3MjA0MzA', first: 2 },
     };
 
     const res = await server.executeOperation({
@@ -435,39 +377,32 @@ describe('tags query tests - happy path', () => {
       variables,
     });
 
-    const tags = res.data?._entities[0].tags;
-    // Returns 2 tags, but there are 3 total active
-    expect(tags.edges.length).to.equal(2);
-    expect(tags.pageInfo.hasNextPage).to.be.true;
-    expect(tags.totalCount).to.equal(3);
-
-    // since tags collide on createdAt, default to alphabetical ascending sort on name
-    const firstTag = tags.edges[0].node;
-    const secondTag = tags.edges[1].node;
-    expect(firstTag.name).to.equal('adventure');
-    expect(secondTag.name).to.equal('travel');
-
-    expect(firstTag.savedItems.edges.length).to.equal(2);
-    // all SavedItems collide on createdAt, so default to ascending by itemId
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
+      'adventure'
+    );
     expect(
-      firstTag.savedItems.edges.map((edge) => edge.node.url)
-    ).to.deep.equal(['http://tagtest', 'http://winter.sports']);
-    expect(firstTag.savedItems.pageInfo.hasNextPage).to.be.true;
-    expect(firstTag.savedItems.totalCount).to.equal(3);
-
-    expect(secondTag.savedItems.edges.length).to.equal(2);
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
+    ).to.equal('http://winter.sports');
     expect(
-      secondTag.savedItems.edges.map((edge) => edge.node.url)
-    ).to.deep.equal(['http://abc', 'http://tagtest']);
-    expect(secondTag.savedItems.pageInfo.hasNextPage).to.be.false;
+      res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
+    ).equals(3);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
+    ).equals(2);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo.hasNextPage
+    ).is.false;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo
+        .hasPreviousPage
+    ).is.true;
   });
 
   it('return paginated SavedItems, when filtered by archived', async () => {
     const variables = {
       id: '1',
-      pagination: { first: 1 },
+      pagination: { first: 2 },
       itemPagination: { last: 10 },
-      sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
       filter: { isArchived: true },
     };
 
@@ -475,21 +410,66 @@ describe('tags query tests - happy path', () => {
       query: GET_TAGS_SAVED_ITEMS,
       variables,
     });
-    // tags are sorted alphabetically, ascending
+
     expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
       'adventure'
     );
-    const tag = res.data?._entities[0].tags.edges[0].node;
-    // There are two archived SavedItems under adventure Tag
-    expect(tag.savedItems.edges.length).to.equal(2);
-    // sorted by createdAt, ascending (collision defaults to itemId)
-    expect(tag.savedItems.edges.map((edge) => edge.node.url)).to.deep.equal([
-      'http://winter.sports',
-      'http://summer.sports',
-    ]);
-    expect(tag.savedItems.totalCount).to.equal(2);
-    expect(tag.savedItems.pageInfo.hasNextPage).to.be.false;
-    expect(tag.savedItems.pageInfo.hasPreviousPage).to.be.false;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
+    ).to.equal('http://summer.sports');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[1].node.url
+    ).to.equal('http://winter.sports');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
+    ).equals(2);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
+    ).equals(2);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo.hasNextPage
+    ).is.false;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo
+        .hasPreviousPage
+    ).is.false;
+  });
+
+  it('return paginated SavedItems in ASC order when sorted by favorited items', async () => {
+    const variables = {
+      id: '1',
+      pagination: { first: 2 },
+      itemPagination: { before: 'NF8qXzE2OTYzMjg0MzA=', last: 10 },
+      sort: { sortBy: 'FAVORITED_AT', sortOrder: 'ASC' },
+    };
+
+    const res = await server.executeOperation({
+      query: GET_TAGS_SAVED_ITEMS,
+      variables,
+    });
+
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
+      'adventure'
+    );
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[0].node.url
+    ).to.equal('http://tagtest');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges[1].node.url
+    ).to.equal('http://winter.sports');
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.totalCount
+    ).equals(3);
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo.hasNextPage
+    ).is.true;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.pageInfo
+        .hasPreviousPage
+    ).is.false;
+    expect(
+      res.data?._entities[0].tags.edges[0].node.savedItems.edges.length
+    ).equals(2);
   });
 
   it('should return list of Tags for User for first n values', async () => {
