@@ -36,14 +36,14 @@
     "graphql-depth-limit": "1.1.0",
     "graphql-tools": "^8.2.0",
     "knex": "^0.95.14",
-    "locutus": "2.0.15",
+    "locutus": "2.0.16",
     "luxon": "2.3.0",
     "mysql": "^2.18.1"
   },
   "devDependencies": {
     "@apollo/federation": "0.33.9",
     "@types/chai": "4.3.0",
-    "@types/chai-as-promised": "7.1.4",
+    "@types/chai-as-promised": "7.1.5",
     "@types/chai-datetime": "^0.0.37",
     "@types/deep-equal-in-any-order": "1.0.1",
     "@types/faker": "^5.5.7",
