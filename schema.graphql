@@ -254,6 +254,10 @@ input SavedItemsFilter {
   Optional, filter to get user items based on status.
   """
   status: SavedItemStatusFilter
+  """
+  Optional, filters to get user items based on multiple statuses (OR operator)
+  """
+  states: [SavedItemStatusFilter]
 }
 """
 An edge in a connection.

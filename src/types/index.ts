@@ -94,6 +94,7 @@ export type SavedItemsFilter = {
   isHighlighted?: boolean;
   contentType?: SavedItemsContentType;
   status?: Exclude<SavedItemStatus, SavedItemStatus.DELETED>;
+  states?: Exclude<SavedItemStatus, SavedItemStatus.DELETED>[];
 };
 
 export enum SavedItemsSortOrder {
