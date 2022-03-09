@@ -7,7 +7,11 @@ import {
   TagConnection,
   User,
 } from '../types';
-import { SavedItemDataService, TagDataService } from '../dataService';
+import {
+  SavedItemDataService,
+  TagDataService,
+  ListPaginationService,
+} from '../dataService';
 import { validatePagination } from '@pocket-tools/apollo-utils';
 import { IContext } from '../server/context';
 import config from '../config';
@@ -46,7 +50,7 @@ export function savedItems(
     config.pagination.defaultPageSize,
     config.pagination.maxPageSize
   );
-  return new SavedItemDataService(context).getSavedItems(
+  return new ListPaginationService(context).getSavedItems(
     args.filter,
     args.sort,
     args.pagination
