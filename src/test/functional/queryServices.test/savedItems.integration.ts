@@ -429,12 +429,13 @@ describe('getSavedItems', () => {
       {
         sortBy: 'ARCHIVED_AT',
         sortOrder: 'DESC',
-        expectedUrls: ['http://ijk', 'http://def'],
+        expectedUrls: ['http://abc', 'http://ijk'],
       },
       {
         sortBy: 'ARCHIVED_AT',
+        // Note that this will put non-archived items first (since they are set to time 0)
         sortOrder: 'ASC',
-        expectedUrls: ['http://abc', 'http://def'],
+        expectedUrls: ['http://def', 'http://ijk'],
       },
     ])(
       ' by $sortBy, $sortOrder works',
@@ -455,20 +456,5 @@ describe('getSavedItems', () => {
         expect(expectedUrls).to.deep.equal(urls);
       }
     );
-  });
-  it('should throw error if cursor is not found', async () => {
-    const variables = {
-      id: '1',
-      pagination: {
-        before: 'abc123=',
-        last: 2,
-      },
-    };
-    const res = await server.executeOperation({
-      query: GET_SAVED_ITEMS,
-      variables,
-    });
-    expect(res.errors?.length).to.be.above(0);
-    expect(res.errors[0].message).to.equal('Cursor not found.');
   });
 });

@@ -372,7 +372,7 @@ enum SavedItemsSortBy {
 }
 
 """
-Input to sort fetched SavedItems. If unspecified, defaults to CREATED_AT, ASC.
+Input to sort fetched SavedItems
 """
 input SavedItemsSort {
   """
