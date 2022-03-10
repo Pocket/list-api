@@ -557,7 +557,12 @@ export class ListPaginationService {
         baseQuery.where('readitla_b.items_extended.is_article', 1);
         break;
       case 'IS_EXTERNAL':
-        baseQuery.where('readitla_b.items_extended.is_article', 0);
+        // Only query for items that have "is_article" 0, and "video" and "image" not equal to 2
+        // The understanding is that this implies that the item was truly not parsed
+        baseQuery
+          .where('readitla_b.items_extended.is_article', 0)
+          .andWhere('readitla_b.items_extended.video', '!=', 2)
+          .andWhere('readitla_b.items_extended.image', '!=', 2);
         break;
       case 'IS_READABLE':
         baseQuery.where('readitla_b.items_extended.is_article', 1);

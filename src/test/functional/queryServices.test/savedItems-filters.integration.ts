@@ -563,14 +563,9 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(4);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
     res.data?._entities[0].savedItems.edges.forEach((edge) => {
-      expect(edge.node.url).to.be.oneOf([
-        'http://abc',
-        'http://lmn',
-        'http://opq',
-        'http://rst',
-      ]);
+      expect(edge.node.url).to.be.oneOf(['http://abc', 'http://lmn']);
     });
   });
 
