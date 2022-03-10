@@ -42,6 +42,13 @@ describe('getSavedItems filter', () => {
       _entities(representations: { id: $id, __typename: "User" }) {
         ... on User {
           savedItems(pagination: { first: 30 }, filter: $filter) {
+            totalCount
+            pageInfo {
+              startCursor
+              endCursor
+              hasNextPage
+              hasPreviousPage
+            }
             edges {
               node {
                 url
@@ -325,6 +332,31 @@ describe('getSavedItems filter', () => {
     expect(
       res.data?._entities[0].savedItems.edges[0].node.item.savedItem.isFavorite
     ).to.equal(false);
+  });
+
+  it('should not throw an error if no items match the filters', async () => {
+    const variables = {
+      id: '1',
+      filter: {
+        isHighlighted: true,
+        contentType: 'VIDEO',
+        isFavorite: false,
+        status: 'ARCHIVED',
+      },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges).to.deep.equal([]);
+    expect(res.data?._entities[0].savedItems.totalCount).to.equal(0);
+    expect(res.data?._entities[0].savedItems.pageInfo).to.deep.equal({
+      startCursor: null,
+      endCursor: null,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    });
   });
 
   it('should return highlighted items with active (non-deleted) highlights only', async () => {
