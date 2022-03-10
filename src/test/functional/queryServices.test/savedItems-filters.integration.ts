@@ -437,10 +437,10 @@ describe('getSavedItems filter', () => {
       res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('2');
   });
-  it('should use states to return multiple statuses', async () => {
+  it('should use statuses to return multiple statuses', async () => {
     const variables = {
       id: '1',
-      filter: { states: ['UNREAD', 'ARCHIVED'] },
+      filter: { statuses: ['UNREAD', 'ARCHIVED'] },
     };
     const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,

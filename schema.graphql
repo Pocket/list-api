@@ -251,13 +251,13 @@ input SavedItemsFilter {
   """
   contentType: SavedItemsContentType
   """
-  Optional, filter to get user items based on status.
+  Optional, filter to get user items based on status. Deprecated: use statuses instead.
   """
   status: SavedItemStatusFilter
   """
   Optional, filters to get user items based on multiple statuses (OR operator)
   """
-  states: [SavedItemStatusFilter]
+  statuses: [SavedItemStatusFilter]
 }
 """
 An edge in a connection.
