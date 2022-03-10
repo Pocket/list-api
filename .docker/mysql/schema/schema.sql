@@ -117,6 +117,7 @@ USE readitla_b;
 -- NOTE: This is a subset of fields in the actual table, for test purposes
 CREATE TABLE `items_extended` (
   `extended_item_id` int(10) unsigned NOT NULL,
+  `image` tinyint(1) NOT NULL,
   `video` tinyint(1) NOT NULL,
   `is_article` tinyint(1) NOT NULL,
   PRIMARY KEY (`extended_item_id`),

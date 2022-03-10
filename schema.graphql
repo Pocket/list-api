@@ -203,8 +203,34 @@ input SavedItemUpsertInput {
 A SavedItem can be one of these content types
 """
 enum SavedItemsContentType {
-  VIDEO
-  ARTICLE
+  """
+  Item is a parsed article that contains videos
+  """
+  VIDEO @deprecated(reason: "Use `HAS_VIDEO`.")
+  """
+  Item is a parsed page can be opened in reader view
+  """
+  ARTICLE @deprecated(reason: "Use `IS_READABLE`.")
+  """
+  Item is an image
+  """
+  IS_IMAGE
+  """
+  Item is a video
+  """
+  IS_VIDEO
+  """
+  Item is a parsed article that contains videos
+  """
+  HAS_VIDEO
+  """
+  Item is a parsed page can be opened in reader view
+  """
+  IS_READABLE
+  """
+  Item is an un-parsable page and will be opened externally
+  """
+  IS_EXTERNAL
 }
 """
 Valid statuses a client may use to filter SavedItems
