@@ -620,8 +620,10 @@ export class ListPaginationService {
         cursor: this.encodeCursor(node.id, node[sortColumn]),
       };
     });
-    pageInfo['startCursor'] = edges[0].cursor;
-    pageInfo['endCursor'] = edges[edges.length - 1].cursor;
+    if (edges.length) {
+      pageInfo['startCursor'] = edges[0].cursor;
+      pageInfo['endCursor'] = edges[edges.length - 1].cursor;
+    }
     return {
       edges,
       pageInfo,
@@ -632,7 +634,7 @@ export class ListPaginationService {
     pagedResult: ListEntity[],
     pagination: PaginationInput
   ) {
-    const pageInfo = {};
+    const pageInfo = { startCursor: null, endCursor: null };
     if (pagination.first) {
       pageInfo['hasNextPage'] = pagedResult.length > pagination.first;
       if (pagination.after) {
