@@ -437,6 +437,23 @@ describe('getSavedItems filter', () => {
       res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('2');
   });
+  it('should use statuses to return multiple statuses', async () => {
+    const variables = {
+      id: '1',
+      filter: { statuses: ['UNREAD', 'ARCHIVED'] },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(
+      res.data?._entities[0].savedItems.edges.map(
+        (edge) => edge.node.item.savedItem.id
+      )
+    ).to.deep.equalInAnyOrder(['1', '2']); // Don't care about sort for this test
+  });
 
   it('should be combined with other filters properly', async () => {
     const variables = {

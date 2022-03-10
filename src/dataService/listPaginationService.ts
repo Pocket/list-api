@@ -423,6 +423,12 @@ export class ListPaginationService {
     if (filter.status != null) {
       baseQuery.andWhere('status', SavedItemStatus[filter.status]);
     }
+    if (filter.statuses != null) {
+      const statuses = filter.statuses.map((status) => SavedItemStatus[status]);
+      baseQuery.andWhere((builder) => {
+        builder.whereIn('status', statuses);
+      });
+    }
     if (filter.isHighlighted != null) {
       await this.isHighlightedFilter(baseQuery, trx, filter.isHighlighted);
     }
