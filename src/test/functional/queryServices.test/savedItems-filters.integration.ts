@@ -599,12 +599,12 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
     expect(
       res.data?._entities[0].savedItems.edges.map(
         (edge) => edge.node.item.savedItem.id
       )
-    ).to.deep.equalInAnyOrder(['1', '2']); // Don't care about sort for this test
+    ).to.deep.equalInAnyOrder(['1', '2', '4', '5', '6']); // Don't care about sort for this test
   });
 
   it('should be combined with other filters properly', async () => {
