@@ -546,11 +546,38 @@ export class ListPaginationService {
       'list.resolved_id',
       'readitla_b.items_extended.extended_item_id'
     );
-    if (contentType == 'VIDEO') {
-      baseQuery.where('readitla_b.items_extended.video', 1);
-    } else {
-      baseQuery.where('readitla_b.items_extended.is_article', 1);
+
+    switch (contentType) {
+      // Deprecated
+      case 'VIDEO':
+        baseQuery.where('readitla_b.items_extended.video', 1);
+        break;
+      // Deprecated
+      case 'ARTICLE':
+        baseQuery.where('readitla_b.items_extended.is_article', 1);
+        break;
+      case 'IS_EXTERNAL':
+        // Only query for items that have "is_article" 0, and "video" and "image" not equal to 2
+        // The understanding is that this implies that the item was truly not parsed
+        baseQuery
+          .where('readitla_b.items_extended.is_article', 0)
+          .andWhere('readitla_b.items_extended.video', '!=', 2)
+          .andWhere('readitla_b.items_extended.image', '!=', 2);
+        break;
+      case 'IS_READABLE':
+        baseQuery.where('readitla_b.items_extended.is_article', 1);
+        break;
+      case 'HAS_VIDEO':
+        baseQuery.where('readitla_b.items_extended.video', 1);
+        break;
+      case 'IS_IMAGE':
+        baseQuery.where('readitla_b.items_extended.image', 2);
+        break;
+      case 'IS_VIDEO':
+        baseQuery.where('readitla_b.items_extended.video', 2);
+        break;
     }
+
     return baseQuery;
   }
 

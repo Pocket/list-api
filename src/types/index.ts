@@ -83,6 +83,11 @@ export type Pagination = PaginationInput;
 export enum SavedItemsContentType {
   VIDEO = 'VIDEO',
   ARTICLE = 'ARTICLE',
+  IS_IMAGE = 'IS_IMAGE',
+  IS_VIDEO = 'IS_VIDEO',
+  HAS_VIDEO = 'HAS_VIDEO',
+  IS_READABLE = 'IS_READABLE',
+  IS_EXTERNAL = 'IS_EXTERNAL',
 }
 
 export type SavedItemsFilter = {

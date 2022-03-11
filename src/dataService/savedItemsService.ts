@@ -1,18 +1,7 @@
 import { Knex } from 'knex';
-import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-pagination';
 import { IContext } from '../server/context';
-import { cleanAndValidateTag, mysqlTimeString } from './utils';
-import {
-  Pagination,
-  SavedItem,
-  SavedItemConnection,
-  SavedItemEdge,
-  SavedItemsContentType,
-  SavedItemsFilter,
-  SavedItemsSort,
-  SavedItemStatus,
-  SavedItemUpsertInput,
-} from '../types';
+import { mysqlTimeString } from './utils';
+import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 
@@ -46,13 +35,6 @@ export class SavedItemDataService {
   private db: Knex;
   private readonly userId: string;
   private readonly apiId: string;
-
-  private sortMap = {
-    CREATED_AT: '_createdAt',
-    UPDATED_AT: '_updatedAt',
-    FAVORITED_AT: 'favoritedAt',
-    ARCHIVED_AT: 'archivedAt', // this is a derived field
-  };
 
   constructor(
     context: IContext,
@@ -88,6 +70,19 @@ export class SavedItemDataService {
       return dbResult.map((row) => statusConvert(row));
     }
     return statusConvert(dbResult);
+  }
+
+  public static getWriteDbClient(context: IContext) {
+    return new SavedItemDataService(context, context.db.writeClient);
+  }
+
+  /**
+   * Format a date to the configured database timezone
+   * @param date
+   * @private
+   */
+  private static formatDate(date: Date): string {
+    return mysqlTimeString(date, config.database.tz);
   }
 
   /**
@@ -136,81 +131,6 @@ export class SavedItemDataService {
   }
 
   /**
-   * Fetch paginated list of saved items for the list of Item Ids.
-   * @param itemIds the savedItem ID to fetch
-   * @param pagination pagination inputs
-   * @param filter filter options for savedItems
-   * @param sort sort options for savedItems
-   */
-  public async getPaginatedSavedItemsForListOfIds(
-    itemIds: string[],
-    pagination: Pagination,
-    filter: SavedItemsFilter,
-    sort: SavedItemsSort
-  ): Promise<SavedItemConnection> {
-    const query = this.buildQuery()
-      .where({ user_id: this.userId })
-      .whereIn('item_id', itemIds);
-
-    return this.getPaginatedItemsForQuery(query, pagination, filter, sort);
-  }
-
-  /**
-   * Fetch paginated list of savedItems for the given query
-   * @param query baseQuery for fetching savedItems
-   * @param pagination pagination inputs
-   * @param filter filter options for savedItems
-   * @param sort sort options for savedItems
-   */
-  private async getPaginatedItemsForQuery(
-    query: any,
-    pagination: Pagination,
-    filter: SavedItemsFilter,
-    sort: SavedItemsSort
-  ): Promise<SavedItemConnection> {
-    if (pagination == null) {
-      pagination = { first: config.pagination.defaultPageSize };
-    }
-
-    const sortOrder = sort?.sortOrder ?? 'DESC';
-    const sortColumn = this.sortMap[sort?.sortBy] ?? '_createdAt';
-
-    query = query.orderBy(
-      sortColumn,
-      sortOrder.toLowerCase(),
-      'item_id',
-      'asc'
-    ); // item_id sort is to resolve ties with stable sort (e.g. null sort field)
-
-    if (filter != null) {
-      query = this.buildFilterQuery(query, filter);
-    }
-    return await paginate(
-      // Need to use a subquery in order to order by derived fields ('archivedAt')
-      this.db.select('*').from(query.as('page_query')),
-      {
-        first: pagination?.first,
-        last: pagination?.last,
-        before: pagination?.before,
-        after: pagination?.after,
-        orderBy: sortColumn,
-        orderDirection: sortOrder,
-      },
-      {
-        primaryKey: 'item_id',
-        modifyEdgeFn: (edge): SavedItemEdge => ({
-          ...edge,
-          //Format the node to conform to our SavedItem type.
-          node: {
-            ...edge.node,
-            status: SavedItemDataService.statusMap[edge.node.status],
-          },
-        }),
-      }
-    );
-  }
-
-  /**
    * Fetch a single SavedItem via its unique URL from a user's list
    * @param givenUrl the URL of the item to fetch
    */
@@ -247,21 +167,6 @@ export class SavedItemDataService {
   }
 
   /**
-   * Fetch all SavedItems in a User's list
-   * @param filter PARTIALLY IMPLEMENTED: tagIds is not implemented
-   * @param sort instructions for sorting; impacts pagination
-   * @param pagination: instructions for how to paginate the data
-   */
-  public getSavedItems(
-    filter?: SavedItemsFilter,
-    sort?: SavedItemsSort,
-    pagination?: Pagination
-  ): Promise<SavedItemConnection> {
-    const baseQuery = this.buildQuery().where('user_id', this.userId);
-    return this.getPaginatedItemsForQuery(baseQuery, pagination, filter, sort);
-  }
-
-  /**
    * Get time read for a saved item
    * @param itemId
    */
@@ -270,182 +175,6 @@ export class SavedItemDataService {
       .select(this.db.raw('SQL_NO_CACHE time_read'))
       .where({ item_id: itemId, user_id: this.userId })
       .first();
-  }
-
-  /**
-   * Build filter statements from SavedItemsFilter for pagination
-   * The database entities don't nicely map onto the GraphQL objects
-   * so this very explicit way may be the most clear and maintainable.
-   * @param baseQuery the base query for selecting a user's list
-   * @param filter a SavedItemsFilter object containing instructions for filtering
-   * a user's list
-   */
-  private buildFilterQuery(baseQuery: Knex, filter: SavedItemsFilter): any {
-    // The base query will always have a 'where' statement selecting
-    // the user ID, so use andWhere for all additional methods
-    if (filter.updatedSince != null) {
-      baseQuery.andWhere(
-        'time_updated',
-        '>',
-        mysqlTimeString(
-          new Date(filter.updatedSince * 1000),
-          config.database.tz
-        )
-      );
-    }
-    if (filter.isFavorite != null) {
-      baseQuery.andWhere('favorite', +filter.isFavorite);
-    }
-    if (filter.isArchived != null) {
-      if (filter.isArchived) {
-        baseQuery.andWhere('status', 1);
-      } else {
-        baseQuery.andWhere('status', '!=', 1);
-      }
-    }
-    if (filter.status != null) {
-      baseQuery.andWhere('status', SavedItemStatus[filter.status]);
-    }
-    if (filter.isHighlighted != null) {
-      this.isHighlightedFilter(baseQuery, filter.isHighlighted);
-    }
-    if (filter.contentType != null) {
-      this.contentTypeFilter(baseQuery, filter.contentType);
-    }
-    // Tags has to go last due to select distinct
-    if (filter.tagNames != null && filter.tagNames.length > 0) {
-      const cleanTags = filter.tagNames.map(cleanAndValidateTag);
-      return this.tagNameFilter(baseQuery, cleanTags);
-    }
-    return baseQuery;
-  }
-
-  /**
-   * Update the user list query to filter to highlighted/not-highlighted items.
-   * to only highlighted items.
-   * NOTE: Due to the way the final pagination subquery is created,
-   * we can't rely on aliases to identify the `orderBy` and `primaryKey`
-   * columns in the paginated query. So all queries that will be paginated need
-   * to ensure that there are no name collisions (that is, that every
-   * column has a unique name). This is why the columns used to join
-   * `user_annotations` to `list` are prefixed with `hl_`, despite not
-   * being returned in the final query.
-   * @param baseQuery the base query for selecting a user's list
-   * @param isHighlighted boolean to filter either highlighted or not highlighted items
-   */
-  private isHighlightedFilter(
-    baseQuery: Knex,
-    isHighlighted: boolean
-  ): Promise<any> {
-    const highlightSubquery = this.db('user_annotations')
-      .select('user_id as hl_user_id', 'item_id as hl_item_id')
-      .where('user_id', this.userId)
-      .andWhere('status', 1)
-      .groupBy('hl_user_id', 'hl_item_id')
-      .as('highlights');
-
-    if (isHighlighted) {
-      return baseQuery.innerJoin(highlightSubquery, function () {
-        this.on('highlights.hl_user_id', '=', 'list.user_id').andOn(
-          'highlights.hl_item_id',
-          '=',
-          'list.item_id'
-        );
-      });
-    } else {
-      return baseQuery
-        .leftJoin(highlightSubquery, function () {
-          this.on('highlights.hl_user_id', '=', 'list.user_id').andOn(
-            'highlights.hl_item_id',
-            '=',
-            'list.item_id'
-          );
-        })
-        .andWhere(this.db.raw('highlights.hl_item_id is null'));
-    }
-  }
-
-  private contentTypeFilter(
-    baseQuery: Knex,
-    contentType: SavedItemsContentType
-  ): Knex {
-    baseQuery.join(
-      `readitla_b.items_extended`,
-      'list.resolved_id',
-      'readitla_b.items_extended.extended_item_id'
-    );
-    if (contentType == 'VIDEO') {
-      baseQuery.where('readitla_b.items_extended.video', 1);
-    } else {
-      baseQuery.where('readitla_b.items_extended.is_article', 1);
-    }
-    return baseQuery;
-  }
-
-  /**
-   * Update the user list query to filter for items with specific tags.
-   * In order to get untagged items, use the string "_untagged_".
-   * An item will be included in the filter if it has any tags that
-   * match any values in `tagNames` (or if it is untagged, if "_untagged_"
-   * is included)
-   * NOTE: Due to the way the final pagination subquery is created,
-   * we can't rely on aliases to identify the `orderBy` and `primaryKey`
-   * columns in the paginated query. So all queries that will be paginated need
-   * to ensure that there are no name collisions (that is, that every
-   * column has a unique name). This is why the columns used to join
-   * `item_tags` to `list` are prefixed with `tag_`, despite not
-   * being returned in the final query.
-   * @param baseQuery the base query for selecting a user's list
-   * @param tagNames the desired tags to filter on; for untagged items,
-   * include the string '_untagged_'
-   */
-  private tagNameFilter(baseQuery: Knex, tagNames: string[]): any {
-    if (tagNames.length === 0) {
-      return baseQuery;
-    }
-
-    const tagsSubQuery = this.db('item_tags')
-      .select(
-        'tag as tag_tag',
-        'user_id as tag_user_id',
-        'item_id as tag_item_id'
-      )
-      .where('user_id', this.userId);
-
-    baseQuery.leftJoin(tagsSubQuery.as('tags_subquery'), {
-      'list.item_id': 'tags_subquery.tag_item_id',
-      'list.user_id': 'tags_subquery.tag_user_id',
-    });
-    // Can't do a straight inner join since we may have "untagged" items
-    // that we need to find
-    const untaggedIndex = tagNames.indexOf('_untagged_', 0);
-    if (untaggedIndex > -1) {
-      tagNames.splice(untaggedIndex, 1); // remove _untagged_
-      if (tagNames.length > 0) {
-        baseQuery.where((builder) => {
-          // This is where you want untagged items plus an item with a specific tag(s)
-          builder.andWhere('tag_tag', 'in', tagNames).orWhereNull('tag_tag');
-        });
-      } else {
-        // Untagged items only
-        baseQuery.whereNull('tag_tag');
-      }
-    } else {
-      // Specific tagged items
-      baseQuery.andWhere('tag_tag', 'in', tagNames);
-    }
-    // Tags are a many-to-one relationship with item, so need
-    // to take distinct results after performing this join
-    return this.db.select('*').from(baseQuery.as('base')).distinct();
-  }
-
-  /**
-   * Format a date to the configured database timezone
-   * @param date
-   * @private
-   */
-  private static formatDate(date: Date): string {
-    return mysqlTimeString(date, config.database.tz);
   }
 
   /**
@@ -644,9 +373,5 @@ export class SavedItemDataService {
         api_id_updated: this.apiId,
       })
       .andWhere('user_id', this.userId);
-  }
-
-  public static getWriteDbClient(context: IContext) {
-    return new SavedItemDataService(context, context.db.writeClient);
   }
 }

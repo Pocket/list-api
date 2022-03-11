@@ -124,6 +124,51 @@ describe('getSavedItems filter', () => {
         favorite: 0,
         api_id_updated: 'apiid',
       },
+      {
+        user_id: 1,
+        item_id: 4,
+        resolved_id: 4,
+        given_url: 'http://lmn',
+        title: 'mytitle',
+        time_added: date1,
+        time_updated: date1,
+        time_read: date1,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 0,
+        favorite: 0,
+        api_id_updated: 'apiid',
+      },
+      {
+        user_id: 1,
+        item_id: 5,
+        resolved_id: 5,
+        given_url: 'http://opq',
+        title: 'mytitle',
+        time_added: date1,
+        time_updated: date1,
+        time_read: date1,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 0,
+        favorite: 0,
+        api_id_updated: 'apiid',
+      },
+      {
+        user_id: 1,
+        item_id: 6,
+        resolved_id: 6,
+        given_url: 'http://rst',
+        title: 'mytitle',
+        time_added: date1,
+        time_updated: date1,
+        time_read: date1,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 0,
+        favorite: 0,
+        api_id_updated: 'apiid',
+      },
     ]);
 
     await db('item_tags').truncate();
@@ -176,18 +221,39 @@ describe('getSavedItems filter', () => {
       .insert([
         {
           extended_item_id: 1,
+          image: 0,
           video: 1,
           is_article: 0,
         },
         {
           extended_item_id: 2,
+          image: 0,
           video: 0,
           is_article: 1,
         },
         {
           extended_item_id: 3,
+          image: 0,
           video: 0,
           is_article: 1,
+        },
+        {
+          extended_item_id: 4,
+          image: 0,
+          video: 0,
+          is_article: 0,
+        },
+        {
+          extended_item_id: 5,
+          image: 0,
+          video: 2,
+          is_article: 0,
+        },
+        {
+          extended_item_id: 6,
+          image: 2,
+          video: 0,
+          is_article: 0,
         },
       ])
       .into(`readitla_b.items_extended`);
@@ -203,7 +269,7 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.data._entities[0].savedItems.edges.length).to.equal(4);
     expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://ijk'
     );
@@ -280,7 +346,7 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
     res.data?._entities[0].savedItems.edges.forEach((edge) => {
       expect(edge.node.item.savedItem.status).to.not.equal('ARCHIVED');
     });
@@ -328,7 +394,7 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(4);
     expect(
       res.data?._entities[0].savedItems.edges[0].node.item.savedItem.isFavorite
     ).to.equal(false);
@@ -385,13 +451,19 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
     res.data?._entities[0].savedItems.edges.forEach((edge) => {
-      expect(edge.node.url).to.be.oneOf(['http://ijk', 'http://def']);
+      expect(edge.node.url).to.be.oneOf([
+        'http://ijk',
+        'http://def',
+        'http://lmn',
+        'http://opq',
+        'http://rst',
+      ]);
     });
   });
 
-  it('should return articles', async () => {
+  it('should return articles that can be opened in article view (deprecated)', async () => {
     const variables = {
       id: '1',
       filter: { contentType: 'ARTICLE' },
@@ -406,7 +478,22 @@ describe('getSavedItems filter', () => {
     const actualIds = edges.map((edge) => edge.node.item.savedItem.id);
     expect(actualIds).to.deep.equalInAnyOrder(['2', '3']);
   });
-  it('should return videos', async () => {
+  it('should return articles that can be opened in article view', async () => {
+    const variables = {
+      id: '1',
+      filter: { contentType: 'IS_READABLE' },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    const edges = res.data?._entities[0].savedItems.edges;
+    expect(edges.length).to.equal(2);
+    const actualIds = edges.map((edge) => edge.node.item.savedItem.id);
+    expect(actualIds).to.deep.equalInAnyOrder(['2', '3']);
+  });
+  it('should return articles with videos (deprecated)', async () => {
     const variables = {
       id: '1',
       filter: { contentType: 'VIDEO' },
@@ -420,6 +507,66 @@ describe('getSavedItems filter', () => {
     expect(
       res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('1');
+  });
+  it('should return articles with videos', async () => {
+    const variables = {
+      id: '1',
+      filter: { contentType: 'HAS_VIDEO' },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(
+      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+    ).to.equal('1');
+  });
+  it('should return videos', async () => {
+    const variables = {
+      id: '1',
+      filter: { contentType: 'IS_VIDEO' },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(
+      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+    ).to.equal('5');
+  });
+  it('should return images', async () => {
+    const variables = {
+      id: '1',
+      filter: { contentType: 'IS_IMAGE' },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(
+      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+    ).to.equal('6');
+  });
+  it('should return articles that are un-parsable and will be opened externally', async () => {
+    const variables = {
+      id: '1',
+      filter: { contentType: 'IS_EXTERNAL' },
+    };
+    const res = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    res.data?._entities[0].savedItems.edges.forEach((edge) => {
+      expect(edge.node.url).to.be.oneOf(['http://abc', 'http://lmn']);
+    });
   });
 
   it('should return items by status', async () => {
@@ -447,12 +594,12 @@ describe('getSavedItems filter', () => {
       variables,
     });
     expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
     expect(
       res.data?._entities[0].savedItems.edges.map(
         (edge) => edge.node.item.savedItem.id
       )
-    ).to.deep.equalInAnyOrder(['1', '2']); // Don't care about sort for this test
+    ).to.deep.equalInAnyOrder(['1', '2', '4', '5', '6']); // Don't care about sort for this test
   });
 
   it('should be combined with other filters properly', async () => {
