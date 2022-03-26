@@ -2,6 +2,7 @@ version: '3.1'
 services:
   mysql:
     image: mysql:5.6
+    platform: linux/amd64
     env_file:
       - ./.docker/local.env
     ports:
@@ -32,6 +33,7 @@ services:
 
   app:
     image: node:16
+    platform: linux/amd64
     working_dir: /app
     ports:
       - '4005:4005'
@@ -50,5 +52,6 @@ services:
 
   snowplow:
     image: pocket/snowplow-micro:prod
+    platform: linux/amd64
     ports:
       - '9090:9090'
