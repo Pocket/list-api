@@ -30,6 +30,12 @@ export async function suggestedTags(
   args,
   context: IContext
 ): Promise<Tag[]> {
+  if (!context.userIsPremium) {
+    //Return an empty array if the user is not premium
+    //Suggested Tags is a premium feature.
+    return [];
+  }
+
   return new TagDataService(
     context,
     new SavedItemDataService(context)

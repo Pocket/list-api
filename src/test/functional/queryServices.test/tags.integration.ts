@@ -17,7 +17,7 @@ describe('tags query tests - happy path', () => {
     context: ({ req }) => {
       return new ContextManager({
         request: {
-          headers: { userid: '1', apiid: '0' },
+          headers: { userid: '1', apiid: '0', premium: 'true' },
         },
         db: {
           readClient: readClient(),

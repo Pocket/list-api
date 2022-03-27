@@ -15,6 +15,7 @@ export interface IContext {
   userId: string;
   headers: IncomingHttpHeaders;
   apiId: string;
+  userIsPremium: boolean;
   db: {
     readClient: Knex;
     writeClient: Knex;
@@ -59,6 +60,11 @@ export class ContextManager implements IContext {
     }
 
     return userId instanceof Array ? userId[0] : userId;
+  }
+
+  get userIsPremium(): boolean {
+    const userIsPremium = this.headers.premium;
+    return userIsPremium === 'true';
   }
 
   get apiId(): string {
