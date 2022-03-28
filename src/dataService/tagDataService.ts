@@ -120,7 +120,9 @@ export class TagDataService {
    * - Those tags still need to have a relevance score of at least 0.005 to be eligible to appear as a Suggested Tag
    * @param itemId
    */
-  public async getSuggestedTagsByUserItem(itemId: string): Promise<Tag[]> {
+  public async getSuggestedTagsByUserItem(
+    resolvedItemId: string
+  ): Promise<Tag[]> {
     const getTagsForItemQuery = await this.db.raw(
       `SELECT x.tag                                                                           AS tag,
               x.tag                                                                           AS name,
@@ -154,7 +156,7 @@ export class TagDataService {
        HAVING score >= 0.005
        ORDER BY score DESC
            LIMIT 8;`,
-      { resolvedId: itemId, userId: this.userId }
+      { resolvedId: resolvedItemId, userId: this.userId }
     );
 
     return getTagsForItemQuery[0].map(TagObjectMapper.mapDbModelToDomainEntity);
