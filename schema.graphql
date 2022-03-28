@@ -114,7 +114,7 @@ type SavedItem implements RemoteEntity @key(fields: "id") @key(fields: "url") {
   """
   tags: [Tag!]
   """
-  The Suggested Tags associated with this SavedItem
+  The Suggested Tags associated with this SavedItem, if the user is not premium or there are none, this will be empty.
   """
   suggestedTags: [Tag!]
   """
