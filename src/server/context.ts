@@ -64,7 +64,8 @@ export class ContextManager implements IContext {
 
   get userIsPremium(): boolean {
     const userIsPremium = this.headers.premium;
-    return userIsPremium === 'true';
+    //check that we have a premium header, and if it is set to true
+    return userIsPremium !== undefined && userIsPremium === 'true';
   }
 
   get apiId(): string {
