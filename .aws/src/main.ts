@@ -34,7 +34,7 @@ class ListAPI extends TerraformStack {
       workspaces: [{ prefix: `${config.name}-` }],
     });
 
-    const pocketVpc = new PocketVPC(this, 'pocket-vpc');
+    new PocketVPC(this, 'pocket-vpc');
     const region = new datasources.DataAwsRegion(this, 'region');
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
