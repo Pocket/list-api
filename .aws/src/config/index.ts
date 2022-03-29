@@ -14,7 +14,6 @@ const branch = isDev ? 'dev' : 'main';
 export const config = {
   name,
   prefix: `${name}-${environment}`,
-  
   circleCIPrefix: `/${name}/CircleCI/${environment}`,
   shortName: 'LSTAPI',
   environment,

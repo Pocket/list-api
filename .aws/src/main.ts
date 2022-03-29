@@ -5,13 +5,7 @@ import {
   RemoteBackend,
   TerraformStack,
 } from 'cdktf';
-import {
-  AwsProvider,
-  DataAwsCallerIdentity,
-  DataAwsKmsAlias,
-  DataAwsRegion,
-  DataAwsSnsTopic,
-} from '@cdktf/provider-aws';
+import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
   PocketALBApplication,
@@ -20,14 +14,19 @@ import {
   PocketVPC,
 } from '@pocket-tools/terraform-modules';
 import { PagerdutyProvider } from '@cdktf/provider-pagerduty';
+import { NullProvider } from '@cdktf/provider-null';
+import { LocalProvider } from '@cdktf/provider-local';
+import { ArchiveProvider } from '@cdktf/provider-archive';
 
 class ListAPI extends TerraformStack {
   constructor(scope: Construct, name: string) {
     super(scope, name);
 
     new AwsProvider(this, 'aws', { region: 'us-east-1' });
-
     new PagerdutyProvider(this, 'pagerduty_provider', { token: undefined });
+    new NullProvider(this, 'null-provider');
+    new LocalProvider(this, 'local-provider');
+    new ArchiveProvider(this, 'archive-provider');
 
     new RemoteBackend(this, {
       hostname: 'app.terraform.io',
@@ -35,9 +34,9 @@ class ListAPI extends TerraformStack {
       workspaces: [{ prefix: `${config.name}-` }],
     });
 
-    const pocketVpc = new PocketVPC(this, 'pocket-vpc');
-    const region = new DataAwsRegion(this, 'region');
-    const caller = new DataAwsCallerIdentity(this, 'caller');
+    new PocketVPC(this, 'pocket-vpc');
+    const region = new datasources.DataAwsRegion(this, 'region');
+    const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
@@ -55,7 +54,7 @@ class ListAPI extends TerraformStack {
    * @private
    */
   private getCodeDeploySnsTopic() {
-    return new DataAwsSnsTopic(this, 'backend_notifications', {
+    return new sns.DataAwsSnsTopic(this, 'backend_notifications', {
       name: `Backend-${config.environment}-ChatBot`,
     });
   }
@@ -65,7 +64,7 @@ class ListAPI extends TerraformStack {
    * @private
    */
   private getSecretsManagerKmsAlias() {
-    return new DataAwsKmsAlias(this, 'kms_alias', {
+    return new kms.DataAwsKmsAlias(this, 'kms_alias', {
       name: 'alias/aws/secretsmanager',
     });
   }
@@ -105,22 +104,22 @@ class ListAPI extends TerraformStack {
     return new PocketPagerDuty(this, 'pagerduty', {
       prefix: config.prefix,
       service: {
-        criticalEscalationPolicyId: incidentManagement.get(
-          'policy_backend_critical_id'
-        ),
-        nonCriticalEscalationPolicyId: incidentManagement.get(
-          'policy_backend_non_critical_id'
-        ),
+        criticalEscalationPolicyId: incidentManagement
+          .get('policy_backend_critical_id')
+          .toString(),
+        nonCriticalEscalationPolicyId: incidentManagement
+          .get('policy_backend_non_critical_id')
+          .toString(),
       },
     });
   }
 
   private createPocketAlbApplication(dependencies: {
     pagerDuty: PocketPagerDuty;
-    region: DataAwsRegion;
-    caller: DataAwsCallerIdentity;
-    secretsManagerKmsAlias: DataAwsKmsAlias;
-    snsTopic: DataAwsSnsTopic;
+    region: datasources.DataAwsRegion;
+    caller: datasources.DataAwsCallerIdentity;
+    secretsManagerKmsAlias: kms.DataAwsKmsAlias;
+    snsTopic: sns.DataAwsSnsTopic;
   }): PocketALBApplication {
     const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic } =
       dependencies;
@@ -305,20 +304,10 @@ class ListAPI extends TerraformStack {
       },
       alarms: {
         //TODO: When we start using this more we will change from non-critical to critical
-        http5xxError: {
-          threshold: 10,
-          evaluationPeriods: 2,
-          period: 600,
-          actions: [pagerDuty.snsNonCriticalAlarmTopic.arn],
-        },
-        httpLatency: {
-          evaluationPeriods: 2,
-          threshold: 500,
-          actions: [pagerDuty.snsNonCriticalAlarmTopic.arn],
-        },
-        httpRequestCount: {
-          threshold: 5000,
-          evaluationPeriods: 2,
+        http5xxErrorPercentage: {
+          threshold: 25,
+          evaluationPeriods: 4,
+          period: 300,
           actions: [pagerDuty.snsNonCriticalAlarmTopic.arn],
         },
       },

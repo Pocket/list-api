@@ -1,3 +1,4 @@
+---
 ###########################
 ###########################
 ## Linter GitHub Actions ##
@@ -36,29 +37,29 @@ jobs:
       # Checkout the code base #
       ##########################
       - name: Checkout Code
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846 # tag=v3
 
       ##########################
       # Github Super Linter needs
       # the latest definitions installed
       ##########################
       - name: Use Node.js 16.x
-        uses: actions/setup-node@v2.5.1
+        uses: actions/setup-node@9ced9a43a244f3ac94f13bfd896db8c8f30da67a # tag=v3
         with:
           node-version: 16.x
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@pocket'
-      - name: Install dependencies
-        run: npm ci
-        env:
-          GITHUB_TOKEN: ${{ secrets.LIST_API_GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.LIST_API_GITHUB_TOKEN }}
+      # Install our eslint packages.
+      # We may have custom tsconfigs, eslints that are brought in via a package.
+      - run: npm install
 
       ################################
       # Run Linter against code base #
       ################################
       - name: Lint Code Base
-        uses: docker://ghcr.io/github/super-linter:slim-v4
+
+        # We use the Github super linter, it can be cranky at times, so in that moment here are the docs https://github.com/github/super-linter
+        uses: docker://ghcr.io/github/super-linter:slim-v4@sha256:79524dcb8c1d321dfe4a66598aa4447d033cca9423d90be9d4e8dd91cb7e69fc
+
+        # All Environment variables are defined here https://github.com/github/super-linter#environment-variables
         env:
           # The name of the repository default branch.
           DEFAULT_BRANCH: main
@@ -82,11 +83,13 @@ jobs:
           # But if you wish to select specific linters, we give you full control to choose which linters are run, and won’t run anything unexpected.
           ####
 
-          VALIDATE_TERRAFORM: true
-
           # Flag to enable or disable the linting process of the JavaScript language. (Utilizing: eslint)
           # Will validate any raw *.js in the repo like a jest.config.js
           VALIDATE_JAVASCRIPT_ES: true
 
           # Flag to enable or disable the linting process of the TypeScript language. (Utilizing: eslint)
           VALIDATE_TYPESCRIPT_ES: true
+
+          # Flag to enable or disable the linting process of the YAML language.
+          # Note - disabled as of 26 Jan, 2022
+          # VALIDATE_YAML: true
