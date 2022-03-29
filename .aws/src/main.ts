@@ -5,12 +5,7 @@ import {
   RemoteBackend,
   TerraformStack,
 } from 'cdktf';
-import {
-  AwsProvider,
-  datasources,
-  kms,
-  sns
-} from '@cdktf/provider-aws';
+import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
   PocketALBApplication,
@@ -109,12 +104,12 @@ class ListAPI extends TerraformStack {
     return new PocketPagerDuty(this, 'pagerduty', {
       prefix: config.prefix,
       service: {
-        criticalEscalationPolicyId: incidentManagement.get(
-          'policy_backend_critical_id'
-        ).toString(),
-        nonCriticalEscalationPolicyId: incidentManagement.get(
-          'policy_backend_non_critical_id'
-        ).toString(),
+        criticalEscalationPolicyId: incidentManagement
+          .get('policy_backend_critical_id')
+          .toString(),
+        nonCriticalEscalationPolicyId: incidentManagement
+          .get('policy_backend_non_critical_id')
+          .toString(),
       },
     });
   }
@@ -314,7 +309,7 @@ class ListAPI extends TerraformStack {
           evaluationPeriods: 4,
           period: 300,
           actions: [pagerDuty.snsNonCriticalAlarmTopic.arn],
-        }
+        },
       },
     });
   }
