@@ -1,5 +1,5 @@
 import { ApolloServer } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/federation';
 import { typeDefs } from './typeDefs';
 import { resolvers } from '../resolvers';
 import { errorHandler } from '../plugins';
@@ -48,7 +48,7 @@ export function getContext(
  */
 export function getServer(contextFactory: ContextFactory): ApolloServer {
   return new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
+    schema: buildSubgraphSchema({ typeDefs, resolvers }),
     plugins: [
       sentryPlugin,
       process.env.NODE_ENV === 'production'

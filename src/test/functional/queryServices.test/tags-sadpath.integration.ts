@@ -1,7 +1,7 @@
 import { readClient, writeClient } from '../../../database/client';
 import { ApolloServer, gql } from 'apollo-server-express';
 import { expect } from 'chai';
-import { buildFederatedSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
 import { ContextManager } from '../../../server/context';
@@ -9,7 +9,7 @@ import { ContextManager } from '../../../server/context';
 describe(' tags query tests - sad path validation', () => {
   const db = readClient();
   const server = new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
+    schema: buildSubgraphSchema({ typeDefs, resolvers }),
     context: ({ req }) => {
       return new ContextManager({
         request: {
