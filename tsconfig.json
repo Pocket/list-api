@@ -1,5 +1,5 @@
 {
-  "extends": "@pocket-tools/tsconfig/tsconfig.json",
+  "extends": "@pocket-tools/tsconfig",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"

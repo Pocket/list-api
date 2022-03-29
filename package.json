@@ -43,7 +43,7 @@
   "devDependencies": {
     "@apollo/federation": "0.36.0",
     "@pocket-tools/eslint-config": "1.1.0",
-    "@pocket-tools/tsconfig": "1.0.0",
+    "@pocket-tools/tsconfig": "1.0.1",
     "@types/chai": "4.3.0",
     "@types/chai-as-promised": "7.1.5",
     "@types/chai-datetime": "0.0.37",
