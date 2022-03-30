@@ -110,6 +110,27 @@ CREATE TABLE `items_scroll` (
   KEY `updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+----Suggested Tags Tables
+CREATE TABLE `suggested_tags_user_grouping_tags` (
+    user_id        int unsigned            not null,
+    grouping_id    bigint unsigned         not null,
+    tag            varchar(25)             not null,
+    weighted_count decimal(11, 4) unsigned not null,
+    count          int unsigned            not null,
+    primary key (user_id, grouping_id, tag)
+) COLLATE=utf8_unicode_ci;
+
+CREATE INDEX `user_tag_idx` ON suggested_tags_user_grouping_tags (user_id, tag);
+
+CREATE TABLE `suggested_tags_user_groupings`
+(
+    user_id        int unsigned            not null,
+    grouping_id    bigint unsigned         not null,
+    weighted_count decimal(11, 4) unsigned not null,
+    count          int unsigned            not null,
+    primary key (user_id, grouping_id)
+) COLLATE = utf8_unicode_ci;
+
 CREATE DATABASE IF NOT EXISTS `readitla_b`;
 
 USE readitla_b;
@@ -123,3 +144,12 @@ CREATE TABLE `items_extended` (
   PRIMARY KEY (`extended_item_id`),
   KEY `is_article` (`is_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8;
+
+CREATE TABLE `item_grouping`(
+    resolved_id  int unsigned             not null,
+    grouping_id  bigint unsigned          not null,
+    source_score decimal(21, 20) unsigned not null,
+    primary key (resolved_id, grouping_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE INDEX `grouping_idx` ON item_grouping (grouping_id);

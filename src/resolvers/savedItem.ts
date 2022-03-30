@@ -20,6 +20,29 @@ export async function tags(
 }
 
 /**
+ * Get paginated saved item tags
+ * @param parent
+ * @param args
+ * @param context
+ */
+export async function suggestedTags(
+  parent: SavedItem,
+  args,
+  context: IContext
+): Promise<Tag[]> {
+  if (!context.userIsPremium) {
+    //Return an empty array if the user is not premium
+    //Suggested Tags is a premium feature.
+    return [];
+  }
+
+  return new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  ).getSuggestedTagsByUserItem(parent.resolvedId);
+}
+
+/**
  * Resolve Item entity using the givenUrl
  * @param parent
  */

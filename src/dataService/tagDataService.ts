@@ -103,6 +103,65 @@ export class TagDataService {
     return result.map(TagObjectMapper.mapDbModelToDomainEntity);
   }
 
+  /**
+   * For a given item_id, retrieves suggested tags
+   * ----TAKEN FROM THE WEB REPO.----
+   * - Attempts to get 8 suggested tags for a user and itemid
+   * - We only show you tags that you’ve already created — no new suggestions
+   * -- This means that when you save an item, we get the Google entities and Google categories for that item, and
+   * suggest tags you’ve used for other items you’ve also tagged with those entities and categories
+   * - We’re dropping support for looking at how other users tag items
+   * -— this means that if you save an item with specific Google entities and categories that you haven’t previously
+   * tagged before, we can’t offer you tag suggestions
+   * -- When we reinvest in this tech in the future, we’ll set this up to continue to look at how other people tag
+   * items, but ONLY surface tags you’ve already used.
+   *  - In the new version, we’ll no longer exclude entities / categories that were sensitive/adult subjects since
+   *  we’re only showing you your own tags
+   * - Those tags still need to have a relevance score of at least 0.005 to be eligible to appear as a Suggested Tag
+   * @param itemId
+   */
+  public async getSuggestedTagsByUserItem(
+    resolvedItemId: string
+  ): Promise<Tag[]> {
+    const getTagsForItemQuery = await this.db.raw(
+      `SELECT x.tag                                                                           AS tag,
+              x.tag                                                                           AS name,
+              x.user_id                                                                       AS userId,
+              round(1 - exp(sum(log(coalesce((1 - x.source_score * x.adj_tag_rate), 1)))), 4) AS score,
+              TO_BASE64(x.tag)                                                                as id,
+              GROUP_CONCAT(it.item_id)                                                        as savedItems,
+              UNIX_TIMESTAMP(MIN(it.time_added)) as _createdAt,
+                    UNIX_TIMESTAMP(MAX(it.time_updated)) as _updatedAt,
+                    NULL as _deletedAt,
+                    NULL as _version
+       FROM (
+           SELECT
+           gt.grouping_id,
+           ig.source_score,
+           gt.tag,
+           gt.weighted_count,
+           g.count,
+           ((gt.weighted_count + 1.9208) / (gt.weighted_count + (g.count - gt.weighted_count)) -
+           1.96 * SQRT((gt.weighted_count * (g.count - gt.weighted_count)) / (gt.weighted_count + (g.count - gt.weighted_count)) + 0.9604) /
+           (gt.weighted_count + (g.count - gt.weighted_count))) / (1 + 3.8416 / (gt.weighted_count + (g.count - gt.weighted_count))) AS adj_tag_rate,
+           g.user_id as user_id
+           FROM \`readitla_b\`.item_grouping ig
+           STRAIGHT_JOIN \`readitla_ril-tmp\`.suggested_tags_user_groupings g ON (g.user_id = :userId AND ig.grouping_id = g.grouping_id)
+           STRAIGHT_JOIN \`readitla_ril-tmp\`.suggested_tags_user_grouping_tags gt ON (g.user_id = gt.user_id AND g.grouping_id = gt.grouping_id)
+           WHERE ig.resolved_id = :resolvedId
+           ) AS x
+           JOIN item_tags as it
+       ON (it.tag = x.tag AND it.user_id = x.user_id)
+       GROUP BY tag
+       HAVING score >= 0.005
+       ORDER BY score DESC
+           LIMIT 8;`,
+      { resolvedId: resolvedItemId, userId: this.userId }
+    );
+
+    return getTagsForItemQuery[0].map(TagObjectMapper.mapDbModelToDomainEntity);
+  }
+
   public async getTagsByName(names: string[]): Promise<any> {
     const cleanTags = names.map(cleanAndValidateTag);
     const tags = await this.getTagsByUserSubQuery().andWhere(function () {
@@ -290,7 +349,9 @@ export class TagDataService {
     const newTagName = cleanAndValidateTag(tagUpdateInput.name);
     await this.db.transaction(async (trx: Knex.Transaction) => {
       await trx.raw(
-        `update ignore item_tags set tag=:newTagName, time_updated=:_updatedAt where user_id = :userId and tag=:oldTagName`,
+        `update ignore item_tags
+         set tag=:newTagName,
+             time_updated=:_updatedAt where user_id = :userId and tag=:oldTagName`,
         {
           newTagName: newTagName,
           userId: this.userId,

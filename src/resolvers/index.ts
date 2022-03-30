@@ -1,6 +1,10 @@
 import { savedItemById, savedItems, tags as userTags } from './user';
 import { savedItem } from './item';
-import { item, tags as savedItemTags } from './savedItem';
+import {
+  item,
+  tags as savedItemTags,
+  suggestedTags as savedItemSuggestedTags,
+} from './savedItem';
 
 import {
   createTags,
@@ -37,6 +41,7 @@ export const resolvers = {
   },
   SavedItem: {
     tags: savedItemTags,
+    suggestedTags: savedItemSuggestedTags,
     item,
     __resolveReference: async (savedItem, context: IContext) => {
       if (savedItem.id) {
