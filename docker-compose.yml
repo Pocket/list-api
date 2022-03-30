@@ -1,7 +1,7 @@
 version: '3.1'
 services:
   mysql:
-    image: mysql:5.6
+    image: mysql:5.6@sha256:20575ecebe6216036d25dab5903808211f1e9ba63dc7825ac20cb975e34cfcae
     platform: linux/amd64
     env_file:
       - ./.docker/local.env
@@ -14,7 +14,8 @@ services:
       - TZ=US/Central
 
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack@sha256:e3590b6fa651150cb2cde7dfe3129125148e9301b1fa9cba74a71bf234e195da
+    platform: linux/amd64
     env_file:
       - .docker/local.env
     ports:
@@ -32,7 +33,7 @@ services:
       - HOSTNAME_EXTERNAL=localstack
 
   app:
-    image: node:16
+    image: node:16@sha256:68e34cfcd8276ad531b12b3454af5c24cd028752dfccacce4e19efef6f7cdbe0
     platform: linux/amd64
     working_dir: /app
     ports:

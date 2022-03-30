@@ -5,7 +5,7 @@ import {
   ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from 'apollo-server-core';
-import { buildFederatedSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
 import { ContextManager } from '../../../server/context';
@@ -17,7 +17,7 @@ export function getServer(
   eventEmitter: ItemsEventEmitter
 ) {
   return new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
+    schema: buildSubgraphSchema({ typeDefs, resolvers }),
     plugins: [
       ApolloServerPluginInlineTraceDisabled(),
       ApolloServerPluginUsageReportingDisabled(),

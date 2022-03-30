@@ -1,6 +1,6 @@
 import { readClient, writeClient } from '../../../database/client';
 import { ApolloServer, gql } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/federation';
 import { typeDefs } from '../../../server/typeDefs';
 import { resolvers } from '../../../resolvers';
 import chai, { expect } from 'chai';
@@ -13,7 +13,7 @@ chai.use(chaiDateTime);
 describe('tags query tests - happy path', () => {
   const db = readClient();
   const server = new ApolloServer({
-    schema: buildFederatedSchema({ typeDefs, resolvers }),
+    schema: buildSubgraphSchema({ typeDefs, resolvers }),
     context: ({ req }) => {
       return new ContextManager({
         request: {

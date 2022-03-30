@@ -1,6 +1,6 @@
 import { readClient } from '../../database/client';
 import { ApolloServer, gql } from 'apollo-server-express';
-import { buildFederatedSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/federation';
 import { errorHandler, errorLogger } from '../../plugins';
 import { UserInputError } from 'apollo-server-errors';
 import chai, { expect } from 'chai';
@@ -53,7 +53,7 @@ const resolvers = {
   },
 };
 const server = new ApolloServer({
-  schema: buildFederatedSchema({ typeDefs, resolvers }),
+  schema: buildSubgraphSchema({ typeDefs, resolvers }),
   plugins: [errorLogger],
   formatError: errorHandler,
 });

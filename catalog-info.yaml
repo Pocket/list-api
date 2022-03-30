@@ -1,0 +1,36 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: list-api
+  description: Provides pocket list api functionality for clients
+  annotations:
+    github.com/project-slug: pocket/list-api
+    github.com/team-slug: Pocket/backend
+    circleci.com/project-slug: github/pocket/list-api
+    sentry.io/project-slug: list-api
+spec:
+  type: service
+  owner: backend
+  lifecycle: production
+  consumesApis:
+    - parser
+  providesApis:
+    - list-api
+  dependsOn:
+    - resource:pocket-db-primary
+
+---
+
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: list-api
+  description: Provides pocket list functionality for clients
+spec:
+  type: graphql
+  owner: backend
+  definition: |
+    query {}
+  lifecycle: production
+
+
