@@ -466,14 +466,14 @@ describe('tags query tests - happy path', () => {
       query: GET_SUGGESTED_TAGS_FOR_SAVED_ITEM,
       variables,
     });
-    expect(res.data?._entities[0].savedItemById.url).to.equal('http://abc');
-    expect(res.data?._entities[0].savedItemById.suggestedTags[0].name).to.equal(
-      'travel'
-    );
     const tagId0 = Buffer.from(
       res.data?._entities[0].savedItemById.suggestedTags[0].id,
       'base64'
     ).toString();
+    expect(res.data?._entities[0].savedItemById.url).to.equal('http://abc');
+    expect(res.data?._entities[0].savedItemById.suggestedTags[0].name).to.equal(
+      'travel'
+    );
     expect(tagId0).to.equal('travel');
     expect(res.data?._entities[0].savedItemById.suggestedTags[0]._version).is
       .null;
@@ -485,6 +485,11 @@ describe('tags query tests - happy path', () => {
     expect(
       res.data?._entities[0].savedItemById.suggestedTags[0]._updatedAt
     ).to.equal(unixDate1);
+    const tagId1 = Buffer.from(
+      res.data?._entities[0].savedItemById.suggestedTags[1].id,
+      'base64'
+    ).toString();
+    expect(tagId1).to.equal('zebra');
     expect(
       res.data?._entities[0].savedItemById.suggestedTags[1]._createdAt
     ).to.equal(unixDate1);
@@ -494,34 +499,29 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].savedItemById.suggestedTags[1].name).to.equal(
       'zebra'
     );
-    const tagId1 = Buffer.from(
-      res.data?._entities[0].savedItemById.suggestedTags[1].id,
-      'base64'
-    ).toString();
-    expect(tagId1).to.equal('zebra');
     expect(res.data?._entities[0].savedItemById.suggestedTags[1]._deletedAt).is
       .null;
     expect(res.data?._entities[0].savedItemById.suggestedTags[1]._deletedAt).is
       .null;
     expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0].savedItems.edges
+      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.edges
         .length
-    ).equals(2);
+    ).equals(1);
     // Default to itemId, asc on sort field collision
     expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0].savedItems.edges[0]
+      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.edges[0]
         .node.url
     ).equals('http://abc');
     expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0].savedItems
+      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems
         .totalCount
-    ).equals(2);
+    ).equals(1);
     expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0].savedItems.pageInfo
+      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.pageInfo
         .hasNextPage
     ).is.false;
     expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0].savedItems.pageInfo
+      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.pageInfo
         .hasPreviousPage
     ).is.false;
   });
