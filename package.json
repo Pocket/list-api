@@ -41,7 +41,7 @@
     "mysql": "2.18.1"
   },
   "devDependencies": {
-    "@apollo/federation": "0.36.0",
+    "@apollo/federation": "0.36.1",
     "@pocket-tools/eslint-config": "1.1.0",
     "@pocket-tools/tsconfig": "1.0.1",
     "@types/chai": "4.3.0",
