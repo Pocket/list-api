@@ -66,7 +66,6 @@ export const resolvers = {
     updateSavedItemRemoveTags,
     createTags,
     updateTag,
-    deleteSavedItemTags,
     deleteTag,
   },
 };

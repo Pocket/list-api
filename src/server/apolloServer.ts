@@ -49,6 +49,7 @@ export function getContext(
 export function getServer(contextFactory: ContextFactory): ApolloServer {
   return new ApolloServer({
     schema: buildSubgraphSchema({ typeDefs, resolvers }),
+    mocks: true,
     plugins: [
       sentryPlugin,
       process.env.NODE_ENV === 'production'
