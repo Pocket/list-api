@@ -362,19 +362,7 @@ input SavedItemTagUpdateInput {
   """
   tagIds: [ID!]!
 }
-"""
-Input field for creating a Tag
-"""
-input TagCreateInput {
-  """
-  The user provided tag string
-  """
-  name: String!
-  """
-  ID of the SavedItem to associate with this Tag
-  """
-  savedItemId: ID!
-}
+
 """
 Input field for updating a Tag
 """
@@ -503,6 +491,20 @@ extend type Item @key(fields: "givenUrl") {
 }
 
 """
+Input field for setting all Tag associations on a SavedItem.
+"""
+input SavedItemTagsInput {
+  """
+  The SavedItem ID to associate Tags to
+  """
+  savedItemId: ID!
+  """
+  The set of Tag names to associate to the SavedItem
+  """
+  name: [String!]!
+}
+
+"""
 Default Mutation Type
 """
 type Mutation {
@@ -537,12 +539,6 @@ type Mutation {
   """
   updateSavedItemUnFavorite(id: ID!): SavedItem!
 
-  """
-  Set the Tags that are associated with a SavedItem.
-  Will replace any existing Tag associations on the SavedItem.
-  To remove all Tags from a SavedItem, use `updateSavedItemRemoveTags`.
-  """
-  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem!
 
   """
   Removes all Tag associations from a SavedItem. Returns the
@@ -557,10 +553,35 @@ type Mutation {
   deleted SavedItem
   """
   deleteSavedItem(id: ID!): ID!
+
   """
-  Creates user tags that a user can use to classify SavedItems
+  Add tags to the savedItems
+  Inputs a list of SavedItemTagsInput(ie. savedItemId and the list of tagName)
+  Returns the list of `SavedItem` for which the tags were added
   """
-  createTags(input: [TagCreateInput!]!): [Tag!]!
+  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+
+  """
+  Replaces the old tags associated with the savedItem to the new tag list
+  given in the entry
+  To remove all Tags from a SavedItem, use `updateSavedItemRemoveTags`.
+  Note: if there is a new tag name in the SavedItemTagUpdateInput, then the tag record will be created
+  Inputs a list of SavedItemTagsInput(ie. savedItemId and list of tag names)
+  Returns the SavedItem for which the tags have been modified.
+  """
+  replaceSavedItemTags(input: [SavedItemTagsInput!]): [SavedItem!]
+
+  """
+  Deletes the association between a Tag and a SavedItem
+  (removes a Tag from a SavedItem).
+  Note that if this operation results in a Tag having no associations
+  to a SavedItem, the Tag object will be deleted.
+  Returns the list of savedItems that has been affected by this mutation.
+  """
+  deleteSavedItemTags(
+    input: [DeleteSavedItemTagsInput!]!
+  ): [SavedItem]!
+
   """
   Updates a Tag (renames the tag), and returns the updated Tag.
   If a Tag with the updated name already exists in the database, will
@@ -573,13 +594,4 @@ type Mutation {
   (removes the Tag from all SavedItems). Returns ID of the deleted Tag.
   """
   deleteTag(id: ID!): ID!
-  """
-  Deletes the association between a Tag and a SavedItem
-  (removes a Tag from a SavedItem).
-  Note that if this operation results in a Tag having no associations
-  to a SavedItem, the Tag object will be deleted.
-  """
-  deleteSavedItemTags(
-    input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItemTagAssociation]
 }
