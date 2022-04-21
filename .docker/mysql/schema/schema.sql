@@ -110,7 +110,7 @@ CREATE TABLE `items_scroll` (
   KEY `updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-----Suggested Tags Tables
+-- Suggested Tags Tables
 CREATE TABLE `suggested_tags_user_grouping_tags` (
     user_id        int unsigned            not null,
     grouping_id    bigint unsigned         not null,

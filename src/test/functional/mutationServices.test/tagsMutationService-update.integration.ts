@@ -41,12 +41,6 @@ describe('updateTag Mutation: ', () => {
   });
 
   beforeEach(async () => {
-    // Mock Date.now() to get a consistent date for inserting data
-    clock = sinon.useFakeTimers({
-      now: updateDate,
-      shouldAdvanceTime: true,
-    });
-
     await db('item_tags').truncate();
     await db('item_tags').insert([
       {

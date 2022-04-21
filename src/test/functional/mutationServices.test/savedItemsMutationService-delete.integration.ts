@@ -87,13 +87,15 @@ describe('Delete/Undelete SavedItem: ', () => {
     clock.restore();
   });
 
-  beforeEach(async () => {
+  beforeAll(() => {
     // Mock Date.now() to get a consistent date for inserting data
     clock = sinon.useFakeTimers({
       now: updateDate,
-      shouldAdvanceTime: true,
+      shouldAdvanceTime: false,
     });
+  });
 
+  beforeEach(async () => {
     await db('list').truncate();
     await db('item_tags').truncate();
     await db('item_attribution').truncate();
