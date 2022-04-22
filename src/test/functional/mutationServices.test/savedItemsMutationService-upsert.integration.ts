@@ -15,7 +15,7 @@ import { ReceiveMessageCommand } from '@aws-sdk/client-sqs';
 import { sqs } from '../../../aws/sqs';
 import sinon from 'sinon';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from './testServerUtil';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 

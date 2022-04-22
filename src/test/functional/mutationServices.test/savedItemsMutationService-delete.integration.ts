@@ -6,7 +6,7 @@ import sinon from 'sinon';
 import { Knex } from 'knex';
 import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from './testServerUtil';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 
@@ -75,7 +75,7 @@ describe('Delete/Undelete SavedItem: ', () => {
   const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
   const userId = '1';
-  const server = getServer('1', readDb, db, eventEmitter);
+  const server = getServer(userId, readDb, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30');
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert

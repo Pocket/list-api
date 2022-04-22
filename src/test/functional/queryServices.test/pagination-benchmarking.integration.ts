@@ -1,10 +1,7 @@
 import { timeIt, seeds } from '@pocket-tools/backend-benchmarking';
-import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildSubgraphSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
-import { ContextManager } from '../../../server/context';
+import { readClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
+import { getServer } from '../testServerUtil';
 
 const GET_SAVED_ITEMS = gql`
   query getSavedItem(
@@ -35,21 +32,7 @@ const GET_SAVED_ITEMS = gql`
 `;
 describe.skip('temp table with new list pagination - benchmarking', () => {
   const db = readClient();
-  const server = new ApolloServer({
-    schema: buildSubgraphSchema({ typeDefs, resolvers }),
-    context: ({ req }) => {
-      return new ContextManager({
-        request: {
-          headers: { userid: '1', apiid: '0' },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: null,
-      });
-    },
-  });
+  const server = getServer('1', readClient(), db, null);
   const variables = {
     id: '1',
     filter: { contentType: 'ARTICLE' },

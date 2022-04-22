@@ -4,9 +4,9 @@ import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
 import { EventType } from '../../../businessEvents';
-import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
+import { ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from './testServerUtil';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 

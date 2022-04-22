@@ -2,7 +2,7 @@ import { readClient, writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
-import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
+import { ItemsEventEmitter } from '../../../businessEvents';
 import { UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
@@ -10,24 +10,17 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
 import { BasicItemEventPayload, EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { getContext, getServer } from '../../../server/apolloServer';
-import { Request } from 'express';
+import { getServer } from '../testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('tags mutation update: ', () => {
   const db = readClient();
+  const readDb = readClient();
   const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
 
-  const contextFactory = (req: Request) => {
-    const testReq = {
-      headers: { userid: '1', apiid: '0' },
-    } as unknown as Request;
-    return getContext(testReq, eventEmitter);
-  };
-
-  const server = getServer(contextFactory);
+  const server = getServer('1', readDb, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);

@@ -3,12 +3,12 @@ import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import sinon from 'sinon';
-import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
+import { ItemsEventEmitter } from '../../../businessEvents';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import { EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from './testServerUtil';
+import { getServer } from '../testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 
