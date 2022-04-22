@@ -1,32 +1,15 @@
-import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildSubgraphSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
+import { readClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
-import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 
 describe('tags query tests - happy path', () => {
   const db = readClient();
-  const server = new ApolloServer({
-    schema: buildSubgraphSchema({ typeDefs, resolvers }),
-    context: ({ req }) => {
-      return new ContextManager({
-        request: {
-          headers: { userid: '1', apiid: '0', premium: 'true' },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: null,
-      });
-    },
-  });
+  const server = getServer('1', readClient(), db, null, { premium: 'true' });
   const date = new Date('2020-10-03T10:20:30.000Z');
   const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');

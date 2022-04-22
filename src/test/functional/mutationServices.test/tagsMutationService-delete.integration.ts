@@ -2,12 +2,12 @@ import { readClient, writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
-import { ItemsEventEmitter } from '../../../businessEvents/itemsEventEmitter';
+import { ItemsEventEmitter } from '../../../businessEvents';
 import sinon from 'sinon';
 import { UsersMetaService } from '../../../dataService';
 import chaiDateTime from 'chai-datetime';
 import { BasicItemEventPayload, EventType } from '../../../businessEvents';
-import { getServer } from './testServerUtil';
+import { getServer } from '../testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
@@ -238,6 +238,7 @@ describe('Mutation for Tag deletions: ', () => {
       const tagState = await tagStateQuery;
       const metaState = await metaStateQuery;
 
+      sinon.restore();
       sinon
         .stub(UsersMetaService.prototype, 'logTagMutation')
         .rejects(Error('server error'));

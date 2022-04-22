@@ -1,5 +1,6 @@
 import { Tag } from '../types';
 import * as Sentry from '@sentry/node';
+import { ApolloError } from 'apollo-server-errors';
 
 export type TagModel = {
   userId: string;
@@ -65,7 +66,7 @@ export class TagObjectMapper {
 
     if (err) {
       Sentry.captureException(err);
-      throw new Error(err);
+      throw new ApolloError(err);
     }
     return true;
   }

@@ -1,32 +1,15 @@
-import { readClient, writeClient } from '../../../database/client';
-import { ApolloServer, gql } from 'apollo-server-express';
-import { buildSubgraphSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
+import { readClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
-import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 
 describe('getSavedItemByItemId', () => {
   const db = readClient();
-  const server = new ApolloServer({
-    schema: buildSubgraphSchema({ typeDefs, resolvers }),
-    context: ({ req }) => {
-      return new ContextManager({
-        request: {
-          headers: { userid: '1', apiid: '0' },
-        },
-        db: {
-          readClient: readClient(),
-          writeClient: writeClient(),
-        },
-        eventEmitter: null,
-      });
-    },
-  });
+  const server = getServer('1', readClient(), db, null);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date); // unix timestamp

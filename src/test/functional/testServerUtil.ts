@@ -1,20 +1,22 @@
 import { Knex } from 'knex';
-import { ItemsEventEmitter } from '../../../businessEvents';
+import { ItemsEventEmitter } from '../../businessEvents';
 import { ApolloServer } from 'apollo-server-express';
 import {
   ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from 'apollo-server-core';
 import { buildSubgraphSchema } from '@apollo/federation';
-import { typeDefs } from '../../../server/typeDefs';
-import { resolvers } from '../../../resolvers';
-import { ContextManager } from '../../../server/context';
+import { typeDefs } from '../../server/typeDefs';
+import { resolvers } from '../../resolvers';
+import { ContextManager } from '../../server/context';
+import { errorHandler } from '@pocket-tools/apollo-utils';
 
 export function getServer(
   userId: string,
   readClient: Knex,
   writeClient: Knex,
-  eventEmitter: ItemsEventEmitter
+  eventEmitter: ItemsEventEmitter,
+  headers = {}
 ) {
   return new ApolloServer({
     schema: buildSubgraphSchema({ typeDefs, resolvers }),
@@ -22,12 +24,14 @@ export function getServer(
       ApolloServerPluginInlineTraceDisabled(),
       ApolloServerPluginUsageReportingDisabled(),
     ],
+    formatError: errorHandler,
     context: () => {
       return new ContextManager({
         request: {
           headers: {
             userid: userId,
             apiid: '0',
+            ...headers,
           },
         },
         db: {

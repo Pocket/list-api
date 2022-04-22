@@ -2,7 +2,7 @@ import { ApolloServer } from 'apollo-server-express';
 import { buildSubgraphSchema } from '@apollo/federation';
 import { typeDefs } from './typeDefs';
 import { resolvers } from '../resolvers';
-import { errorHandler } from '../plugins';
+import { errorHandler } from '@pocket-tools/apollo-utils';
 import { ItemsEventEmitter } from '../businessEvents';
 import { ContextManager } from './context';
 import { readClient, writeClient } from '../database/client';

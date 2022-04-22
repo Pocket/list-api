@@ -15,8 +15,8 @@ import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { decodeBase64ToPlainText } from '../dataService/utils';
 import { getSavedItemMapFromTags } from './utils';
-import { NotFoundError } from '../errors';
-import { UserInputError } from 'apollo-server-errors';
+import { NotFoundError } from '@pocket-tools/apollo-utils';
+import { ApolloError, UserInputError } from 'apollo-server-errors';
 
 /**
  * Create or re-add a saved item in a user's list.
@@ -55,7 +55,7 @@ export async function upsertSavedItem(
 
     if (upsertedItem == undefined) {
       console.info(`savedUrl: ${savedItemUpsertInput.url}`);
-      throw new Error(`unable to add an item`);
+      throw new ApolloError(`unable to add an item`);
     }
 
     if (existingItem != null) {
@@ -74,7 +74,9 @@ export async function upsertSavedItem(
   } catch (e) {
     console.log(e.message);
     Sentry.captureException(e);
-    throw new Error(`unable to add item with url: ${savedItemUpsertInput.url}`);
+    throw new ApolloError(
+      `unable to add item with url: ${savedItemUpsertInput.url}`
+    );
   }
 }
 
@@ -332,7 +334,7 @@ export async function deleteSavedItemTags(
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
-    throw new Error(
+    throw new ApolloError(
       `deleteSavedItemTags: server error while untagging a savedItem ${JSON.stringify(
         args.input
       )}`
@@ -378,7 +380,7 @@ export async function updateTag(
   } catch {
     const error = `Tag Id does not exist ${args.input.id}`;
     console.log(error);
-    throw new Error(error);
+    throw new ApolloError(error);
   }
 
   try {
@@ -387,7 +389,7 @@ export async function updateTag(
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
-    throw new Error(
+    throw new ApolloError(
       `updateTag: server error while updating tag ${JSON.stringify(args.input)}`
     );
   }
