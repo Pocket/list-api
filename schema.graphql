@@ -595,11 +595,9 @@ type Mutation {
   """
   deleteSavedItemTags(
     input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItemTagAssociation]
+  ): [SavedItem!]!
 
-  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem]!
+  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
 
-  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem]!
-
-  deleteSavedItemTags(input: [DeleteSavedItemTagsInput!]!): [SavedItem]!
+  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
 }
