@@ -17,6 +17,7 @@ export interface IContext {
   apiId: string;
   userIsPremium: boolean;
   db: {
+    client?: Knex;
     readClient: Knex;
     writeClient: Knex;
   };

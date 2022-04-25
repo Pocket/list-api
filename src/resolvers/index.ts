@@ -25,6 +25,24 @@ import { tagsSavedItems } from './tag';
 import { SavedItem } from '../types';
 import { IContext } from '../server/context';
 
+/**
+ * wrapper function to change context database to writeDb connection
+ * @param mutate gets the mutation callback functions
+ * returns a function that changes the db to writeDb and calls the mutation callBack
+ */
+export function executeMutation<Args, ReturnType>(
+  mutate: (parent, args: Args, context: IContext) => Promise<ReturnType>
+): (parent, args: Args, context: IContext) => Promise<ReturnType> {
+  return async function (
+    parent,
+    args: Args,
+    context: IContext
+  ): Promise<ReturnType> {
+    context.db.client = context.db.writeClient;
+    return mutate(parent, args, context);
+  };
+}
+
 export const resolvers = {
   ItemResult: {
     __resolveType(savedItem: SavedItem) {
@@ -55,7 +73,7 @@ export const resolvers = {
     savedItems: tagsSavedItems,
   },
   Mutation: {
-    upsertSavedItem,
+    upsertSavedItem: executeMutation(upsertSavedItem),
     updateSavedItemFavorite,
     updateSavedItemUnFavorite,
     updateSavedItemArchive,
