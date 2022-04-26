@@ -14,7 +14,7 @@ services:
       - TZ=US/Central
 
   localstack:
-    image: localstack/localstack@sha256:3b3265be816642689f79cdccc7175b767c58fc33491a08ba75cefd706c82427c
+    image: localstack/localstack@sha256:3e5feda3d230a5c28dad006fcde1e3f1c8202763de23664cca50a8ca844d3990
     platform: linux/amd64
     env_file:
       - .docker/local.env
