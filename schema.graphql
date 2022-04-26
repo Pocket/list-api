@@ -490,20 +490,6 @@ type PendingItem @key(fields: "url") {
   status: PendingItemStatus
 }
 
-"""
-Input field for setting all Tag associations on a SavedItem.
-"""
-input SavedItemTagsInput {
-  """
-  The SavedItem ID to associate Tags to
-  """
-  savedItemId: ID!
-  """
-  The set of Tag names to associate to the SavedItem
-  """
-  tags: [String!]!
-}
-
 extend type Item @key(fields: "givenUrl") {
   "key field to identify the Item entity in the Parser service"
   givenUrl: Url! @external
@@ -595,9 +581,5 @@ type Mutation {
   """
   deleteSavedItemTags(
     input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItem!]!
-
-  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
-
-  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+  ): [SavedItemTagAssociation]
 }

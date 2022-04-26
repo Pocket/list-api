@@ -9,7 +9,7 @@ chai.use(chaiDateTime);
 
 describe('tags query tests - happy path', () => {
   const db = readClient();
-  const server = getServer('1', readClient(), db, null, { premium: 'true' });
+  const server = getServer('1', db, null, { premium: 'true' });
   const date = new Date('2020-10-03T10:20:30.000Z');
   const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');

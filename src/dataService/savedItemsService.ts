@@ -36,13 +36,8 @@ export class SavedItemDataService {
   private readonly userId: string;
   private readonly apiId: string;
 
-  constructor(
-    context: IContext,
-    db: Knex = context.db.readClient
-    //note: for mutations, please pass the writeClient,
-    //otherwise there will be replication lags.
-  ) {
-    this.db = db;
+  constructor(context: IContext) {
+    this.db = context.dbClient;
     this.userId = context.userId;
     this.apiId = context.apiId;
   }
@@ -70,10 +65,6 @@ export class SavedItemDataService {
       return dbResult.map((row) => statusConvert(row));
     }
     return statusConvert(dbResult);
-  }
-
-  public static getWriteDbClient(context: IContext) {
-    return new SavedItemDataService(context, context.db.writeClient);
   }
 
   /**

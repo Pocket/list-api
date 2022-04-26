@@ -34,10 +34,7 @@ describe('context', () => {
       request: {
         headers: { userid: '1', apiid: '0' },
       },
-      db: {
-        readClient: jest.fn() as unknown as Knex,
-        writeClient: jest.fn() as unknown as Knex,
-      },
+      dbClient: jest.fn() as unknown as Knex,
       eventEmitter: null,
     });
   });

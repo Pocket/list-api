@@ -1,4 +1,4 @@
-import { readClient, writeClient } from '../../../database/client';
+import { writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
@@ -14,21 +14,19 @@ chai.use(chaiDateTime);
 
 describe('Mutation for Tag deletions: ', () => {
   const db = writeClient();
-  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
   const dbTagsQuery = db('item_tags').select('tag').pluck('tag');
   const listUpdatedQuery = db('list').select('time_updated');
   const listStateQuery = db('list').select();
   const tagStateQuery = db('item_tags').select();
   const metaStateQuery = db('users_meta').select();
-  const server = getServer('1', readDb, db, eventEmitter);
+  const server = getServer('1', db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
 
   afterAll(async () => {
-    await readClient().destroy();
-    await writeClient().destroy();
+    await db.destroy();
   });
 
   afterEach(() => {

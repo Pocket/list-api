@@ -594,8 +594,8 @@ export class ListPaginationService {
     if (pagination == null) {
       pagination = { first: config.pagination.defaultPageSize };
     }
-    const { totalCount, pageResult } =
-      await this.context.db.readClient.transaction(async (trx) => {
+    const { totalCount, pageResult } = await this.context.dbClient.transaction(
+      async (trx) => {
         // Drop temp tables if exists.
         await this.dropTempTables(trx);
 
@@ -622,7 +622,8 @@ export class ListPaginationService {
           sort
         );
         return { totalCount, pageResult };
-      });
+      }
+    );
     const pageInfo: any = this.hydratePageInfo(pageResult, pagination);
     let nodes: SavedItemResult[];
     if (pagination.first) {

@@ -13,8 +13,7 @@ import { errorHandler } from '@pocket-tools/apollo-utils';
 
 export function getServer(
   userId: string,
-  readClient: Knex,
-  writeClient: Knex,
+  dbClient: Knex,
   eventEmitter: ItemsEventEmitter,
   headers = {}
 ) {
@@ -34,10 +33,7 @@ export function getServer(
             ...headers,
           },
         },
-        db: {
-          readClient: readClient,
-          writeClient: writeClient,
-        },
+        dbClient: dbClient,
         eventEmitter: eventEmitter,
       });
     },

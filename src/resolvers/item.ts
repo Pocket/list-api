@@ -1,6 +1,6 @@
 import { Item, SavedItem } from '../types';
 import { IContext } from '../server/context';
-import { SavedItemDataService } from '../dataService/savedItemsService';
+import { SavedItemDataService } from '../dataService';
 
 /**
  * Resolve saved item on the Item entity

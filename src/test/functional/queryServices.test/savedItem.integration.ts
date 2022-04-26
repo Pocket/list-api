@@ -9,7 +9,7 @@ chai.use(chaiDateTime);
 
 describe('getSavedItemByItemId', () => {
   const db = readClient();
-  const server = getServer('1', readClient(), db, null);
+  const server = getServer('1', db, null);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date); // unix timestamp

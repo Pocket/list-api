@@ -51,10 +51,7 @@ describe('SavedItemsService', () => {
       request: {
         headers: { userid: '1', apiid: '0' },
       },
-      db: {
-        readClient: readClient(),
-        writeClient: writeClient(),
-      },
+      dbClient: readClient(),
       eventEmitter: null,
     });
 
@@ -71,10 +68,7 @@ describe('SavedItemsService', () => {
       request: {
         headers: { userid: '1', apiid: '0' },
       },
-      db: {
-        readClient: readClient(),
-        writeClient: writeClient(),
-      },
+      dbClient: readClient(),
       eventEmitter: null,
     });
 

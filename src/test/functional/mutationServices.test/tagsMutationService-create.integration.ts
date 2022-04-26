@@ -1,4 +1,4 @@
-import { readClient, writeClient } from '../../../database/client';
+import { writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
@@ -15,9 +15,8 @@ chai.use(deepEqualInAnyOrder);
 describe('Mutation for Tag: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
-  const readDb = readClient();
   const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
-  const server = getServer('1', readDb, db, eventEmitter);
+  const server = getServer('1', db, eventEmitter);
   const createTagsMutation = gql`
     mutation createTags($input: [TagCreateInput!]!) {
       createTags(input: $input) {
@@ -41,8 +40,7 @@ describe('Mutation for Tag: ', () => {
   let clock;
 
   afterAll(async () => {
-    await readClient().destroy();
-    await writeClient().destroy();
+    await db.destroy();
     clock.restore();
   });
 

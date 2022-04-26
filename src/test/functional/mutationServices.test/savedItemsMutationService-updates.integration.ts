@@ -1,4 +1,4 @@
-import { readClient, writeClient } from '../../../database/client';
+import { writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
@@ -13,16 +13,14 @@ chai.use(chaiDateTime);
 describe('Update Mutation for SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
-  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
-  const server = getServer('1', readDb, db, eventEmitter);
+  const server = getServer('1', db, eventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
 
   afterAll(async () => {
-    await readDb.destroy();
     await db.destroy();
     clock.restore();
   });

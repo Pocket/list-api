@@ -5,7 +5,7 @@ import { resolvers } from '../resolvers';
 import { errorHandler } from '@pocket-tools/apollo-utils';
 import { ItemsEventEmitter } from '../businessEvents';
 import { ContextManager } from './context';
-import { readClient, writeClient } from '../database/client';
+import { readClient } from '../database/client';
 import { Request } from 'express';
 import {
   ApolloServerPluginLandingPageGraphQLPlayground,
@@ -32,10 +32,7 @@ export function getContext(
 ): ContextManager {
   return new ContextManager({
     request: req,
-    db: {
-      readClient: readClient(),
-      writeClient: writeClient(),
-    },
+    dbClient: readClient(),
     eventEmitter: emitter,
   });
 }
@@ -56,7 +53,7 @@ export function getServer(contextFactory: ContextFactory): ApolloServer {
         : ApolloServerPluginLandingPageGraphQLPlayground(),
     ],
     formatError: errorHandler,
-    introspection: process.env.NODE_ENV === 'production' ? false : true,
+    introspection: process.env.NODE_ENV !== 'production',
     context: ({ req }) => contextFactory(req),
   });
 }

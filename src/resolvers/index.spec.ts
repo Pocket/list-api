@@ -1,15 +1,18 @@
 import { IContext } from '../server/context';
 import { executeMutation } from './index';
-import { writeClient } from '../database/client';
+import { readClient, writeClient } from '../database/client';
 
 describe('executeMutation spec test', () => {
+  afterAll(async () => {
+    await readClient().destroy();
+    await writeClient().destroy();
+  });
+
   it('should change client writeDbClient and calls the mutation function ', async () => {
     const testContext = {
-      db: {
-        client: null,
-        writeClient: writeClient(),
-      },
+      dbClient: readClient(),
     } as IContext;
+
     async function testMutation(
       parent,
       args,
@@ -20,7 +23,7 @@ describe('executeMutation spec test', () => {
 
     const anonymousFunction = executeMutation<any, string>(testMutation);
     const res = await anonymousFunction({}, { hello: 'world' }, testContext);
-    expect(testContext.db.client).toEqual(testContext.db.writeClient);
+    expect(testContext.dbClient).toEqual(writeClient());
     expect(res).toEqual('world');
   });
 });

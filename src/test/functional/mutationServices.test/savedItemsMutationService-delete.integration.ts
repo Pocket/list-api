@@ -1,4 +1,4 @@
-import { readClient, writeClient } from '../../../database/client';
+import { writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
@@ -72,17 +72,15 @@ async function setUpSavedItem(db: Knex, date: Date) {
 describe('Delete/Undelete SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
-  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
   const userId = '1';
-  const server = getServer(userId, readDb, db, eventEmitter);
+  const server = getServer(userId, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30');
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
 
   afterAll(async () => {
-    await readClient().destroy();
     await writeClient().destroy();
     clock.restore();
   });
