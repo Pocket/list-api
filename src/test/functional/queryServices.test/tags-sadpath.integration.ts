@@ -5,7 +5,7 @@ import { getServer } from '../testServerUtil';
 
 describe(' tags query tests - sad path validation', () => {
   const db = readClient();
-  const server = getServer('1', readClient(), db, null);
+  const server = getServer('1', db, null);
   const date = new Date('2020-10-03T10:20:30.000Z');
 
   afterAll(async () => {

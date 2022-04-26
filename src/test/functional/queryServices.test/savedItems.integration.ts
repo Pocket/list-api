@@ -10,7 +10,7 @@ chai.use(deepEqualInAnyOrder);
 
 describe('getSavedItems', () => {
   const db = readClient();
-  const server = getServer('1', readClient(), db, null);
+  const server = getServer('1', db, null);
 
   // TODO: What date is the server running in? Web repo does central...
   // should this do UTC, this changes pagination cursors.

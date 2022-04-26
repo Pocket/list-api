@@ -32,7 +32,7 @@ const GET_SAVED_ITEMS = gql`
 `;
 describe.skip('temp table with new list pagination - benchmarking', () => {
   const db = readClient();
-  const server = getServer('1', readClient(), db, null);
+  const server = getServer('1', db, null);
   const variables = {
     id: '1',
     filter: { contentType: 'ARTICLE' },

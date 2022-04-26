@@ -36,12 +36,11 @@ export class TagDataService {
 
   constructor(
     context: IContext,
-    savedItemDataService: SavedItemDataService,
-    db: Knex = context.db.readClient
+    savedItemDataService: SavedItemDataService
     //note: for mutations, please pass the writeClient,
     //otherwise there will be replication lags.
   ) {
-    this.db = db;
+    this.db = context.dbClient;
     this.userId = context.userId;
     this.apiId = context.apiId;
     this.savedItemService = savedItemDataService;
@@ -429,16 +428,5 @@ export class TagDataService {
     return this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .del();
-  }
-
-  public static getWriteDbClient(
-    context: IContext,
-    savedItemService: SavedItemDataService
-  ) {
-    return new TagDataService(
-      context,
-      savedItemService,
-      context.db.writeClient
-    );
   }
 }

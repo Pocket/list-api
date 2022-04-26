@@ -16,10 +16,7 @@ export interface IContext {
   headers: IncomingHttpHeaders;
   apiId: string;
   userIsPremium: boolean;
-  db: {
-    readClient: Knex;
-    writeClient: Knex;
-  };
+  dbClient: Knex;
   eventEmitter: ItemsEventEmitter;
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
@@ -35,15 +32,17 @@ export interface IContext {
 
 export class ContextManager implements IContext {
   public readonly dataLoaders: IContext['dataLoaders'];
+  public dbClient: Knex;
 
   constructor(
     private config: {
       request: any;
-      db: { readClient: Knex; writeClient: Knex };
+      dbClient: Knex;
       eventEmitter: ItemsEventEmitter;
     }
   ) {
     this.dataLoaders = createSavedItemDataLoaders(this);
+    this.dbClient = config.dbClient;
   }
 
   get headers(): { [key: string]: any } {
@@ -72,10 +71,6 @@ export class ContextManager implements IContext {
     const apiId = this.headers.apiid || '0';
 
     return apiId instanceof Array ? apiId[0] : apiId;
-  }
-
-  get db(): IContext['db'] {
-    return this.config.db;
   }
 
   get eventEmitter(): ItemsEventEmitter {

@@ -1,4 +1,4 @@
-import { readClient, writeClient } from '../../../database/client';
+import { writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
@@ -16,9 +16,8 @@ chai.use(chaiDateTime);
 
 describe('updateTag Mutation: ', () => {
   const db = writeClient();
-  const readDb = readClient();
   const eventEmitter = new ItemsEventEmitter();
-  const server = getServer('1', readDb, db, eventEmitter);
+  const server = getServer('1', db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
@@ -35,8 +34,7 @@ describe('updateTag Mutation: ', () => {
   });
 
   afterAll(async () => {
-    await readClient().destroy();
-    await writeClient().destroy();
+    await db.destroy();
     clock.restore();
   });
 
