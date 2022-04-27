@@ -606,5 +606,4 @@ type Mutation {
   Returns the SavedItem for which the tags have been modified.
   """
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
-  ): [SavedItem!]!
 }
