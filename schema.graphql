@@ -589,14 +589,13 @@ type Mutation {
   """
   deleteTag(id: ID!): ID!
   """
-  Deletes the association between a Tag and a SavedItem
-  (removes a Tag from a SavedItem).
+  Delete one or more tags from one or more SavedItems.
   Note that if this operation results in a Tag having no associations
   to a SavedItem, the Tag object will be deleted.
   """
   deleteSavedItemTags(
     input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItemTagAssociation]
+  ): [SavedItem!]!
 
   """
   Replaces the old tags associated with the savedItem to the new tag list
@@ -607,4 +606,5 @@ type Mutation {
   Returns the SavedItem for which the tags have been modified.
   """
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+  ): [SavedItem!]!
 }
