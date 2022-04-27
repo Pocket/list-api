@@ -8,6 +8,7 @@ import {
 
 import {
   createTags,
+  createSavedItemTags,
   deleteSavedItem,
   deleteSavedItemTags,
   deleteTag,
@@ -69,6 +70,7 @@ const resolvers = {
     updateTag,
     deleteSavedItemTags,
     deleteTag,
+    createSavedItemTags,
   },
 };
 

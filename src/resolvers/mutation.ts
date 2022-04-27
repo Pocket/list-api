@@ -7,6 +7,7 @@ import {
   DeleteSavedItemTagsInput,
   SavedItemTagAssociation,
   SavedItemTagUpdateInput,
+  SavedItemTagsInput,
 } from '../types';
 import { IContext } from '../server/context';
 import { ParserCaller } from '../externalCaller/parserCaller';
@@ -297,6 +298,50 @@ export async function createTags(
   }
 
   return tags;
+}
+
+export async function createSavedItemTags(
+  root,
+  args: { input: SavedItemTagsInput[] },
+  context: IContext
+): Promise<SavedItem[]> {
+  const savedItemService = new SavedItemDataService(context);
+  const tagDataService = new TagDataService(context, savedItemService);
+
+  const tagCreateInput: TagCreateInput[] = [];
+  for (let savedItemTagsInput of args.input) {
+    for (let tag of savedItemTagsInput.names) {
+      tagCreateInput.push({
+        name: tag,
+        savedItemId: savedItemTagsInput.savedItemId,
+      });
+    }
+  }
+
+  await tagDataService.insertTags(tagCreateInput);
+  const savedItemIds: string[] = args.input.map((i) => i.savedItemId);
+  const savedItems = await savedItemService.batchGetSavedItemsByGivenIds(
+    savedItemIds
+  );
+
+  const savedItemTagsMap = args.input.reduce((savedItemTags, input) => {
+    let tags = input.tags;
+    if (savedItemTags[input.savedItemId]) {
+      tags = [...savedItemTags[input.savedItemId], ...input.tags];
+    }
+    return {
+      ...savedItemTags,
+      [input.savedItemId]: [...new Set([...tags])],
+    };
+  }, {});
+
+  for (const savedItem of savedItems) {
+    context.emitItemEvent(
+      EventType.ADD_TAGS,
+      savedItem,
+      savedItemTagsMap[savedItem.id]
+    );
+  }
 }
 
 /**
