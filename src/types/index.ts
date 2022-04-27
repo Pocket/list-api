@@ -150,6 +150,11 @@ export type SavedItemTagAssociation = {
   tagId: string;
 };
 
+export type SavedItemTagsInput = {
+  savedItemId: string;
+  tags: string[];
+};
+
 export type TagUpdateInput = {
   name: string;
   id: string;

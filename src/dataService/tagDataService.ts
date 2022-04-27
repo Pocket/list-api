@@ -6,6 +6,7 @@ import {
   Pagination,
   SavedItem,
   SavedItemTagAssociation,
+  SavedItemTagsInput,
   SavedItemTagUpdateInput,
   Tag,
   TagCreateInput,
@@ -238,9 +239,17 @@ export class TagDataService {
    * Insert tags into the database for items in a user's list
    * Note: does not check to ensure that the item being tagged
    * is actually in the user's list (no foreign key constraint).
+   * @param tagInputs
+   * @param beforeInsert optional callback function to execute a query or statement before inserting tags
    */
-  public async insertTags(tagInputs: TagCreateInput[]): Promise<void> {
+  public async insertTags(
+    tagInputs: TagCreateInput[],
+    beforeInsert?: (trx: Knex.Transaction) => Promise<void>
+  ): Promise<void> {
     await this.db.transaction(async (trx: Knex.Transaction) => {
+      if (beforeInsert) {
+        await beforeInsert(trx);
+      }
       await this.insertTagAndUpdateSavedItem(tagInputs, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
@@ -416,6 +425,41 @@ export class TagDataService {
     });
 
     return await this.savedItemService.getSavedItemById(savedItemId);
+  }
+
+  /**
+   * Replaces all tags associated with a given savedItem id
+   * @param savedItemTagsInput
+   */
+  public async replaceSavedItemTags(
+    savedItemTagsInput: SavedItemTagsInput[]
+  ): Promise<SavedItem[]> {
+    const tagInputs: TagCreateInput[] = savedItemTagsInput.reduce(
+      (inputs, tagInput) => {
+        const tagInputs = tagInput.tags.map((tag) => ({
+          savedItemId: tagInput.savedItemId,
+          name: tag,
+        }));
+
+        inputs.push(...tagInputs);
+        return inputs;
+      },
+      []
+    );
+
+    const savedItemIds = savedItemTagsInput.map((input) => input.savedItemId);
+
+    await this.insertTags(tagInputs, async (trx) => {
+      await Promise.all(
+        savedItemIds.map(async (id) => {
+          await this.deleteTagsByItemId(id).transacting(trx);
+        })
+      );
+    });
+
+    return await this.savedItemService.batchGetSavedItemsByGivenIds(
+      savedItemIds
+    );
   }
 
   private deleteTagsByItemId(itemId: string): Knex.QueryBuilder {
