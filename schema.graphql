@@ -503,6 +503,20 @@ extend type Item @key(fields: "givenUrl") {
 }
 
 """
+Input field for setting all Tag associations on a SavedItem.
+"""
+input SavedItemTagsInput {
+  """
+  The SavedItem ID to associate Tags to
+  """
+  savedItemId: ID!
+  """
+  The set of Tag names to associate to the SavedItem
+  """
+  names: [String!]!
+}
+
+"""
 Default Mutation Type
 """
 type Mutation {
@@ -561,6 +575,13 @@ type Mutation {
   Creates user tags that a user can use to classify SavedItems
   """
   createTags(input: [TagCreateInput!]!): [Tag!]!
+
+  """
+  Add tags to the savedItems
+  Inputs a list of SavedItemTagsInput(ie. savedItemId and the list of tagName)
+  Returns the list of `SavedItem` for which the tags were added
+  """
+  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
   """
   Updates a Tag (renames the tag), and returns the updated Tag.
   If a Tag with the updated name already exists in the database, will
