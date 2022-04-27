@@ -11,6 +11,7 @@ import {
   deleteSavedItem,
   deleteSavedItemTags,
   deleteTag,
+  replaceSavedItemTags,
   updateSavedItemArchive,
   updateSavedItemFavorite,
   updateSavedItemRemoveTags,
@@ -69,6 +70,7 @@ const resolvers = {
     updateTag,
     deleteSavedItemTags,
     deleteTag,
+    replaceSavedItemTags,
   },
 };
 

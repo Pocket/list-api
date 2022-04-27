@@ -7,6 +7,7 @@ import {
   DeleteSavedItemTagsInput,
   SavedItemTagAssociation,
   SavedItemTagUpdateInput,
+  SavedItemTagsInput,
 } from '../types';
 import { IContext } from '../server/context';
 import { ParserCaller } from '../externalCaller/parserCaller';
@@ -384,4 +385,42 @@ export async function updateTag(
       `updateTag: server error while updating tag ${JSON.stringify(args.input)}`
     );
   }
+}
+
+/**
+ * Replaces all tags for a given saved item with the tags provided in the input
+ * @param root
+ * @param args
+ * @param context
+ */
+export async function replaceSavedItemTags(
+  root,
+  args: { input: SavedItemTagsInput[] },
+  context: IContext
+): Promise<SavedItem[]> {
+  const savedItems = await new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  ).replaceSavedItemTags(args.input);
+
+  const savedItemTagsMap = args.input.reduce((savedItemTags, input) => {
+    let tags = input.tags;
+    if (savedItemTags[input.savedItemId]) {
+      tags = [...savedItemTags[input.savedItemId], ...input.tags];
+    }
+    return {
+      ...savedItemTags,
+      [input.savedItemId]: [...new Set([...tags])],
+    };
+  }, {});
+
+  for (const savedItem of savedItems) {
+    context.emitItemEvent(
+      EventType.REPLACE_TAGS,
+      savedItem,
+      savedItemTagsMap[savedItem.id]
+    );
+  }
+
+  return savedItems;
 }
