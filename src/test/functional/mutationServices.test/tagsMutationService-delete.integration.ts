@@ -111,8 +111,9 @@ describe('Mutation for Tag deletions: ', () => {
         .where('item_id', 0)
         .first();
       expect(res.errors).to.be.undefined;
-      expect(res.data.deleteSavedItemTags.id).to.equal('0');
-      expect(res.data.deleteSavedItemTags.tags).to.deep.equalInAnyOrder([
+      expect(res.data.deleteSavedItemTags.length).to.equal(1);
+      expect(res.data.deleteSavedItemTags[0].id).to.equal('0');
+      expect(res.data.deleteSavedItemTags[0].tags).to.deep.equalInAnyOrder([
         { name: 'nandor' },
         { name: 'nadja' },
         { name: 'guillermo' },
@@ -170,9 +171,6 @@ describe('Mutation for Tag deletions: ', () => {
       const vampires = vampireNames.map((vampire) =>
         Buffer.from(vampire).toString('base64')
       );
-      const expectedTags = vampireNames.map((vampire) => ({
-        name: vampire,
-      }));
       const variables = {
         input: [{ savedItemId: '0', tagIds: vampires }],
       };
@@ -186,10 +184,10 @@ describe('Mutation for Tag deletions: ', () => {
         .where('item_id', 0)
         .first();
       expect(res.errors).to.be.undefined;
-      expect(res.data.deleteSavedItemTags.id).to.equal('0');
-      expect(res.data.deleteSavedItemTags.tags).to.deep.equalInAnyOrder(
-        expectedTags
-      );
+      expect(res.data.deleteSavedItemTags[0].id).to.equal('0');
+      expect(res.data.deleteSavedItemTags[0].tags).to.deep.equal([
+        { name: 'guillermo' },
+      ]);
       expect(dbTags.length).to.equal(1);
       expect(dbTags[0]).to.equal('guillermo');
       expect(listItem.time_updated).to.be.closeToTime(now, 5);
@@ -201,7 +199,6 @@ describe('Mutation for Tag deletions: ', () => {
       const newVampires = newVampireNames.map((vampire) =>
         Buffer.from(vampire).toString('base64')
       );
-      const oldVampireNames = ['deacon', 'viago', 'vladislav'];
       const oldVampires = ['deacon', 'viago', 'vladislav'].map((vampire) =>
         Buffer.from(vampire).toString('base64')
       );
@@ -225,12 +222,24 @@ describe('Mutation for Tag deletions: ', () => {
         .orWhere('item_id', 1)
         .pluck('time_updated');
       expect(res.errors).to.be.undefined;
-      const data = res.data.deleteSavedItemTags;
-      expect(data.id).to.deep.equalInAnyOrder(['0', '1']);
-      expect(data.id[data.id.indexOf('0')].tags).to.deep.equal({
-        name: 'guillermo',
-      });
-      expect(data.id[data.id.indexOf('0').tags]).to.be.null;
+      expect(res.data.deleteSavedItemTags.length).to.equal(2);
+      const expectedSavedItems = [
+        {
+          id: '0',
+          tags: [
+            {
+              name: 'guillermo',
+            },
+          ],
+        },
+        {
+          id: '1',
+          tags: [],
+        },
+      ];
+      expect(res.data.deleteSavedItemTags).to.deep.equalInAnyOrder(
+        expectedSavedItems
+      );
       updates.forEach((update) => {
         expect(update).to.be.closeToTime(now, 5);
       });

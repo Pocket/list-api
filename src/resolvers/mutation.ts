@@ -18,6 +18,7 @@ import { decodeBase64ToPlainText } from '../dataService/utils';
 import { getSavedItemMapFromTags } from './utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import { ApolloError, UserInputError } from 'apollo-server-errors';
+import { String } from 'aws-sdk/clients/batch';
 
 /**
  * Create or re-add a saved item in a user's list.
@@ -301,28 +302,33 @@ export async function createTags(
 }
 
 /**
- * Mutation for untagging a saved item in a user's list
+ * Mutation for untagging a saved item in a user's list.
+ * Returns a list of SavedItem IDs to resolve
  */
 export async function deleteSavedItemTags(
   root,
   args: { input: DeleteSavedItemTagsInput[] },
   context: IContext
-): Promise<SavedItemTagAssociation[]> {
+): Promise<SavedItem[]> {
   try {
     const savedItemService = new SavedItemDataService(context);
     const tagDataService = new TagDataService(context, savedItemService);
-    const associations = await tagDataService.deleteSavedItemAssociations(
-      args.input
-    );
+    await tagDataService.deleteSavedItemAssociations(args.input);
 
+    const savedItemsToReturn = [];
     for (const association of args.input) {
+      const savedItem = savedItemService.getSavedItemById(
+        association.savedItemId
+      );
+
       context.emitItemEvent(
         EventType.REMOVE_TAGS,
-        savedItemService.getSavedItemById(association.savedItemId),
+        savedItem,
         association.tagIds.map((id) => decodeBase64ToPlainText(id))
       );
+      savedItemsToReturn.push(savedItem);
     }
-    return associations;
+    return savedItemsToReturn;
   } catch (e) {
     console.log(e);
     Sentry.captureException(e);
