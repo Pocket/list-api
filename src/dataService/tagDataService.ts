@@ -240,16 +240,9 @@ export class TagDataService {
    * Note: does not check to ensure that the item being tagged
    * is actually in the user's list (no foreign key constraint).
    * @param tagInputs
-   * @param beforeInsert optional callback function to execute a query or statement before inserting tags
    */
-  public async insertTags(
-    tagInputs: TagCreateInput[],
-    beforeInsert?: (trx: Knex.Transaction) => Promise<void>
-  ): Promise<void> {
+  public async insertTags(tagInputs: TagCreateInput[]): Promise<void> {
     await this.db.transaction(async (trx: Knex.Transaction) => {
-      if (beforeInsert) {
-        await beforeInsert(trx);
-      }
       await this.insertTagAndUpdateSavedItem(tagInputs, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
@@ -449,12 +442,14 @@ export class TagDataService {
 
     const savedItemIds = savedItemTagsInput.map((input) => input.savedItemId);
 
-    await this.insertTags(tagInputs, async (trx) => {
+    await this.db.transaction(async (trx) => {
       await Promise.all(
         savedItemIds.map(async (id) => {
           await this.deleteTagsByItemId(id).transacting(trx);
         })
       );
+      await this.insertTagAndUpdateSavedItem(tagInputs, trx);
+      await this.usersMetaService.logTagMutation(new Date(), trx);
     });
 
     return await this.savedItemService.batchGetSavedItemsByGivenIds(

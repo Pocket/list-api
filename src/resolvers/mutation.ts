@@ -404,9 +404,13 @@ export async function replaceSavedItemTags(
   ).replaceSavedItemTags(args.input);
 
   const savedItemTagsMap = args.input.reduce((savedItemTags, input) => {
+    let tags = input.tags;
+    if (savedItemTags[input.savedItemId]) {
+      tags = [...savedItemTags[input.savedItemId], ...input.tags];
+    }
     return {
       ...savedItemTags,
-      [input.savedItemId]: input.tags,
+      [input.savedItemId]: [...new Set([...tags])],
     };
   }, {});
 
