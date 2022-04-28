@@ -421,7 +421,7 @@ export class TagDataService {
 
   /**
    * Replaces all tags associated with a given savedItem id
-   * @param savedItemTagsInput
+   * @param tagsInputs : list of tagCreateInput
    */
   public async replaceSavedItemTags(
     tagInputs: TagCreateInput[]
