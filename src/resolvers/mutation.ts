@@ -5,7 +5,6 @@ import {
   TagUpdateInput,
   Tag,
   DeleteSavedItemTagsInput,
-  SavedItemTagAssociation,
   SavedItemTagUpdateInput,
   SavedItemTagsInput,
 } from '../types';
@@ -18,7 +17,6 @@ import { decodeBase64ToPlainText } from '../dataService/utils';
 import { getSavedItemMapFromTags } from './utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import { ApolloError, UserInputError } from 'apollo-server-errors';
-import { String } from 'aws-sdk/clients/batch';
 
 /**
  * Create or re-add a saved item in a user's list.
