@@ -140,11 +140,6 @@ export type TagCreateInput = {
   savedItemId: string;
 };
 
-export type SavedItemTagsInput = {
-  savedItemId: string;
-  names: string[];
-};
-
 export type DeleteSavedItemTagsInput = {
   savedItemId: string;
   tagIds: string[];
@@ -153,6 +148,11 @@ export type DeleteSavedItemTagsInput = {
 export type SavedItemTagAssociation = {
   savedItemId: string;
   tagId: string;
+};
+
+export type SavedItemTagsInput = {
+  savedItemId: string;
+  tags: string[];
 };
 
 export type TagUpdateInput = {

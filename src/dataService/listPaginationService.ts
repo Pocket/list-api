@@ -35,13 +35,6 @@ const statusMap = {
   [SavedItemStatus.HIDDEN]: 'HIDDEN',
 };
 
-const sortMap = {
-  CREATED_AT: '_createdAt',
-  ARCHIVED_AT: '_archivedAt',
-  FAVORITED_AT: 'favoritedAt',
-  UPDATED_AT: '_updatedAt',
-};
-
 type SavedItemResult = Omit<SavedItem, 'item' | 'tags'>;
 
 class Sort {
@@ -79,11 +72,20 @@ export class ListPaginationService {
     ListPaginationService.TAGS_TEMP_TABLE,
   ];
 
-  public sortMap = {
+  // Maps sortBy argument to the relevant db column
+  public dbSortByMap = {
     CREATED_AT: 'time_added',
     UPDATED_AT: 'time_updated',
     FAVORITED_AT: 'time_favorited',
     ARCHIVED_AT: 'time_read',
+  };
+
+  // Maps sortBy argument to the SavedItem graphql field
+  private nodeSortByMap = {
+    CREATED_AT: '_createdAt',
+    UPDATED_AT: '_updatedAt',
+    FAVORITED_AT: 'favoritedAt',
+    ARCHIVED_AT: 'archivedAt',
   };
 
   constructor(private readonly context: IContext) {}
@@ -255,7 +257,7 @@ export class ListPaginationService {
     } else {
       order = sortOrder.opposite;
     }
-    const sortColumn = this.sortMap[sortOrder.column];
+    const sortColumn = this.dbSortByMap[sortOrder.column];
     const queryString = query
       .clone()
       .orderBy([
@@ -294,7 +296,7 @@ export class ListPaginationService {
     // Set a high (default of 5000 from the web repo) on this, but hopefully
     // collisions on timestamp fields are unusual enough that it will be much
     // less in practice
-    const [itemId, timeStr] = this.decodeCursor(cursor);
+    const [itemId, timeStr] = ListPaginationService.decodeCursor(cursor);
     const timeCursor = timeStr
       ? mysqlTimeString(new Date(parseInt(timeStr) * 1000), config.database.tz)
       : null;
@@ -307,7 +309,7 @@ export class ListPaginationService {
     } else {
       order = sortOrder.opposite;
     }
-    const sortColumn = this.sortMap[sortOrder.column];
+    const sortColumn = this.dbSortByMap[sortOrder.column];
     // Add the sort to the filter query
     baseQuery.orderBy([
       { column: `list.${sortColumn}`, order: order },
@@ -368,7 +370,7 @@ export class ListPaginationService {
    * @param cursor cursor (_*_ separated string of itemId and cursor value)
    * @returns [itemId, cursorValue]
    */
-  private decodeCursor(cursor: string) {
+  public static decodeCursor(cursor: string) {
     const [id, val] = Buffer.from(cursor, 'base64')
       .toString('utf8')
       .split('_*_');
@@ -639,7 +641,7 @@ export class ListPaginationService {
         pageResult.slice(startIx, pagination.last + startIx)
       );
     }
-    const sortColumn = sortMap[sort?.sortBy ?? 'CREATED_AT'];
+    const sortColumn = this.nodeSortByMap[sort?.sortBy ?? 'CREATED_AT'];
     const edges = nodes.map((node) => {
       return {
         node: node as SavedItem,

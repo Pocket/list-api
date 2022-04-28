@@ -15,7 +15,7 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { decodeBase64ToPlainText } from '../dataService/utils';
-import { getSavedItemMapFromTags } from './utils';
+import { getSavedItemMapFromTags, getSavedItemTagsMap } from './utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import { ApolloError, UserInputError } from 'apollo-server-errors';
 
@@ -300,6 +300,13 @@ export async function createTags(
   return tags;
 }
 
+/**
+ * Creates tags, savedItem and tag association for the given list of inputs.
+ * Note: this mutation does not validate if the savedItem exist already.
+ * @param root
+ * @param args list of savedItemTagsInput.
+ * @param context
+ */
 export async function createSavedItemTags(
   root,
   args: { input: SavedItemTagsInput[] },
@@ -309,8 +316,8 @@ export async function createSavedItemTags(
   const tagDataService = new TagDataService(context, savedItemService);
 
   const tagCreateInput: TagCreateInput[] = [];
-  for (let savedItemTagsInput of args.input) {
-    for (let tag of savedItemTagsInput.names) {
+  for (const savedItemTagsInput of args.input) {
+    for (const tag of savedItemTagsInput.tags) {
       tagCreateInput.push({
         name: tag,
         savedItemId: savedItemTagsInput.savedItemId,
@@ -324,16 +331,7 @@ export async function createSavedItemTags(
     savedItemIds
   );
 
-  const savedItemTagsMap = args.input.reduce((savedItemTags, input) => {
-    let tags = input.tags;
-    if (savedItemTags[input.savedItemId]) {
-      tags = [...savedItemTags[input.savedItemId], ...input.tags];
-    }
-    return {
-      ...savedItemTags,
-      [input.savedItemId]: [...new Set([...tags])],
-    };
-  }, {});
+  const savedItemTagsMap = getSavedItemTagsMap(args.input);
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
@@ -342,6 +340,8 @@ export async function createSavedItemTags(
       savedItemTagsMap[savedItem.id]
     );
   }
+
+  return savedItems;
 }
 
 /**
@@ -429,4 +429,33 @@ export async function updateTag(
       `updateTag: server error while updating tag ${JSON.stringify(args.input)}`
     );
   }
+}
+
+/**
+ * Replaces all tags for a given saved item with the tags provided in the input
+ * @param root
+ * @param args
+ * @param context
+ */
+export async function replaceSavedItemTags(
+  root,
+  args: { input: SavedItemTagsInput[] },
+  context: IContext
+): Promise<SavedItem[]> {
+  const savedItems = await new TagDataService(
+    context,
+    new SavedItemDataService(context)
+  ).replaceSavedItemTags(args.input);
+
+  const savedItemTagsMap = getSavedItemTagsMap(args.input);
+
+  for (const savedItem of savedItems) {
+    context.emitItemEvent(
+      EventType.REPLACE_TAGS,
+      savedItem,
+      savedItemTagsMap[savedItem.id]
+    );
+  }
+
+  return savedItems;
 }
