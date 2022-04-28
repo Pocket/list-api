@@ -164,3 +164,7 @@ export type SavedItemTagUpdateInput = {
   savedItemId: string;
   tagIds: string[];
 };
+
+export type SavedItemTagsMap = {
+  [savedItemId: string]: string[];
+};

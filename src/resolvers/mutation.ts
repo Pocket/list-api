@@ -14,7 +14,11 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { decodeBase64ToPlainText } from '../dataService/utils';
-import { getSavedItemMapFromTags, getSavedItemTagsMap } from './utils';
+import {
+  convertToTagCreateInputs,
+  getSavedItemMapFromTags,
+  getSavedItemTagsMap,
+} from './utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import { ApolloError, UserInputError } from 'apollo-server-errors';
 
@@ -315,16 +319,7 @@ export async function createSavedItemTags(
   const tagDataService = new TagDataService(context, savedItemService);
 
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
-  const tagCreateInput: TagCreateInput[] = [];
-  for (const savedItemId in savedItemTagsMap) {
-    const tags = savedItemTagsMap[savedItemId];
-    for (const tag of tags) {
-      tagCreateInput.push({
-        name: tag,
-        savedItemId: savedItemId,
-      });
-    }
-  }
+  const tagCreateInput = convertToTagCreateInputs(savedItemTagsMap);
 
   await tagDataService.insertTags(tagCreateInput);
   const savedItemIds: string[] = args.input.map((i) => i.savedItemId);
@@ -447,11 +442,12 @@ export async function replaceSavedItemTags(
   context: IContext
 ): Promise<SavedItem[]> {
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
+  const tagCreateInputs = convertToTagCreateInputs(savedItemTagsMap);
 
   const savedItems = await new TagDataService(
     context,
     new SavedItemDataService(context)
-  ).replaceSavedItemTags(args.input);
+  ).replaceSavedItemTags(tagCreateInputs);
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
