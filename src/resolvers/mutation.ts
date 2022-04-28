@@ -14,7 +14,11 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { decodeBase64ToPlainText } from '../dataService/utils';
-import { getSavedItemMapFromTags } from './utils';
+import {
+  convertToTagCreateInputs,
+  getSavedItemMapFromTags,
+  getSavedItemTagsMap,
+} from './utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import { ApolloError, UserInputError } from 'apollo-server-errors';
 
@@ -300,6 +304,41 @@ export async function createTags(
 }
 
 /**
+ * Creates tags, savedItem and tag association for the given list of inputs.
+ * Note: this mutation does not validate if the savedItem exist already.
+ * @param root
+ * @param args list of savedItemTagsInput.
+ * @param context
+ */
+export async function createSavedItemTags(
+  root,
+  args: { input: SavedItemTagsInput[] },
+  context: IContext
+): Promise<SavedItem[]> {
+  const savedItemService = new SavedItemDataService(context);
+  const tagDataService = new TagDataService(context, savedItemService);
+
+  const savedItemTagsMap = getSavedItemTagsMap(args.input);
+  const tagCreateInput = convertToTagCreateInputs(savedItemTagsMap);
+
+  await tagDataService.insertTags(tagCreateInput);
+  const savedItemIds: string[] = args.input.map((i) => i.savedItemId);
+  const savedItems = await savedItemService.batchGetSavedItemsByGivenIds(
+    savedItemIds
+  );
+
+  for (const savedItem of savedItems) {
+    context.emitItemEvent(
+      EventType.ADD_TAGS,
+      savedItem,
+      savedItemTagsMap[savedItem.id]
+    );
+  }
+
+  return savedItems;
+}
+
+/**
  * Mutation for untagging a saved item in a user's list.
  * Returns a list of SavedItem IDs to resolve
  */
@@ -402,21 +441,13 @@ export async function replaceSavedItemTags(
   args: { input: SavedItemTagsInput[] },
   context: IContext
 ): Promise<SavedItem[]> {
+  const savedItemTagsMap = getSavedItemTagsMap(args.input);
+  const tagCreateInputs = convertToTagCreateInputs(savedItemTagsMap);
+
   const savedItems = await new TagDataService(
     context,
     new SavedItemDataService(context)
-  ).replaceSavedItemTags(args.input);
-
-  const savedItemTagsMap = args.input.reduce((savedItemTags, input) => {
-    let tags = input.tags;
-    if (savedItemTags[input.savedItemId]) {
-      tags = [...savedItemTags[input.savedItemId], ...input.tags];
-    }
-    return {
-      ...savedItemTags,
-      [input.savedItemId]: [...new Set([...tags])],
-    };
-  }, {});
+  ).replaceSavedItemTags(tagCreateInputs);
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(

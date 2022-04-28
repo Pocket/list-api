@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { Tag } from '../types';
-import { getSavedItemMapFromTags } from './utils';
+import { SavedItemTagsInput, Tag } from '../types';
+import { getSavedItemMapFromTags, getSavedItemTagsMap } from './utils';
 
 describe('getSavedItemMapFromTags', () => {
   it('should return a savedItem map from a list of tags', () => {
@@ -11,5 +11,32 @@ describe('getSavedItemMapFromTags', () => {
     const expected = { '1': [tagA, tagB], '2': [tagA], '3': [tagB] };
     const actual = getSavedItemMapFromTags(input);
     expect(actual).to.deep.equal(expected);
+  });
+});
+
+describe('getSavedItemTagsMap', () => {
+  it('should return savedItemTagsMap from list of duplicated SavedItemTagsInput', () => {
+    const savedItemTagsInput: SavedItemTagsInput[] = [
+      {
+        savedItemId: '1',
+        tags: ['tagA', 'tagA'],
+      },
+      {
+        savedItemId: '1',
+        tags: ['tagA', 'tagB'],
+      },
+      {
+        savedItemId: '1',
+        tags: ['tagC', 'tagD'],
+      },
+      {
+        savedItemId: '2',
+        tags: ['tagC', 'tagD'],
+      },
+    ];
+
+    const map = getSavedItemTagsMap(savedItemTagsInput);
+    expect(map['1']).to.deep.equal(['tagA', 'tagB', 'tagC', 'tagD']);
+    expect(map['2']).to.deep.equal(['tagC', 'tagD']);
   });
 });

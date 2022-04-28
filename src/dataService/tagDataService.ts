@@ -6,7 +6,6 @@ import {
   Pagination,
   SavedItem,
   SavedItemTagAssociation,
-  SavedItemTagsInput,
   SavedItemTagUpdateInput,
   Tag,
   TagCreateInput,
@@ -422,25 +421,12 @@ export class TagDataService {
 
   /**
    * Replaces all tags associated with a given savedItem id
-   * @param savedItemTagsInput
+   * @param tagsInputs : list of tagCreateInput
    */
   public async replaceSavedItemTags(
-    savedItemTagsInput: SavedItemTagsInput[]
+    tagInputs: TagCreateInput[]
   ): Promise<SavedItem[]> {
-    const tagInputs: TagCreateInput[] = savedItemTagsInput.reduce(
-      (inputs, tagInput) => {
-        const tagInputs = tagInput.tags.map((tag) => ({
-          savedItemId: tagInput.savedItemId,
-          name: tag,
-        }));
-
-        inputs.push(...tagInputs);
-        return inputs;
-      },
-      []
-    );
-
-    const savedItemIds = savedItemTagsInput.map((input) => input.savedItemId);
+    const savedItemIds = tagInputs.map((input) => input.savedItemId);
 
     await this.db.transaction(async (trx) => {
       await Promise.all(

@@ -12,7 +12,7 @@ import { getServer } from '../testServerUtil';
 
 chai.use(deepEqualInAnyOrder);
 
-describe('Mutation for Tag: ', () => {
+describe('createTags mutation', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
   const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();

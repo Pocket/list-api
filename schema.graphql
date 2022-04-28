@@ -576,6 +576,7 @@ type Mutation {
   Creates user tags that a user can use to classify SavedItems
   """
   createTags(input: [TagCreateInput!]!): [Tag!]!
+
   """
   Updates a Tag (renames the tag), and returns the updated Tag.
   If a Tag with the updated name already exists in the database, will
@@ -596,6 +597,13 @@ type Mutation {
   deleteSavedItemTags(
     input: [DeleteSavedItemTagsInput!]!
   ): [SavedItem!]!
+
+  """
+  Add tags to the savedItems
+  Inputs a list of SavedItemTagsInput(ie. savedItemId and the list of tagName)
+  Returns the list of `SavedItem` for which the tags were added
+  """
+  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
 
   """
   Replaces the old tags associated with the savedItem to the new tag list
