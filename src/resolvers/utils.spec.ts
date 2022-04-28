@@ -29,9 +29,14 @@ describe('getSavedItemTagsMap', () => {
         savedItemId: '1',
         tags: ['tagC', 'tagD'],
       },
+      {
+        savedItemId: '2',
+        tags: ['tagC', 'tagD'],
+      },
     ];
 
     const map = getSavedItemTagsMap(savedItemTagsInput);
     expect(map['1']).to.deep.equal(['tagA', 'tagB', 'tagC', 'tagD']);
+    expect(map['2']).to.deep.equal(['tagC', 'tagD']);
   });
 });

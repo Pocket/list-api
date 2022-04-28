@@ -30,12 +30,10 @@ export function getSavedItemTagsMap(input: SavedItemTagsInput[]): {
   const savedItemTagsMap = input.reduce((savedItemTags, input) => {
     let tags = input.tags;
     if (savedItemTags[input.savedItemId]) {
-      tags = [...savedItemTags[input.savedItemId], ...input.tags];
+      tags = savedItemTags[input.savedItemId].concat(tags);
     }
-    return {
-      ...savedItemTags,
-      [input.savedItemId]: [...new Set([...tags])],
-    };
+    savedItemTags[input.savedItemId] = [...new Set(tags)];
+    return savedItemTags;
   }, {});
 
   return savedItemTagsMap;

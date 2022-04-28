@@ -314,12 +314,14 @@ export async function createSavedItemTags(
   const savedItemService = new SavedItemDataService(context);
   const tagDataService = new TagDataService(context, savedItemService);
 
+  const savedItemTagsMap = getSavedItemTagsMap(args.input);
   const tagCreateInput: TagCreateInput[] = [];
-  for (const savedItemTagsInput of args.input) {
-    for (const tag of savedItemTagsInput.tags) {
+  for (const savedItemId in savedItemTagsMap) {
+    const tags = savedItemTagsMap[savedItemId];
+    for (const tag of tags) {
       tagCreateInput.push({
         name: tag,
-        savedItemId: savedItemTagsInput.savedItemId,
+        savedItemId: savedItemId,
       });
     }
   }
@@ -329,8 +331,6 @@ export async function createSavedItemTags(
   const savedItems = await savedItemService.batchGetSavedItemsByGivenIds(
     savedItemIds
   );
-
-  const savedItemTagsMap = getSavedItemTagsMap(args.input);
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
@@ -446,12 +446,12 @@ export async function replaceSavedItemTags(
   args: { input: SavedItemTagsInput[] },
   context: IContext
 ): Promise<SavedItem[]> {
+  const savedItemTagsMap = getSavedItemTagsMap(args.input);
+
   const savedItems = await new TagDataService(
     context,
     new SavedItemDataService(context)
   ).replaceSavedItemTags(args.input);
-
-  const savedItemTagsMap = getSavedItemTagsMap(args.input);
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
