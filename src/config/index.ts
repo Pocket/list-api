@@ -13,6 +13,7 @@ export default {
   app: {
     environment: process.env.NODE_ENV || 'development',
     depthLimit: 8,
+    bulkSizeLimit: 30,
   },
   events: {
     source: 'list-api', // TODO - ok to change from 'backend-php'?

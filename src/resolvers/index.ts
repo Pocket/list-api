@@ -26,6 +26,8 @@ import { tagsSavedItems } from './tag';
 import { SavedItem } from '../types';
 import { IContext } from '../server/context';
 import { writeClient } from '../database/client';
+import { UserInputError } from 'apollo-server-errors';
+import config from '../config';
 
 const resolvers = {
   ItemResult: {
@@ -99,6 +101,13 @@ export function executeMutation<Args, ReturnType>(
     context: IContext
   ): Promise<ReturnType> {
     context.dbClient = writeClient();
+    Object.entries(args).forEach(([name, value]) => {
+      if (value instanceof Array && value.length > config.app.bulkSizeLimit) {
+        throw new UserInputError(
+          `Value of ${name} argument is too large (received=${value.length}, limit=${config.app.bulkSizeLimit}).`
+        );
+      }
+    });
     return mutate(parent, args, context);
   };
 }
