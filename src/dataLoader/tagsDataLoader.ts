@@ -20,13 +20,13 @@ export function createTagDataLoaders(
   context: IContext
 ): Pick<IContext['dataLoaders'], 'tagsById' | 'tagsByName'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
-    const tags = await batchGetTagsByNames(context, ids);
-    tags.forEach((item) => byNameLoader.prime(item.name, item));
+    const tags = await batchGetTagsByIds(context, ids);
+    tags.forEach((tag) => byNameLoader.prime(tag.name, tag));
     return tags;
   });
   const byNameLoader = new DataLoader(async (names: string[]) => {
-    const tags = await batchGetTagsByIds(context, names);
-    tags.forEach((item) => byIdLoader.prime(item.id, item));
+    const tags = await batchGetTagsByNames(context, names);
+    tags.forEach((tag) => byIdLoader.prime(tag.id, tag));
     return tags;
   });
   return { tagsById: byIdLoader, tagsByName: byNameLoader };

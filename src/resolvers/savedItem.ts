@@ -29,7 +29,7 @@ export async function suggestedTags(
   parent: SavedItem,
   args,
   context: IContext
-): Promise<Tag[]> {
+): Promise<Pick<Tag, 'id' | 'name'>[]> {
   if (!context.userIsPremium) {
     //Return an empty array if the user is not premium
     //Suggested Tags is a premium feature.
