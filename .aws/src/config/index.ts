@@ -13,10 +13,15 @@ const branch = isDev ? 'dev' : 'main';
 
 export const config = {
   name,
+  isDev,
   prefix: `${name}-${environment}`,
   circleCIPrefix: `/${name}/CircleCI/${environment}`,
   shortName: 'LSTAPI',
   environment,
+  rds: {
+    minCapacity: 1,
+    maxCapacity: isDev ? 1 : undefined,
+  },
   domain,
   graphqlVariant,
   codePipeline: {

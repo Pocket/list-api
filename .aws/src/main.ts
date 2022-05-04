@@ -8,6 +8,7 @@ import {
 import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
+  ApplicationRDSCluster,
   PocketALBApplication,
   PocketECSCodePipeline,
   PocketPagerDuty,
@@ -34,7 +35,7 @@ class ListAPI extends TerraformStack {
       workspaces: [{ prefix: `${config.name}-` }],
     });
 
-    new PocketVPC(this, 'pocket-vpc');
+    const pocketVPC = new PocketVPC(this, 'pocket-vpc');
     const region = new datasources.DataAwsRegion(this, 'region');
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
@@ -44,6 +45,7 @@ class ListAPI extends TerraformStack {
       snsTopic: this.getCodeDeploySnsTopic(),
       region,
       caller,
+      vpc: pocketVPC,
     });
 
     this.createApplicationCodePipeline(pocketApp);
@@ -114,17 +116,64 @@ class ListAPI extends TerraformStack {
     });
   }
 
+  /**
+   * Creates a serverless aurora RDS.
+   * This function should only be used when the environment is Dev
+   * @private
+   */
+  private createRds(vpc: PocketVPC) {
+    return new ApplicationRDSCluster(this, 'dev-aurora', {
+      prefix: `${config.prefix}-v1`,
+      vpcId: vpc.vpc.id,
+      subnetIds: vpc.privateSubnetIds,
+      rdsConfig: {
+        databaseName: config.name.toLowerCase(),
+        masterUsername: 'pkt_listapi',
+        skipFinalSnapshot: true,
+        engine: 'aurora-mysql',
+        engineMode: 'serverless',
+        scalingConfiguration: {
+          minCapacity: config.rds.minCapacity,
+          maxCapacity: config.rds.maxCapacity,
+          autoPause: false,
+        },
+        deletionProtection: false,
+      },
+      tags: config.tags,
+    });
+  }
+
   private createPocketAlbApplication(dependencies: {
     pagerDuty: PocketPagerDuty;
     region: datasources.DataAwsRegion;
     caller: datasources.DataAwsCallerIdentity;
     secretsManagerKmsAlias: kms.DataAwsKmsAlias;
     snsTopic: sns.DataAwsSnsTopic;
+    vpc: PocketVPC;
   }): PocketALBApplication {
-    const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic } =
+    const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic, vpc } =
       dependencies;
 
     const databaseSecretsArn = `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/READITLA_DB`;
+
+    /**
+     * Create an RDS instance if we are working in the Dev account.
+     * This is only to facilitate testing
+     */
+    let rdsCluster: ApplicationRDSCluster;
+
+    // Conditionally build secrets depending on environment
+    const secretResources = [
+      `arn:aws:secretsmanager:${vpc.region}:${vpc.accountId}:secret:${config.name}/${config.environment}`,
+      `arn:aws:secretsmanager:${vpc.region}:${vpc.accountId}:secret:${config.name}/${config.environment}/*`,
+    ];
+
+    if (config.isDev) {
+      rdsCluster = this.createRds(vpc);
+
+      // Add the ARN to the RDS cluster
+      secretResources.push(rdsCluster.secretARN);
+    }
 
     return new PocketALBApplication(this, 'application', {
       internal: true,
@@ -255,6 +304,8 @@ class ListAPI extends TerraformStack {
               `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
               `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
               `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
+              // Add Dev RDS-specific secrets if in Dev environment
+              ...(config.isDev ? secretResources : []),
             ],
             effect: 'Allow',
           },
