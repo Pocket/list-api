@@ -6,10 +6,11 @@ import {
 } from '../businessEvents';
 import { IncomingHttpHeaders } from 'http';
 import { Knex } from 'knex';
-import { SavedItem } from '../types';
+import { SavedItem, Tag } from '../types';
 import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
+import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
 
 export interface IContext {
   userId: string;
@@ -21,6 +22,8 @@ export interface IContext {
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
     savedItemsByUrl: DataLoader<string, SavedItem>;
+    tagsById: DataLoader<string, Tag>;
+    tagsByName: DataLoader<string, Tag>;
   };
 
   emitItemEvent(
@@ -41,7 +44,10 @@ export class ContextManager implements IContext {
       eventEmitter: ItemsEventEmitter;
     }
   ) {
-    this.dataLoaders = createSavedItemDataLoaders(this);
+    this.dataLoaders = {
+      ...createTagDataLoaders(this),
+      ...createSavedItemDataLoaders(this),
+    };
     this.dbClient = config.dbClient;
   }
 

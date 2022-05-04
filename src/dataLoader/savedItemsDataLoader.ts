@@ -84,7 +84,7 @@ export async function batchGetSavedItemsByIds(
  */
 export function createSavedItemDataLoaders(
   context: IContext
-): IContext['dataLoaders'] {
+): Pick<IContext['dataLoaders'], 'savedItemsById' | 'savedItemsByUrl'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
     const items = await batchGetSavedItemsByIds(context, ids);
     items.forEach((item) => byUrlLoader.prime(item.url, item));

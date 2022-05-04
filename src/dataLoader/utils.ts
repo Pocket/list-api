@@ -8,7 +8,7 @@ type ReorderMap<T, K extends keyof T> = {
 export function reorderResultByKey<T, K extends keyof T>(
   reorderMap: ReorderMap<T, K>,
   results: T[]
-) {
+): T[] {
   const resMap = results.reduce((acc, element) => {
     acc[element[reorderMap.key]] = element;
     return acc;
