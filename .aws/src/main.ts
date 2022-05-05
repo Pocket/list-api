@@ -127,8 +127,8 @@ class ListAPI extends TerraformStack {
       vpcId: vpc.vpc.id,
       subnetIds: vpc.privateSubnetIds,
       rdsConfig: {
-        databaseName: config.name.toLowerCase(),
-        masterUsername: 'pkt_listapi',
+        databaseName: config.rds.databaseName,
+        masterUsername: config.rds.masterUsername,
         skipFinalSnapshot: true,
         engine: 'aurora-mysql',
         engineMode: 'serverless',

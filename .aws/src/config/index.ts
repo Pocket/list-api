@@ -21,6 +21,8 @@ export const config = {
   rds: {
     minCapacity: 1,
     maxCapacity: isDev ? 1 : undefined,
+    databaseName: 'listapi',
+    masterUsername: 'pkt_listapi',
   },
   domain,
   graphqlVariant,
