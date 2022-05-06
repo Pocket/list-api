@@ -1,4 +1,4 @@
-import { SavedItemConnection } from '../types';
+import { SavedItemConnection, SavedItemsFilter } from '../types';
 import { IContext } from '../server/context';
 import { validatePagination } from '@pocket-tools/apollo-utils';
 import { ListPaginationService } from '../dataService';
@@ -40,11 +40,24 @@ export async function tagsSavedItems(
     }
   }
   // Now get result
-  const res = await savedItemDataService.getSavedItems(
-    args.filter,
-    args.sort,
-    args.pagination,
-    parent.savedItems
-  );
-  return res;
+  // If the IDs are on the parent, use them
+  if (parent.savedItems != null) {
+    return savedItemDataService.getSavedItems(
+      args.filter,
+      args.sort,
+      args.pagination,
+      parent.savedItems
+    );
+  } else {
+    // Use filter to retrieve the SavedItems if IDs are not on the parent
+    const tagFilter: SavedItemsFilter = {
+      ...args.filter,
+      tagNames: [parent.name],
+    };
+    return savedItemDataService.getSavedItems(
+      tagFilter,
+      args.sort,
+      args.pagination
+    );
+  }
 }

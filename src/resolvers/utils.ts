@@ -1,3 +1,4 @@
+import DataLoader from 'dataloader';
 import { SavedItemTagsInput, SavedItemTagsMap, TagCreateInput } from '../types';
 
 /**
@@ -56,4 +57,29 @@ export function convertToTagCreateInputs(
   }
 
   return tagCreateInputs;
+}
+
+/**
+ * Lazily load an attribute from the parent object in the resolver
+ * chain (if it exists), or via a dataloader function.
+ * @param key The dataloader key; used for load if the requested attribute
+ * does not exist on the parent in the resolver chain.
+ * @param loader The dataloader method for fetching the object, minimally
+ * with the requested attribute
+ * @param parent The parent in the resolver chain
+ * @param attr The attribute of the parent to request
+ * @returns The value keyed by `attr` of the parent or fetched object.
+ */
+export async function lazyParentLoad<T, K, A extends keyof T>(
+  key: K,
+  loader: DataLoader<K, T>,
+  parent: T,
+  attr: A
+): Promise<T[A]> {
+  if (attr in parent && parent[attr] != undefined) {
+    return Promise.resolve(parent[attr]);
+  } else {
+    const fetched = await loader.load(key);
+    return fetched[attr];
+  }
 }

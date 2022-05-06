@@ -4,6 +4,9 @@ import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
+import { TagDataService } from '../../../dataService';
+import sinon from 'sinon';
+import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 
 chai.use(chaiDateTime);
 
@@ -352,56 +355,50 @@ describe('tags query tests - happy path', () => {
     ).is.false;
   });
 
-  it('return list of SuggestedTags and paginated savedItems for SavedItem', async () => {
-    await db('readitla_b.item_grouping').insert([
-      {
-        resolved_id: 1,
-        grouping_id: 10631688,
-        source_score: 1.0,
-      },
-      {
-        resolved_id: 1,
-        grouping_id: 10631689,
-        source_score: 1.0,
-      },
-    ]);
-
-    await db('suggested_tags_user_grouping_tags').insert([
-      {
-        user_id: 1,
-        grouping_id: 10631688,
-        tag: 'zebra',
-        weighted_count: 0.9211,
-        count: 2,
-      },
-      {
-        user_id: 1,
-        grouping_id: 10631689,
-        tag: 'travel',
-        weighted_count: 0.9211,
-        count: 2,
-      },
-    ]);
-
-    await db('suggested_tags_user_groupings').insert([
-      {
-        user_id: 1,
-        grouping_id: 10631688,
-        weighted_count: 1.6461,
-        count: 1,
-      },
-      {
-        user_id: 1,
-        grouping_id: 10631689,
-        weighted_count: 1.6461,
-        count: 1,
-      },
-    ]);
+  describe('suggestedTags', () => {
+    let getTagsByNameSpy;
 
     const variables = {
       userId: '1',
       itemId: '1',
     };
+
+    const GET_SUGGESTED_TAGS_NONLAZY = gql`
+      query getSavedItem($userId: ID!, $itemId: ID!) {
+        _entities(representations: { id: $userId, __typename: "User" }) {
+          ... on User {
+            savedItemById(id: $itemId) {
+              suggestedTags {
+                ... on Tag {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    const GET_SUGGESTED_TAGS_LAZY = gql`
+      query getSavedItem($userId: ID!, $itemId: ID!) {
+        _entities(representations: { id: $userId, __typename: "User" }) {
+          ... on User {
+            savedItemById(id: $itemId) {
+              suggestedTags {
+                ... on Tag {
+                  id
+                  name
+                  _createdAt
+                  _updatedAt
+                  _version
+                  _deletedAt
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
 
     const GET_SUGGESTED_TAGS_FOR_SAVED_ITEM = gql`
       query getSavedItem($userId: ID!, $itemId: ID!) {
@@ -444,69 +441,183 @@ describe('tags query tests - happy path', () => {
         }
       }
     `;
+    beforeAll(async () => {
+      getTagsByNameSpy = sinon.spy(TagDataService.prototype, 'getTagsByName');
+      await db('readitla_b.item_grouping').insert([
+        {
+          resolved_id: 1,
+          grouping_id: 10631688,
+          source_score: 1.0,
+        },
+        {
+          resolved_id: 1,
+          grouping_id: 10631689,
+          source_score: 2.0,
+        },
+      ]);
 
-    const res = await server.executeOperation({
-      query: GET_SUGGESTED_TAGS_FOR_SAVED_ITEM,
-      variables,
+      await db('suggested_tags_user_grouping_tags').insert([
+        {
+          user_id: 1,
+          grouping_id: 10631688,
+          tag: 'zebra',
+          weighted_count: 0.9211,
+          count: 2,
+        },
+        {
+          user_id: 1,
+          grouping_id: 10631689,
+          tag: 'travel',
+          weighted_count: 0.9211,
+          count: 2,
+        },
+      ]);
+
+      await db('suggested_tags_user_groupings').insert([
+        {
+          user_id: 1,
+          grouping_id: 10631688,
+          weighted_count: 1.6461,
+          count: 1,
+        },
+        {
+          user_id: 1,
+          grouping_id: 10631689,
+          weighted_count: 1.6461,
+          count: 1,
+        },
+      ]);
     });
-    const tagId0 = Buffer.from(
-      res.data?._entities[0].savedItemById.suggestedTags[0].id,
-      'base64'
-    ).toString();
-    expect(res.data?._entities[0].savedItemById.url).to.equal('http://abc');
-    expect(res.data?._entities[0].savedItemById.suggestedTags[0].name).to.equal(
-      'travel'
-    );
-    expect(tagId0).to.equal('travel');
-    expect(res.data?._entities[0].savedItemById.suggestedTags[0]._version).is
-      .null;
-    expect(res.data?._entities[0].savedItemById.suggestedTags[0]._deletedAt).is
-      .null;
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0]._createdAt
-    ).to.equal(unixDate);
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[0]._updatedAt
-    ).to.equal(unixDate1);
-    const tagId1 = Buffer.from(
-      res.data?._entities[0].savedItemById.suggestedTags[1].id,
-      'base64'
-    ).toString();
-    expect(tagId1).to.equal('zebra');
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1]._createdAt
-    ).to.equal(unixDate1);
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1]._updatedAt
-    ).to.equal(unixDate1);
-    expect(res.data?._entities[0].savedItemById.suggestedTags[1].name).to.equal(
-      'zebra'
-    );
-    expect(res.data?._entities[0].savedItemById.suggestedTags[1]._deletedAt).is
-      .null;
-    expect(res.data?._entities[0].savedItemById.suggestedTags[1]._deletedAt).is
-      .null;
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.edges
-        .length
-    ).equals(1);
-    // Default to itemId, asc on sort field collision
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.edges[0]
-        .node.url
-    ).equals('http://abc');
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems
-        .totalCount
-    ).equals(1);
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.pageInfo
-        .hasNextPage
-    ).is.false;
-    expect(
-      res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.pageInfo
-        .hasPreviousPage
-    ).is.false;
+    afterAll(async () => {
+      await Promise.all(
+        [
+          'suggested_tags_user_groupings',
+          'suggested_tags_user_grouping_tags',
+          'readitla_b.item_grouping',
+        ].map((table) => db(table).truncate())
+      );
+      getTagsByNameSpy.restore();
+    });
+
+    afterEach(() => {
+      getTagsByNameSpy.resetHistory();
+    });
+
+    it('return list of SuggestedTags and paginated savedItems for SavedItem, ordered by score descending', async () => {
+      const res = await server.executeOperation({
+        query: GET_SUGGESTED_TAGS_FOR_SAVED_ITEM,
+        variables,
+      });
+      const expectedTags = [
+        {
+          id: Buffer.from('travel').toString('base64'),
+          name: 'travel',
+          _version: null,
+          _deletedAt: null,
+          _createdAt: unixDate,
+          _updatedAt: unixDate1,
+        },
+        {
+          id: Buffer.from('zebra').toString('base64'),
+          name: 'zebra',
+          _createdAt: unixDate1,
+          _updatedAt: unixDate1,
+          _deletedAt: null,
+          _version: null,
+        },
+      ];
+      expect(res.errors).to.be.undefined;
+      expect(res.data?._entities[0].savedItemById.url).to.equal('http://abc');
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[0]
+      ).to.deep.include(expectedTags[0]);
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[1]
+      ).to.deep.include(expectedTags[1]);
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[1].savedItems.edges
+          .length
+      ).equals(1);
+      // Default to itemId, asc on sort field collision
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[1].savedItems
+          .edges[0].node.url
+      ).equals('http://abc');
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[1].savedItems
+          .totalCount
+      ).equals(1);
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[1].savedItems
+          .pageInfo.hasNextPage
+      ).is.false;
+      expect(
+        res.data?._entities[0].savedItemById.suggestedTags[1].savedItems
+          .pageInfo.hasPreviousPage
+      ).is.false;
+    });
+    it('should not fetch fields other than name and id if not requested', async () => {
+      const res = await server.executeOperation({
+        query: GET_SUGGESTED_TAGS_NONLAZY,
+        variables,
+      });
+      const expectedTags = [
+        {
+          id: Buffer.from('travel').toString('base64'),
+          name: 'travel',
+        },
+        {
+          id: Buffer.from('zebra').toString('base64'),
+          name: 'zebra',
+        },
+      ];
+      expect(res.errors).to.be.undefined;
+      expect(res.data?._entities[0].savedItemById.suggestedTags).to.deep.equal(
+        expectedTags
+      );
+      expect(getTagsByNameSpy.callCount).to.equal(0);
+    });
+    it('should lazily fetch fields other than name and id only once', async () => {
+      const res = await server.executeOperation({
+        query: GET_SUGGESTED_TAGS_LAZY,
+        variables,
+      });
+      const expectedTags = [
+        {
+          id: Buffer.from('travel').toString('base64'),
+          name: 'travel',
+          _version: null,
+          _deletedAt: null,
+          _createdAt: unixDate,
+          _updatedAt: unixDate1,
+        },
+        {
+          id: Buffer.from('zebra').toString('base64'),
+          name: 'zebra',
+          _createdAt: unixDate1,
+          _updatedAt: unixDate1,
+          _deletedAt: null,
+          _version: null,
+        },
+      ];
+      expect(res.errors).to.be.undefined;
+      expect(res.data?._entities[0].savedItemById.suggestedTags).to.deep.equal(
+        expectedTags
+      );
+      expect(getTagsByNameSpy.callCount).to.equal(1);
+    });
+    it('should lazily fetch a batch of all tags in one request', async () => {
+      const res = await server.executeOperation({
+        query: GET_SUGGESTED_TAGS_LAZY,
+        variables,
+      });
+      expect(res.errors).to.be.undefined;
+      expect(getTagsByNameSpy.callCount).to.equal(1);
+      expect(getTagsByNameSpy.getCall(0).args[0]).to.deep.equal([
+        'travel',
+        'zebra',
+      ]);
+    });
   });
 
   describe('should not allow before/after pagination', () => {
@@ -751,5 +862,19 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
     expect(res.data?._entities[0].tags.edges.length).to.equal(1);
     expect(res.data?._entities[0].tags.edges[0].node.name).to.equal('zebra');
+  });
+  it('should resolve tag fields from the parent if provided', async () => {
+    const dataLoaderSpy = sinon.spy(tagsDataLoader, 'batchGetTagsByNames');
+    const variables = {
+      id: '1',
+      pagination: { first: 2 },
+    };
+
+    await server.executeOperation({
+      query: GET_TAG_CONNECTION,
+      variables,
+    });
+    expect(dataLoaderSpy.callCount).to.equal(0);
+    dataLoaderSpy.restore();
   });
 });

@@ -121,18 +121,13 @@ export class TagDataService {
    */
   public async getSuggestedTagsByUserItem(
     resolvedItemId: string
-  ): Promise<Tag[]> {
+  ): Promise<Pick<Tag, 'name' | 'id'>[]> {
     const getTagsForItemQuery = await this.db.raw(
       `SELECT x.tag                                                                           AS tag,
               x.tag                                                                           AS name,
-              x.user_id                                                                       AS userId,
               round(1 - exp(sum(log(coalesce((1 - x.source_score * x.adj_tag_rate), 1)))), 4) AS score,
-              TO_BASE64(x.tag)                                                                as id,
-              GROUP_CONCAT(it.item_id)                                                        as savedItems,
-              UNIX_TIMESTAMP(MIN(it.time_added)) as _createdAt,
-                    UNIX_TIMESTAMP(MAX(it.time_updated)) as _updatedAt,
-                    NULL as _deletedAt,
-                    NULL as _version
+              TO_BASE64(x.tag)                                                                as id
+
        FROM (
            SELECT
            gt.grouping_id,
@@ -149,16 +144,19 @@ export class TagDataService {
            STRAIGHT_JOIN \`readitla_ril-tmp\`.suggested_tags_user_grouping_tags gt ON (g.user_id = gt.user_id AND g.grouping_id = gt.grouping_id)
            WHERE ig.resolved_id = :resolvedId
            ) AS x
-           JOIN item_tags as it
-       ON (it.tag = x.tag AND it.user_id = x.user_id)
        GROUP BY tag
        HAVING score >= 0.005
        ORDER BY score DESC
            LIMIT 8;`,
       { resolvedId: resolvedItemId, userId: this.userId }
     );
-
-    return getTagsForItemQuery[0].map(TagObjectMapper.mapDbModelToDomainEntity);
+    // Returning a partial here because joining on `item_tags` to get additional
+    // data is very expensive; lazily load those fields at the resolver level
+    // only if they are requested.
+    return getTagsForItemQuery[0].map((row) => ({
+      id: row.id,
+      name: row.name,
+    }));
   }
 
   public async getTagsByName(names: string[]): Promise<any> {
@@ -175,6 +173,18 @@ export class TagDataService {
       cleanAndValidateTag(tagName)
     );
     return TagObjectMapper.mapDbModelToDomainEntity(result[0]);
+  }
+
+  public async getTagById(tagId: string): Promise<Tag> {
+    const tagName = Buffer.from(tagId, 'base64').toString();
+    return this.getTagByName(tagName);
+  }
+
+  public async getTagsById(tagIds: string[]): Promise<Tag[]> {
+    const tagNames = tagIds.map((tagId) =>
+      Buffer.from(tagId, 'base64').toString()
+    );
+    return this.getTagsByName(tagNames);
   }
 
   public async getTagsByUser(
