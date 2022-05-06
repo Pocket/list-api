@@ -163,10 +163,7 @@ class ListAPI extends TerraformStack {
     let rdsCluster: ApplicationRDSCluster;
 
     // Conditionally build secrets depending on environment
-    const secretResources = [
-      `arn:aws:secretsmanager:${vpc.region}:${vpc.accountId}:secret:${config.name}/${config.environment}`,
-      `arn:aws:secretsmanager:${vpc.region}:${vpc.accountId}:secret:${config.name}/${config.environment}/*`,
-    ];
+    const secretResources = [];
 
     if (config.isDev) {
       rdsCluster = this.createRds(vpc);
