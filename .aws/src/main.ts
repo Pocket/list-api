@@ -162,13 +162,19 @@ class ListAPI extends TerraformStack {
      */
     let rdsCluster: ApplicationRDSCluster;
 
-    // Conditionally build secrets depending on environment
-    const secretResources = [];
+    const secretResources = [
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/*`,
+      secretsManagerKmsAlias.targetKeyArn,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
+    ];
 
     if (config.isDev) {
       rdsCluster = this.createRds(vpc);
-
-      // Add the ARN to the RDS cluster
+      // Add Dev RDS-specific secrets if in Dev environment
       secretResources.push(rdsCluster.secretARN);
     }
 
@@ -239,27 +245,39 @@ class ListAPI extends TerraformStack {
             },
             {
               name: 'DATABASE_READ_HOST',
-              valueFrom: `${databaseSecretsArn}:read_host::`,
+              valueFrom: !config.isDev
+                ? `${databaseSecretsArn}:read_host::`
+                : `${databaseSecretsArn}:host::`,
             },
             {
               name: 'DATABASE_READ_USER',
-              valueFrom: `${databaseSecretsArn}:read_username::`,
+              valueFrom: !config.isDev
+                ? `${databaseSecretsArn}:read_username::`
+                : `${databaseSecretsArn}:username::`,
             },
             {
               name: 'DATABASE_READ_PASSWORD',
-              valueFrom: `${databaseSecretsArn}:read_password::`,
+              valueFrom: !config.isDev
+                ? `${databaseSecretsArn}:read_password::`
+                : `${databaseSecretsArn}:password::`,
             },
             {
               name: 'DATABASE_WRITE_HOST',
-              valueFrom: `${databaseSecretsArn}:write_host::`,
+              valueFrom: !config.isDev
+                ? `${databaseSecretsArn}:write_host::`
+                : `${databaseSecretsArn}:host::`,
             },
             {
               name: 'DATABASE_WRITE_USER',
-              valueFrom: `${databaseSecretsArn}:write_username::`,
+              valueFrom: !config.isDev
+                ? `${databaseSecretsArn}:write_username::`
+                : `${databaseSecretsArn}:user::`,
             },
             {
               name: 'DATABASE_WRITE_PASSWORD',
-              valueFrom: `${databaseSecretsArn}:write_password::`,
+              valueFrom: !config.isDev
+                ? `${databaseSecretsArn}:write_password::`
+                : `${databaseSecretsArn}:password::`,
             },
           ],
         },
@@ -293,17 +311,7 @@ class ListAPI extends TerraformStack {
           //This policy could probably go in the shared module in the future.
           {
             actions: ['secretsmanager:GetSecretValue', 'kms:Decrypt'],
-            resources: [
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/*`,
-              secretsManagerKmsAlias.targetKeyArn,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
-              // Add Dev RDS-specific secrets if in Dev environment
-              ...(config.isDev ? secretResources : []),
-            ],
+            resources: secretResources,
             effect: 'Allow',
           },
           //This policy could probably go in the shared module in the future.
