@@ -123,7 +123,7 @@ class ListAPI extends TerraformStack {
    */
   private createRds(vpc: PocketVPC) {
     return new ApplicationRDSCluster(this, 'dev-aurora', {
-      prefix: `${config.prefix}-v1`,
+      prefix: `${config.prefix}`,
       vpcId: vpc.vpc.id,
       subnetIds: vpc.privateSubnetIds,
       rdsConfig: {
