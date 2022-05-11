@@ -117,6 +117,54 @@ class ListAPI extends TerraformStack {
     });
   }
 
+  /**
+   * Returns mapping for fetching secret data and inserting into environment
+   * variables.
+   * We need a function for this, since the secrets for the development RDS
+   * database are formatted differently than for the production database.
+   * TODO: Dev RDS logic
+   * @param region
+   * @param caller
+   * @returns
+   */
+  private hydrateSecretDbEnvVars(
+    region: datasources.DataAwsRegion,
+    caller: datasources.DataAwsCallerIdentity
+  ): { name: string; valueFrom: string }[] {
+    if (config.environment === 'Prod') {
+      const databaseSecretsArn = `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/READITLA_DB`;
+      return [
+        {
+          name: 'DATABASE_READ_HOST',
+          valueFrom: `${databaseSecretsArn}:read_host::`,
+        },
+        {
+          name: 'DATABASE_READ_USER',
+          valueFrom: `${databaseSecretsArn}:read_username::`,
+        },
+        {
+          name: 'DATABASE_READ_PASSWORD',
+          valueFrom: `${databaseSecretsArn}:read_password::`,
+        },
+        {
+          name: 'DATABASE_WRITE_HOST',
+          valueFrom: `${databaseSecretsArn}:write_host::`,
+        },
+        {
+          name: 'DATABASE_WRITE_USER',
+          valueFrom: `${databaseSecretsArn}:write_username::`,
+        },
+        {
+          name: 'DATABASE_WRITE_PASSWORD',
+          valueFrom: `${databaseSecretsArn}:write_password::`,
+        },
+      ];
+    } else {
+      // TODO
+      return [];
+    }
+  }
+
   private createPocketAlbApplication(dependencies: {
     pagerDuty: PocketPagerDuty;
     region: datasources.DataAwsRegion;
@@ -127,7 +175,7 @@ class ListAPI extends TerraformStack {
     const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic } =
       dependencies;
 
-    const databaseSecretsArn = `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/READITLA_DB`;
+    const secretDbVars = this.hydrateSecretDbEnvVars(region, caller);
 
     return new PocketALBApplication(this, 'application', {
       internal: true,
@@ -194,30 +242,7 @@ class ListAPI extends TerraformStack {
               name: 'SENTRY_DSN',
               valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/SENTRY_DSN`,
             },
-            {
-              name: 'DATABASE_READ_HOST',
-              valueFrom: `${databaseSecretsArn}:read_host::`,
-            },
-            {
-              name: 'DATABASE_READ_USER',
-              valueFrom: `${databaseSecretsArn}:read_username::`,
-            },
-            {
-              name: 'DATABASE_READ_PASSWORD',
-              valueFrom: `${databaseSecretsArn}:read_password::`,
-            },
-            {
-              name: 'DATABASE_WRITE_HOST',
-              valueFrom: `${databaseSecretsArn}:write_host::`,
-            },
-            {
-              name: 'DATABASE_WRITE_USER',
-              valueFrom: `${databaseSecretsArn}:write_username::`,
-            },
-            {
-              name: 'DATABASE_WRITE_PASSWORD',
-              valueFrom: `${databaseSecretsArn}:write_password::`,
-            },
+            ...secretDbVars,
           ],
         },
         {
