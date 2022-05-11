@@ -1,9 +1,7 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
 import { config } from './config';
-import {
-  PocketVPC,
-} from '@pocket-tools/terraform-modules';
+import { PocketVPC } from '@pocket-tools/terraform-modules';
 import { PocketSQSWithLambdaTarget } from '@pocket-tools/terraform-modules';
 import { LAMBDA_RUNTIMES } from '@pocket-tools/terraform-modules';
 import { ssm } from '@cdktf/provider-aws';
@@ -21,7 +19,7 @@ export class SqsLambda extends Resource {
     const { sentryDsn, gitSha } = this.getEnvVariableValues();
 
     new PocketSQSWithLambdaTarget(this, 'sqs-event-consumer', {
-      name: `${config.prefix}-sqs-event-consumer`,
+      name: `${config.prefix}-Sqs-Event-Consumer`,
       batchSize: 10,
       batchWindow: 60,
       sqsQueue: {

@@ -212,6 +212,70 @@ jobs:
       - run:
           name: run tests
           command: npm run test
+  lambda:
+    description: Builds and Optionaly deploys all the associated lambdas
+    parameters:
+      env_lower_name:
+        type: string
+        description: The lower case env name
+      env_capital_name:
+        default: Env Name
+        description: The env capital name
+        type: string
+      deploy:
+        type: boolean
+        default: true
+    docker:
+      - image: circleci/node:14@sha256:6f6b36595d00d61545f502d191c459a52e8f3d55a3607f4e2e2dd8f15a01c9ad
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - run:
+          name: Package Lambda
+          # we use npm-link-by-copy to "install" our shared module into the
+          # node_modules of each consuming app (the API and the lambda). npm link
+          # only creates a sym link, which doesn't play well when building docker
+          # images.
+          #
+          # as the npm-link-by-copy package is over 3 years old, it may be
+          # worthwhile to perform the copying ourselves at some point.
+
+          # we also need to update to the latest npm to fix an fsevents bug. and no,
+          # we can't update the docker image because AWS lambda only supports up to
+          # node 14. good times!
+          command: |
+            cd aws_lambda
+            npm ci --production
+            npm run build
+            cp -r package.json package-lock.json dist/
+            cp -r node_modules/ dist/node_modules/
+            cd dist
+            zip -r9 "/tmp/$CIRCLE_SHA1.zip" *
+            mkdir -p /tmp
+            cp "/tmp/$CIRCLE_SHA1.zip" /tmp/build.zip
+      - when:
+          condition: << parameters.deploy >>
+          steps:
+            - aws-cli/setup:
+                aws-access-key-id: << parameters.env_capital_name >>_AWS_ACCESS_KEY
+                aws-secret-access-key: << parameters.env_capital_name >>_AWS_SECRET_ACCESS_KEY
+                aws-region: << parameters.env_capital_name >>_AWS_DEFAULT_REGION
+            - run:
+                name: Upload Package
+                command: aws s3 cp "/tmp/$CIRCLE_SHA1.zip" s3://pocket-listapi-<< parameters.env_lower_name >>-sqs-event-consumer/
+            - pocket/deploy_lambda:
+                s3-bucket: pocket-listapi-<< parameters.env_lower_name >>-sqs-event-consumer
+                aws-access-key-id: << parameters.env_capital_name >>_AWS_ACCESS_KEY
+                aws-secret-access-key: << parameters.env_capital_name >>_AWS_SECRET_ACCESS_KEY
+                aws-region: << parameters.env_capital_name >>_AWS_DEFAULT_REGION
+                codedeploy-application-name: ListAPI-<< parameters.env_capital_name >>-Sqs-Event-Consumer-Lambda
+                codedeploy-deployment-group-name: ListAPI-<< parameters.env_capital_name >>-Sqs-Event-Consumer-Lambda
+                function-name: ListAPI-<< parameters.env_capital_name >>-Sqs-Event-Consumer-Function
+
+      - store_artifacts:
+          path: /tmp/build.zip
 
 workflows:
   all:
@@ -226,6 +290,33 @@ workflows:
           context: pocket
           name: test_integrations
 
+      # Try building the lambda on each branch
+      - lambda:
+          <<: *not_dev_main
+          context: pocket
+          name: build_lambda
+          env_lower_name: prod
+          env_capital_name: Prod
+          deploy: false
+
+      # Build & Deploy Development Lambdas
+      - lambda:
+          <<: *only_dev
+          context: pocket
+          name: deploy_lambdas_dev
+          env_lower_name: dev
+          env_capital_name: Dev
+          deploy: true
+
+      # Build & Deploy Production Lambdas
+      - lambda:
+          <<: *only_main
+          context: pocket
+          name: deploy_lambdas_prod
+          env_lower_name: prod
+          env_capital_name: Prod
+          deploy: true
+      
       - apollo
 
       - build:
