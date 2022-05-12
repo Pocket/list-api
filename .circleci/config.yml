@@ -235,17 +235,6 @@ jobs:
       - checkout
       - run:
           name: Package Lambda
-          # we use npm-link-by-copy to "install" our shared module into the
-          # node_modules of each consuming app (the API and the lambda). npm link
-          # only creates a sym link, which doesn't play well when building docker
-          # images.
-          #
-          # as the npm-link-by-copy package is over 3 years old, it may be
-          # worthwhile to perform the copying ourselves at some point.
-
-          # we also need to update to the latest npm to fix an fsevents bug. and no,
-          # we can't update the docker image because AWS lambda only supports up to
-          # node 14. good times!
           command: |
             cd lambda
             npm ci --production
