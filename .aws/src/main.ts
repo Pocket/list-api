@@ -8,6 +8,7 @@ import {
 import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
+  ApplicationRDSCluster,
   PocketALBApplication,
   PocketECSCodePipeline,
   PocketPagerDuty,
@@ -47,6 +48,7 @@ class ListAPI extends TerraformStack {
       snsTopic: this.getCodeDeploySnsTopic(),
       region,
       caller,
+      vpc: pocketVPC,
     });
 
     this.createApplicationCodePipeline(pocketApp);
@@ -118,51 +120,30 @@ class ListAPI extends TerraformStack {
   }
 
   /**
-   * Returns mapping for fetching secret data and inserting into environment
-   * variables.
-   * We need a function for this, since the secrets for the development RDS
-   * database are formatted differently than for the production database.
-   * TODO: Dev RDS logic
-   * @param region
-   * @param caller
-   * @returns
+   * Creates a serverless aurora RDS.
+   * This function should only be used when the environment is Dev
+   * @private
    */
-  private hydrateSecretDbEnvVars(
-    region: datasources.DataAwsRegion,
-    caller: datasources.DataAwsCallerIdentity
-  ): { name: string; valueFrom: string }[] {
-    if (config.environment === 'Prod') {
-      const databaseSecretsArn = `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/READITLA_DB`;
-      return [
-        {
-          name: 'DATABASE_READ_HOST',
-          valueFrom: `${databaseSecretsArn}:read_host::`,
+  private createRds(vpc: PocketVPC) {
+    return new ApplicationRDSCluster(this, 'dev-aurora', {
+      prefix: `${config.prefix}`,
+      vpcId: vpc.vpc.id,
+      subnetIds: vpc.privateSubnetIds,
+      rdsConfig: {
+        databaseName: config.rds.databaseName,
+        masterUsername: config.rds.masterUsername,
+        skipFinalSnapshot: true,
+        engine: 'aurora-mysql',
+        engineMode: 'serverless',
+        scalingConfiguration: {
+          minCapacity: config.rds.minCapacity,
+          maxCapacity: config.rds.maxCapacity,
+          autoPause: false,
         },
-        {
-          name: 'DATABASE_READ_USER',
-          valueFrom: `${databaseSecretsArn}:read_username::`,
-        },
-        {
-          name: 'DATABASE_READ_PASSWORD',
-          valueFrom: `${databaseSecretsArn}:read_password::`,
-        },
-        {
-          name: 'DATABASE_WRITE_HOST',
-          valueFrom: `${databaseSecretsArn}:write_host::`,
-        },
-        {
-          name: 'DATABASE_WRITE_USER',
-          valueFrom: `${databaseSecretsArn}:write_username::`,
-        },
-        {
-          name: 'DATABASE_WRITE_PASSWORD',
-          valueFrom: `${databaseSecretsArn}:write_password::`,
-        },
-      ];
-    } else {
-      // TODO
-      return [];
-    }
+        deletionProtection: false,
+      },
+      tags: config.tags,
+    });
   }
 
   private createPocketAlbApplication(dependencies: {
@@ -171,11 +152,54 @@ class ListAPI extends TerraformStack {
     caller: datasources.DataAwsCallerIdentity;
     secretsManagerKmsAlias: kms.DataAwsKmsAlias;
     snsTopic: sns.DataAwsSnsTopic;
+    vpc: PocketVPC;
   }): PocketALBApplication {
-    const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic } =
+    const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic, vpc } =
       dependencies;
 
-    const secretDbVars = this.hydrateSecretDbEnvVars(region, caller);
+    const databaseSecretsArn = `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/READITLA_DB`;
+
+    /**
+     * Create an RDS instance if we are working in the Dev account.
+     * This is only to facilitate testing
+     */
+    let rdsCluster: ApplicationRDSCluster;
+
+    const secretResources = [
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/*`,
+      secretsManagerKmsAlias.targetKeyArn,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
+    ];
+
+    // Set out the DB connection details for the production (legacy) database.
+    let databaseSecretEnvVars = {
+      readHost: `${databaseSecretsArn}:read_host::`,
+      readUser: `${databaseSecretsArn}:read_username::`,
+      readPassword: `${databaseSecretsArn}:read_password::`,
+      writeHost: `${databaseSecretsArn}:write_host::`,
+      writeUser: `${databaseSecretsArn}:write_username::`,
+      writePassword: `${databaseSecretsArn}:write_password::`,
+    };
+
+    if (config.isDev) {
+      rdsCluster = this.createRds(vpc);
+      // Add Dev RDS-specific secrets if in Dev environment
+      secretResources.push(rdsCluster.secretARN);
+
+      // Specify DB connection details for the RDS cluster on Dev
+      databaseSecretEnvVars = {
+        readHost: rdsCluster.secretARN + ':host::',
+        readUser: rdsCluster.secretARN + ':username::',
+        readPassword: rdsCluster.secretARN + ':password::',
+        writeHost: rdsCluster.secretARN + ':host::',
+        writeUser: rdsCluster.secretARN + ':username::',
+        writePassword: rdsCluster.secretARN + ':password::',
+      };
+    }
 
     return new PocketALBApplication(this, 'application', {
       internal: true,
@@ -242,7 +266,30 @@ class ListAPI extends TerraformStack {
               name: 'SENTRY_DSN',
               valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/SENTRY_DSN`,
             },
-            ...secretDbVars,
+            {
+              name: 'DATABASE_READ_HOST',
+              valueFrom: databaseSecretEnvVars.readHost,
+            },
+            {
+              name: 'DATABASE_READ_USER',
+              valueFrom: databaseSecretEnvVars.readUser,
+            },
+            {
+              name: 'DATABASE_READ_PASSWORD',
+              valueFrom: databaseSecretEnvVars.readPassword,
+            },
+            {
+              name: 'DATABASE_WRITE_HOST',
+              valueFrom: databaseSecretEnvVars.writeHost,
+            },
+            {
+              name: 'DATABASE_WRITE_USER',
+              valueFrom: databaseSecretEnvVars.writeUser,
+            },
+            {
+              name: 'DATABASE_WRITE_PASSWORD',
+              valueFrom: databaseSecretEnvVars.writePassword,
+            },
           ],
         },
         {
@@ -275,15 +322,7 @@ class ListAPI extends TerraformStack {
           //This policy could probably go in the shared module in the future.
           {
             actions: ['secretsmanager:GetSecretValue', 'kms:Decrypt'],
-            resources: [
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/*`,
-              secretsManagerKmsAlias.targetKeyArn,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
-            ],
+            resources: secretResources,
             effect: 'Allow',
           },
           //This policy could probably go in the shared module in the future.
