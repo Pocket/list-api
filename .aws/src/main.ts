@@ -8,6 +8,7 @@ import {
 import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
+  ApplicationRDSCluster,
   PocketALBApplication,
   PocketECSCodePipeline,
   PocketPagerDuty,
@@ -34,7 +35,7 @@ class ListAPI extends TerraformStack {
       workspaces: [{ prefix: `${config.name}-` }],
     });
 
-    new PocketVPC(this, 'pocket-vpc');
+    const pocketVPC = new PocketVPC(this, 'pocket-vpc');
     const region = new datasources.DataAwsRegion(this, 'region');
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
@@ -44,6 +45,7 @@ class ListAPI extends TerraformStack {
       snsTopic: this.getCodeDeploySnsTopic(),
       region,
       caller,
+      vpc: pocketVPC,
     });
 
     this.createApplicationCodePipeline(pocketApp);
@@ -114,17 +116,87 @@ class ListAPI extends TerraformStack {
     });
   }
 
+  /**
+   * Creates a serverless aurora RDS.
+   * This function should only be used when the environment is Dev
+   * @private
+   */
+  private createRds(vpc: PocketVPC) {
+    return new ApplicationRDSCluster(this, 'dev-aurora', {
+      prefix: `${config.prefix}`,
+      vpcId: vpc.vpc.id,
+      subnetIds: vpc.privateSubnetIds,
+      rdsConfig: {
+        databaseName: config.rds.databaseName,
+        masterUsername: config.rds.masterUsername,
+        skipFinalSnapshot: true,
+        engine: 'aurora-mysql',
+        engineMode: 'serverless',
+        scalingConfiguration: {
+          minCapacity: config.rds.minCapacity,
+          maxCapacity: config.rds.maxCapacity,
+          autoPause: false,
+        },
+        deletionProtection: false,
+      },
+      tags: config.tags,
+    });
+  }
+
   private createPocketAlbApplication(dependencies: {
     pagerDuty: PocketPagerDuty;
     region: datasources.DataAwsRegion;
     caller: datasources.DataAwsCallerIdentity;
     secretsManagerKmsAlias: kms.DataAwsKmsAlias;
     snsTopic: sns.DataAwsSnsTopic;
+    vpc: PocketVPC;
   }): PocketALBApplication {
-    const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic } =
+    const { pagerDuty, region, caller, secretsManagerKmsAlias, snsTopic, vpc } =
       dependencies;
 
     const databaseSecretsArn = `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/READITLA_DB`;
+
+    /**
+     * Create an RDS instance if we are working in the Dev account.
+     * This is only to facilitate testing
+     */
+    let rdsCluster: ApplicationRDSCluster;
+
+    const secretResources = [
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/*`,
+      secretsManagerKmsAlias.targetKeyArn,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
+      `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
+    ];
+
+    // Set out the DB connection details for the production (legacy) database.
+    let databaseSecretEnvVars = {
+      readHost: `${databaseSecretsArn}:read_host::`,
+      readUser: `${databaseSecretsArn}:read_username::`,
+      readPassword: `${databaseSecretsArn}:read_password::`,
+      writeHost: `${databaseSecretsArn}:write_host::`,
+      writeUser: `${databaseSecretsArn}:write_username::`,
+      writePassword: `${databaseSecretsArn}:write_password::`,
+    };
+
+    if (config.isDev) {
+      rdsCluster = this.createRds(vpc);
+      // Add Dev RDS-specific secrets if in Dev environment
+      secretResources.push(rdsCluster.secretARN);
+
+      // Specify DB connection details for the RDS cluster on Dev
+      databaseSecretEnvVars = {
+        readHost: rdsCluster.secretARN + ':host::',
+        readUser: rdsCluster.secretARN + ':username::',
+        readPassword: rdsCluster.secretARN + ':password::',
+        writeHost: rdsCluster.secretARN + ':host::',
+        writeUser: rdsCluster.secretARN + ':username::',
+        writePassword: rdsCluster.secretARN + ':password::',
+      };
+    }
 
     return new PocketALBApplication(this, 'application', {
       internal: true,
@@ -193,27 +265,27 @@ class ListAPI extends TerraformStack {
             },
             {
               name: 'DATABASE_READ_HOST',
-              valueFrom: `${databaseSecretsArn}:read_host::`,
+              valueFrom: databaseSecretEnvVars.readHost,
             },
             {
               name: 'DATABASE_READ_USER',
-              valueFrom: `${databaseSecretsArn}:read_username::`,
+              valueFrom: databaseSecretEnvVars.readUser,
             },
             {
               name: 'DATABASE_READ_PASSWORD',
-              valueFrom: `${databaseSecretsArn}:read_password::`,
+              valueFrom: databaseSecretEnvVars.readPassword,
             },
             {
               name: 'DATABASE_WRITE_HOST',
-              valueFrom: `${databaseSecretsArn}:write_host::`,
+              valueFrom: databaseSecretEnvVars.writeHost,
             },
             {
               name: 'DATABASE_WRITE_USER',
-              valueFrom: `${databaseSecretsArn}:write_username::`,
+              valueFrom: databaseSecretEnvVars.writeUser,
             },
             {
               name: 'DATABASE_WRITE_PASSWORD',
-              valueFrom: `${databaseSecretsArn}:write_password::`,
+              valueFrom: databaseSecretEnvVars.writePassword,
             },
           ],
         },
@@ -247,15 +319,7 @@ class ListAPI extends TerraformStack {
           //This policy could probably go in the shared module in the future.
           {
             actions: ['secretsmanager:GetSecretValue', 'kms:Decrypt'],
-            resources: [
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/*`,
-              secretsManagerKmsAlias.targetKeyArn,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/*`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}`,
-              `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
-            ],
+            resources: secretResources,
             effect: 'Allow',
           },
           //This policy could probably go in the shared module in the future.
