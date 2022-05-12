@@ -190,10 +190,10 @@ class ListAPI extends TerraformStack {
       // Specify DB connection details for the RDS cluster on Dev
       databaseSecretEnvVars = {
         readHost: rdsCluster.secretARN + ':host::',
-        readUser: rdsCluster.secretARN + ':user::',
+        readUser: rdsCluster.secretARN + ':username::',
         readPassword: rdsCluster.secretARN + ':password::',
         writeHost: rdsCluster.secretARN + ':host::',
-        writeUser: rdsCluster.secretARN + ':user::',
+        writeUser: rdsCluster.secretARN + ':username::',
         writePassword: rdsCluster.secretARN + ':password::',
       };
     }
