@@ -172,10 +172,30 @@ class ListAPI extends TerraformStack {
       `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.prefix}/*`,
     ];
 
+    // Set out the DB connection details for the production (legacy) database.
+    let databaseSecretEnvVars = {
+      readHost: `${databaseSecretsArn}:read_host::`,
+      readUser: `${databaseSecretsArn}:read_username::`,
+      readPassword: `${databaseSecretsArn}:read_password::`,
+      writeHost: `${databaseSecretsArn}:write_host::`,
+      writeUser: `${databaseSecretsArn}:write_username::`,
+      writePassword: `${databaseSecretsArn}:write_password::`,
+    };
+
     if (config.isDev) {
       rdsCluster = this.createRds(vpc);
       // Add Dev RDS-specific secrets if in Dev environment
       secretResources.push(rdsCluster.secretARN);
+
+      // Specify DB connection details for the RDS cluster on Dev
+      databaseSecretEnvVars = {
+        readHost: rdsCluster.secretARN + ':host::',
+        readUser: rdsCluster.secretARN + ':user::',
+        readPassword: rdsCluster.secretARN + ':password::',
+        writeHost: rdsCluster.secretARN + ':host::',
+        writeUser: rdsCluster.secretARN + ':user::',
+        writePassword: rdsCluster.secretARN + ':password::',
+      };
     }
 
     return new PocketALBApplication(this, 'application', {
@@ -245,39 +265,27 @@ class ListAPI extends TerraformStack {
             },
             {
               name: 'DATABASE_READ_HOST',
-              valueFrom: !config.isDev
-                ? `${databaseSecretsArn}:read_host::`
-                : `${databaseSecretsArn}:host::`,
+              valueFrom: databaseSecretEnvVars.readHost,
             },
             {
               name: 'DATABASE_READ_USER',
-              valueFrom: !config.isDev
-                ? `${databaseSecretsArn}:read_username::`
-                : `${databaseSecretsArn}:user::`,
+              valueFrom: databaseSecretEnvVars.readUser,
             },
             {
               name: 'DATABASE_READ_PASSWORD',
-              valueFrom: !config.isDev
-                ? `${databaseSecretsArn}:read_password::`
-                : `${databaseSecretsArn}:password::`,
+              valueFrom: databaseSecretEnvVars.readPassword,
             },
             {
               name: 'DATABASE_WRITE_HOST',
-              valueFrom: !config.isDev
-                ? `${databaseSecretsArn}:write_host::`
-                : `${databaseSecretsArn}:host::`,
+              valueFrom: databaseSecretEnvVars.writeHost,
             },
             {
               name: 'DATABASE_WRITE_USER',
-              valueFrom: !config.isDev
-                ? `${databaseSecretsArn}:write_username::`
-                : `${databaseSecretsArn}:user::`,
+              valueFrom: databaseSecretEnvVars.writeUser,
             },
             {
               name: 'DATABASE_WRITE_PASSWORD',
-              valueFrom: !config.isDev
-                ? `${databaseSecretsArn}:write_password::`
-                : `${databaseSecretsArn}:password::`,
+              valueFrom: databaseSecretEnvVars.writePassword,
             },
           ],
         },
