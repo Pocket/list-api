@@ -18,6 +18,7 @@ import { PagerdutyProvider } from '@cdktf/provider-pagerduty';
 import { NullProvider } from '@cdktf/provider-null';
 import { LocalProvider } from '@cdktf/provider-local';
 import { ArchiveProvider } from '@cdktf/provider-archive';
+import { SqsLambda } from './SqsLambda';
 
 class ListAPI extends TerraformStack {
   constructor(scope: Construct, name: string) {
@@ -38,6 +39,8 @@ class ListAPI extends TerraformStack {
     const pocketVPC = new PocketVPC(this, 'pocket-vpc');
     const region = new datasources.DataAwsRegion(this, 'region');
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
+
+    new SqsLambda(this, 'sqs-event-consumer', pocketVPC);
 
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
