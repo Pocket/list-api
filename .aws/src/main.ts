@@ -253,7 +253,7 @@ class ListAPI extends TerraformStack {
               name: 'DATABASE_READ_USER',
               valueFrom: !config.isDev
                 ? `${databaseSecretsArn}:read_username::`
-                : `${databaseSecretsArn}:username::`,
+                : `${databaseSecretsArn}:user::`,
             },
             {
               name: 'DATABASE_READ_PASSWORD',
