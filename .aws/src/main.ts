@@ -40,7 +40,8 @@ class ListAPI extends TerraformStack {
     const region = new datasources.DataAwsRegion(this, 'region');
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
-    new SqsLambda(this, 'sqs-event-consumer', pocketVPC);
+    new SqsLambda(this, 'Sqs-Event-Consumer', pocketVPC, 10);
+    new SqsLambda(this, 'Sqs-Batch-Delete-Consumer', pocketVPC, 1);
 
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
