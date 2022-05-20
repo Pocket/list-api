@@ -1,4 +1,6 @@
-  version: 2.1
+version: 2.1
+
+setup: false
 
 orbs:
   pocket: pocket/circleci-orbs@1.2.6
