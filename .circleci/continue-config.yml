@@ -115,7 +115,7 @@ workflows:
       - lambda:
           <<: *not_dev_main
           context: pocket
-          name: build_lambda_events
+          name: build_lambda_batchdelete
           env_lower_name: prod
           env_capital_name: Prod
           resource_lower_name: sqs-batch-delete-consumer
@@ -127,7 +127,7 @@ workflows:
       - lambda:
           <<: *only_dev
           context: pocket
-          name: deploy_lambda_events_dev
+          name: deploy_lambda_batchdelete_dev
           env_lower_name: dev
           env_capital_name: Dev
           resource_lower_name: sqs-batch-delete-consumer
@@ -139,7 +139,7 @@ workflows:
       - lambda:
           <<: *only_main
           context: pocket
-          name: deploy_lambda_events_prod
+          name: deploy_lambda_batchdelete_prod
           env_lower_name: prod
           env_capital_name: Prod
           resource_lower_name: sqs-batch-delete-consumer
