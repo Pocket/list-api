@@ -12,15 +12,16 @@ export class SqsLambda extends Resource {
     scope: Construct,
     private name: string,
     vpc: PocketVPC,
+    batchSize: number,
     pagerDuty?: PocketPagerDuty
   ) {
-    super(scope, name);
+    super(scope, name.toLowerCase());
 
     const { sentryDsn, gitSha } = this.getEnvVariableValues();
 
-    new PocketSQSWithLambdaTarget(this, 'sqs-event-consumer', {
-      name: `${config.prefix}-Sqs-Event-Consumer`,
-      batchSize: 10,
+    new PocketSQSWithLambdaTarget(this, name.toLowerCase(), {
+      name: `${config.prefix}-${name}`,
+      batchSize,
       batchWindow: 60,
       sqsQueue: {
         maxReceiveCount: 3,
