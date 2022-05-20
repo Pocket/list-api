@@ -127,9 +127,9 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
         environment:
-          - NODE_ENV=test
-          - AWS_XRAY_LOG_LEVEL=silent
-          - AWS_XRAY_CONTEXT_MISSING=LOG_ERROR
+          NODE_ENV: test
+          AWS_XRAY_LOG_LEVEL: silent
+          AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
       - image: mysql:5.6@sha256:20575ecebe6216036d25dab5903808211f1e9ba63dc7825ac20cb975e34cfcae
         auth:
           username: $DOCKERHUB_USERNAME
@@ -190,9 +190,9 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
         environment:
-          - NODE_ENV=test
-          - AWS_XRAY_LOG_LEVEL=silent
-          - AWS_XRAY_CONTEXT_MISSING=LOG_ERROR
+          NODE_ENV: test
+          AWS_XRAY_LOG_LEVEL: silent
+          AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
     steps:
       - checkout
       - restore_cache:
