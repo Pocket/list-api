@@ -88,7 +88,7 @@ jobs:
                 aws-region: << parameters.env_capital_name >>_AWS_DEFAULT_REGION
             - run:
                 name: Upload Package
-                command: aws s3 cp "/tmp/$CIRCLE_SHA1.zip" s3://pocket-listapi-<< parameters.env_lower_name >>-<< parameters.resource_lower_name >>/
+                command: aws s3 cp "/tmp/$CIRCLE_SHA1-<< parameters.resource_lower_name >>.zip" s3://pocket-listapi-<< parameters.env_lower_name >>-<< parameters.resource_lower_name >>/
             - pocket/deploy_lambda:
                 s3-bucket: pocket-listapi-<< parameters.env_lower_name >>-< parameters.resource_lower_name >>
                 aws-access-key-id: << parameters.env_capital_name >>_AWS_ACCESS_KEY
