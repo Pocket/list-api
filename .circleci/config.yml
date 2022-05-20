@@ -224,22 +224,15 @@ jobs:
           name: run tests
           command: npm run test
 
-  force-build:
-    description: Force build and deploy lambdas regardless of file changes
-    docker:
-      - image: circleci/node:16@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
-    steps:
-      - run: 
-          command: echo "force-building lambdas"
-      - when: 
-          condition: 
-            not: << pipeline.parameters.build-on-change >>
-          steps:
-            - continuation/continue: 
-                configuration_path: .circleci/continue-config.yml
-                parameters: '{"run-build-deploy-batchDelete-lambda-job":true,"run-build-deploy-events-lambda-job":true}'
-
 workflows:
+  force-build:
+    when:
+      not: << pipeline.parameters.build-on-change >> 
+    jobs:
+      - continuation/continue:
+          configuration_path: .circleci/continue-config.yml
+          parameters: '{"run-build-deploy-batchDelete-lambda-job":true,"run-build-deploy-events-lambda-job":true}'
+
   api:
     jobs:
       - test_specs:
@@ -266,8 +259,6 @@ workflows:
           # path filtering and pipeline parameter value updates are
           # complete.
           config-path: .circleci/continue-config.yml
-
-      - force-build
       
       - apollo
 
