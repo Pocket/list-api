@@ -149,7 +149,7 @@ workflows:
   # when pipeline parameter, run-build-service-2-job is true, the
   # build-service-2 job is triggered.
   events:
-    when: << run-build-deploy-events-lambda-job >>
+    when: << pipeline.parameters.run-build-deploy-events-lambda-job >>
     jobs: 
       # TODO: Run tests when they exist
       # Try building the lambda on each branch
