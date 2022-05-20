@@ -219,7 +219,7 @@ jobs:
 
 
 workflows:
-  all:
+  api:
     jobs:
       - path-filtering/filter:
           name: check-updated-files
