@@ -233,7 +233,7 @@ workflows:
           # this is the path of the configuration we should trigger once
           # path filtering and pipeline parameter value updates are
           # complete.
-          config-path: .circleci/continue_config.yml
+          config-path: .circleci/continue-config.yml
       - test_specs:
           <<: *not_main
           context: pocket
