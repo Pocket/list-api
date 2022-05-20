@@ -226,7 +226,8 @@ jobs:
 
 workflows:
   force-build:
-    unless: << pipeline.parameters.build-on-change >> 
+    when: 
+      not: << pipeline.parameters.build-on-change >> 
     jobs:
       - continuation/continue:
           configuration_path: .circleci/continue-config.yml
