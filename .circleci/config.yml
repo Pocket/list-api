@@ -3,10 +3,10 @@ version: 2.1
 setup: true
 
 parameters:
-  force-all:
-    description: Forcibly build all conditional modules (e.g. lambdas)
+  build-on-change:
+    description: Check for file changes to lambdas before build/deploy. Setting this to false will force build.
     type: boolean
-    default: false
+    default: true
 
 orbs:
   pocket: pocket/circleci-orbs@1.2.6
@@ -232,36 +232,12 @@ jobs:
       - run: 
           command: echo "force-building lambdas"
       - when: 
-          condition: << pipeline.parameters.force-all >>
+          condition: 
+            not: << pipeline.parameters.build-on-change >>
           steps:
             - continuation/continue: 
                 configuration_path: .circleci/continue-config.yml
                 parameters: '{"run-build-deploy-batchDelete-lambda-job":true,"run-build-deploy-events-lambda-job":true}'
-  
-  conditional-build:
-    description: Conditionally build and deploy lambdas if file changes detected
-    docker:
-      - image: circleci/node:16@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
-    steps:
-      - run:
-        command: echo "Checking for file changes"
-      - when:
-          condition: 
-            not: << pipeline.parameters.force-all >>
-          steps:
-            - path-filtering/filter:
-                name: check-updated-files
-                # 3-column, whitespace-delimited mapping. One mapping per
-                # line:
-                # <regex path-to-test> <parameter-to-set> <value-of-pipeline-parameter>
-                mapping: |
-                  lambda/batchDelete/.* run-build-deploy-batchDelete-lambda-job true
-                  lambda/events/.* run-build-deploy-events-lambda-job true
-                base-revision: main
-                # this is the path of the configuration we should trigger once
-                # path filtering and pipeline parameter value updates are
-                # complete.
-                config-path: .circleci/continue-config.yml
 
 workflows:
   api:
@@ -276,23 +252,22 @@ workflows:
           context: pocket
           name: test_integrations
 
-      # - path-filtering/filter:
-      #     name: check-updated-files
-      #     # 3-column, whitespace-delimited mapping. One mapping per
-      #     # line:
-      #     # <regex path-to-test> <parameter-to-set> <value-of-pipeline-parameter>
-      #     mapping: |
-      #       lambda/batchDelete/.* run-build-deploy-batchDelete-lambda-job true
-      #       lambda/events/.* run-build-deploy-events-lambda-job true
-      #     base-revision: main
-      #     # this is the path of the configuration we should trigger once
-      #     # path filtering and pipeline parameter value updates are
-      #     # complete.
-      #     config-path: .circleci/continue-config.yml
+      - path-filtering/filter:
+          name: check-updated-files
+          # 3-column, whitespace-delimited mapping. One mapping per
+          # line:
+          # <regex path-to-test> <parameter-to-set> <value-of-pipeline-parameter>
+          # If build-on-change is false, the 'force-build' will trigger so the param is set to false to avoid double-build
+          mapping: |
+            lambda/batchDelete/.* run-build-deploy-batchDelete-lambda-job << pipeline.parameters.build-on-change >> 
+            lambda/events/.* run-build-deploy-events-lambda-job << pipeline.parameters.build-on-change >>
+          base-revision: main
+          # this is the path of the configuration we should trigger once
+          # path filtering and pipeline parameter value updates are
+          # complete.
+          config-path: .circleci/continue-config.yml
 
       - force-build
-
-      - conditional-build
       
       - apollo
 
