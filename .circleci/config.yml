@@ -369,6 +369,7 @@ workflows:
             - deploy_dev
 
   api:
+    when:  << pipeline.parameters.build-on-change >> 
     jobs:
       - test_specs:
           <<: *not_main
