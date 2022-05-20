@@ -15,6 +15,10 @@ parameters:
   run-build-deploy-events-lambda-job:
     type: boolean
     default: false
+  # Just need to accept this parameter from the setup job
+  build-on-change:
+    type: boolean
+    default: false
 
 # Workflow shortcuts
 not_dev_main: &not_dev_main
