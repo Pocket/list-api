@@ -76,9 +76,9 @@ jobs:
             cp -r package.json package-lock.json dist/
             cp -r node_modules/ dist/node_modules/
             cd dist
-            zip -r9 "/tmp/$CIRCLE_SHA1-<< parameters.resource_name_lower >>.zip" *
+            zip -r9 "/tmp/$CIRCLE_SHA1-<< parameters.resource_lower_name >>.zip" *
             mkdir -p /tmp
-            cp "/tmp/$CIRCLE_SHA1-<< parameters.resource_name_lower >>.zip" /tmp/build-<< parameters.resource_name_lower >>.zip
+            cp "/tmp/$CIRCLE_SHA1-<< parameters.resource_lower_name >>.zip" /tmp/build-<< parameters.resource_lower_name >>.zip
       - when:
           condition: << parameters.deploy >>
           steps:
@@ -99,7 +99,7 @@ jobs:
                 function-name: ListAPI-<< parameters.env_capital_name >>-<< parameters.resource_name >>-Function
 
       - store_artifacts:
-          path: /tmp/$CIRCLE_SHA1-<< parameters.resource_name_lower >>.zip
+          path: /tmp/$CIRCLE_SHA1-<< parameters.resource_lower_name >>.zip
 
 # here we specify our workflows, most of which are conditionally
 # executed based upon pipeline parameter values. Each workflow calls a
