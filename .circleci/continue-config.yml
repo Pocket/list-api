@@ -3,7 +3,7 @@ version: 2.1
 setup: false
 
 orbs:
-  pocket: pocket/circleci-orbs@dev:5b801b6
+  pocket: pocket/circleci-orbs@1.2.7
   aws-cli: circleci/aws-cli@1.2.1
 
 # the default pipeline parameters, which will be updated according to
