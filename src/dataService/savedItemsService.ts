@@ -4,6 +4,7 @@ import { mysqlTimeString } from './utils';
 import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
+import * as Sentry from '@sentry/node';
 
 type DbResult = {
   user_id?: number;
@@ -36,7 +37,7 @@ export class SavedItemDataService {
   private readonly userId: string;
   private readonly apiId: string;
 
-  constructor(context: IContext) {
+  constructor(context: Pick<IContext, 'dbClient' | 'userId' | 'apiId'>) {
     this.db = context.dbClient;
     this.userId = context.userId;
     this.apiId = context.apiId;
@@ -227,7 +228,7 @@ export class SavedItemDataService {
    * we perform the entire operation as a single transaction
    * to allow us to fully rollback should any on of the
    * database statements fail.
-   * @param itemId
+   * @param itemId the itemId to delete
    */
   public async deleteSavedItem(itemId) {
     const transaction = await this.db.transaction();
@@ -263,6 +264,38 @@ export class SavedItemDataService {
     } catch (err) {
       await transaction.rollback();
       throw err;
+    }
+  }
+
+  /**
+   * Batch delete saved items, along with accompanying data (tags, item_attribution,
+   * scroll sync data). This is a 'hard' delete.
+   * @param itemIds: the ids of the items to delete from the user's list, along with tags
+   * and accompanying metadata
+   * @param requestId: optional unique request ID for tracing
+   */
+  public async batchDeleteSavedItems(itemIds: number[], requestId?: string) {
+    const tables = ['item_tags', 'list', 'item_attribution', 'items_scroll'];
+    try {
+      await this.db.transaction(async (trx) => {
+        const baseDelete = trx
+          .delete()
+          .whereIn('item_id', itemIds)
+          .andWhere({ user_id: this.userId });
+        const deletePromises = tables.map((table) =>
+          baseDelete.clone().from(table)
+        );
+        await Promise.all(deletePromises);
+      });
+      if (requestId) {
+        console.log(`BatchDelete: Processing request ID=${requestId}`);
+      }
+    } catch (error) {
+      const message = `BatchDelete: Error - transaction failed (userId=${this.userId}, requestId=${requestId})`;
+      Sentry.addBreadcrumb({ message });
+      Sentry.captureException(error);
+      console.log(message);
+      console.log(error);
     }
   }
 
