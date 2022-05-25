@@ -79,4 +79,36 @@ describe('SavedItemsService', () => {
     expect(savedItems[0].url).to.equal('https://abc');
     expect(savedItems[1].url).to.equal('https://def');
   });
+
+  it('fetches saved item IDs up to a given limit', async () => {
+    const context = new ContextManager({
+      request: {
+        headers: { userid: '1', apiid: '0' },
+      },
+      dbClient: readClient(),
+      eventEmitter: null,
+    });
+
+    const savedItemIds = await new SavedItemDataService(
+      context
+    ).getSavedItemIds(0, 1);
+
+    expect(savedItemIds[0]).to.equal(1);
+  });
+
+  it('fetches saved item IDs up to a given limit starting from a given offset', async () => {
+    const context = new ContextManager({
+      request: {
+        headers: { userid: '1', apiid: '0' },
+      },
+      dbClient: readClient(),
+      eventEmitter: null,
+    });
+
+    const savedItemIds = await new SavedItemDataService(
+      context
+    ).getSavedItemIds(1, 1);
+
+    expect(savedItemIds[0]).to.equal(2);
+  });
 });

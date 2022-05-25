@@ -13,7 +13,7 @@ import {
   unifiedEventHandler,
 } from '../businessEvents';
 import batchDeleteRouter from './routes/batchDelete';
-import { savedItemRouter } from '../routes';
+import queueDeleteRouter from './routes/queueDelete';
 
 //Set XRAY to just log if the context is missing instead of a runtime error
 
@@ -61,7 +61,8 @@ const server = startServer(contextFactory);
 app.use(xrayExpress.openSegment('list-api'));
 //Set XRay to use the host header to open its segment name.
 
-app.use('/saved-item', savedItemRouter);
+app.use(express.json());
+app.use('/queue-delete', queueDeleteRouter);
 
 AWSXRay.middleware.enableDynamicNaming('*');
 server.then((server) => server.applyMiddleware({ app, path: '/' }));
