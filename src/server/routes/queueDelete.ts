@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { Router } from 'express';
-import { checkSchema, Schema, validationResult } from 'express-validator';
+import { checkSchema, Schema } from 'express-validator';
 import { readClient } from '../../database/client';
 import { SavedItemDataService } from '../../dataService';
 import config from '../../config';
@@ -12,6 +12,7 @@ import {
 } from '@aws-sdk/client-sqs';
 import { nanoid } from 'nanoid';
 import * as Sentry from '@sentry/node';
+import { validate } from './validator';
 
 export type SqsMessage = {
   userId: number;
@@ -48,17 +49,6 @@ const batchDeleteSchema: Schema = {
     },
   },
 };
-
-function validate(req: Request, res: Response, next: NextFunction) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res
-      .status(400)
-      .json({ errors: errors.array() })
-      .setHeader('Content-Type', 'application/json');
-  }
-  next();
-}
 
 router.post(
   '/',
