@@ -13,7 +13,7 @@ import {
 import { nanoid } from 'nanoid';
 import * as Sentry from '@sentry/node';
 
-type SqsMessage = {
+export type SqsMessage = {
   userId: number;
   email: string;
   status: 'FREE' | 'PREMIUM';
@@ -67,7 +67,7 @@ router.post(
   (req: Request, res: Response) => {
     const traceId = req.body.traceId ?? nanoid();
     const savedItemService = new SavedItemDataService({
-      userId: req.body.userId,
+      userId: req.body.userId.toString(),
       dbClient: readClient(),
       apiId: 'backend',
     });
@@ -87,7 +87,7 @@ router.post(
  * @param savedItemService
  * @param traceId
  */
-async function enqueueSavedItemIds(
+export async function enqueueSavedItemIds(
   data: Omit<SqsMessage, 'itemIds'>,
   savedItemService: SavedItemDataService,
   traceId: string
@@ -96,14 +96,14 @@ async function enqueueSavedItemIds(
   const limit = config.queueDelete.queryLimit;
   let offset = 0;
   const sqsSends: Promise<SendMessageBatchCommandOutput>[] = [];
-  const sqsEntries: SendMessageBatchRequestEntry[] = [];
+  let sqsEntries: SendMessageBatchRequestEntry[] = [];
 
   const loopCondition = true;
   while (loopCondition) {
     const ids = await savedItemService.getSavedItemIds(offset, limit);
-    if (!ids) break;
+    if (!ids.length) break;
 
-    const chunkedIds = chunk(ids, config.queueDelete.itemIdLimit);
+    const chunkedIds = chunk(ids, config.queueDelete.itemIdChunkSize);
 
     let nextChunk = chunkedIds.next();
     while (!nextChunk.done) {
@@ -118,6 +118,7 @@ async function enqueueSavedItemIds(
 
       if (sqsEntries.length === config.aws.sqs.batchSize) {
         sqsSends.push(sqsSendBatch(sqsEntries, traceId));
+        sqsEntries = []; // reset
       }
 
       nextChunk = chunkedIds.next();
