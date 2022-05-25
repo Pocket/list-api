@@ -7,6 +7,7 @@ import { Knex } from 'knex';
 import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
+import { SavedItemDataService } from '../../../dataService';
 
 chai.use(chaiDateTime);
 
@@ -98,6 +99,31 @@ describe('Delete/Undelete SavedItem: ', () => {
     await db('item_tags').truncate();
     await db('item_attribution').truncate();
     await db('items_scroll').truncate();
+  });
+
+  it('should batch delete saved items', async () => {
+    await setUpSavedItem(db, date);
+    const savedItemService = new SavedItemDataService({
+      dbClient: db,
+      userId: '1',
+      apiId: 'backend',
+    });
+    await savedItemService.batchDeleteSavedItems([1]);
+    const tables = ['list', 'item_tags', 'item_attribution', 'items_scroll'];
+    const baseQuery = db
+      .whereIn('item_id', [1])
+      .andWhere({ user_id: 1 })
+      .count('* as count')
+      .first();
+    const counts = await Promise.all(
+      tables.map((table) =>
+        baseQuery
+          .clone()
+          .from(table)
+          .then((row) => row.count)
+      )
+    );
+    expect(counts.every((count) => count === 0));
   });
 
   it('should delete a saved item', async () => {

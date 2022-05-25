@@ -12,6 +12,7 @@ import {
   sqsEventHandler,
   unifiedEventHandler,
 } from '../businessEvents';
+import batchDeleteRouter from './routes/batchDelete';
 
 //Set XRAY to just log if the context is missing instead of a runtime error
 
@@ -34,6 +35,12 @@ Sentry.init({
 });
 const app = express();
 
+// JSON parser to enable POST body with JSON
+app.use(express.json());
+
+// Initialize routes
+app.use('/batchDelete', batchDeleteRouter);
+
 // Initialize event handlers
 initItemEventHandlers(itemsEventEmitter, [
   unifiedEventHandler,
@@ -48,7 +55,7 @@ const contextFactory = (req: express.Request) => {
 
 const server = startServer(contextFactory);
 
-//If there is no host header (really there always should be..) then use collection-api as the name
+//If there is no host header (really there always should be..) then use list-api as the name
 
 app.use(xrayExpress.openSegment('list-api'));
 //Set XRay to use the host header to open its segment name.
