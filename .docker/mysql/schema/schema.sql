@@ -158,7 +158,7 @@ CREATE INDEX `grouping_idx` ON item_grouping (grouping_id);
 
 CREATE TABLE `item_ads` (
   `user_id` int(10) unsigned NOT NULL,
-  `item_id` int(10) unsigned NOT NULL
+  `item_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`user_id`,`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 
