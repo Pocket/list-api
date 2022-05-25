@@ -174,15 +174,6 @@ CREATE TABLE `item_currently_reading` (
   PRIMARY KEY (`user_id`,`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-create table `item_session`
-(
-	id bigint auto_increment
-		primary key,
-	item_id int unsigned not null,
-	user_id bigint unsigned not null
-)
-collate=utf8_unicode_ci;
-
 CREATE TABLE `item_session` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `item_id` int(10) unsigned NOT NULL,
