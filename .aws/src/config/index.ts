@@ -38,6 +38,7 @@ export const config = {
   envVars: {
     databasePort: '3306',
     sqsPublisherDataQueueName: 'pocket-publisher-data-queue',
+    sqsBatchDeleteQueueName: `ListAPI-${environment}-Sqs-Batch-Delete-Consumer-Queue`,
     unifiedEventStreamName: 'unified_event',
     databaseTz: 'US/Central',
   },
