@@ -61,7 +61,7 @@
     "chai-as-promised": "7.1.1",
     "chai-datetime": "1.8.0",
     "chai-shallow-deep-equal": "^1.4.6",
-    "deep-equal-in-any-order": "1.1.18",
+    "deep-equal-in-any-order": "1.1.19",
     "jest": "27.5.1",
     "nock": "13.2.4",
     "nodemon": "2.0.16",
