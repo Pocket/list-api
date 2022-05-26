@@ -7,6 +7,6 @@
       "esModuleInterop": true,
     },
     "exclude": ["node_modules", "**/*.spec.ts", "**/*.integration.ts"],
-    "include": ["./**/*.ts", "./config"]
+    "include": ["./**/*.ts", "./config", "jest.config.js", "jest.setup.js"]
   }
   
