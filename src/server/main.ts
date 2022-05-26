@@ -13,6 +13,7 @@ import {
   unifiedEventHandler,
 } from '../businessEvents';
 import batchDeleteRouter from './routes/batchDelete';
+import queueDeleteRouter from './routes/queueDelete';
 
 //Set XRAY to just log if the context is missing instead of a runtime error
 
@@ -40,6 +41,7 @@ app.use(express.json());
 
 // Initialize routes
 app.use('/batchDelete', batchDeleteRouter);
+app.use('/queueDelete', queueDeleteRouter);
 
 // Initialize event handlers
 initItemEventHandlers(itemsEventEmitter, [

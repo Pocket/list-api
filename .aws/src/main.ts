@@ -246,6 +246,10 @@ class ListAPI extends TerraformStack {
               value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsPublisherDataQueueName}`,
             },
             {
+              name: 'SQS_BATCH_DELETE_QUEUE',
+              value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsBatchDeleteQueueName}`,
+            },
+            {
               name: 'KINESIS_UNIFIED_EVENT_STREAM',
               value: config.envVars.unifiedEventStreamName,
             },

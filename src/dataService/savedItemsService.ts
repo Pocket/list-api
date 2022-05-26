@@ -394,6 +394,20 @@ export class SavedItemDataService {
   }
 
   /**
+   * Get saved item IDs for a given user.
+   * @param offset
+   * @param limit
+   */
+  public getSavedItemIds(offset: number, limit: number) {
+    return this.db('list')
+      .where('user_id', this.userId)
+      .orderBy('time_added', 'ASC')
+      .limit(limit)
+      .offset(offset)
+      .pluck('item_id');
+  }
+
+  /**
    * Helper function to build updates to a user's list.
    * Used to mark updates that affect the list item (e.g. a new tag
    * association) but are not direct updates to the list table.

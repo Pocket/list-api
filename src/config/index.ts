@@ -52,7 +52,13 @@ export default {
           process.env.SQS_PUBLISHER_DATA_QUEUE_URL ||
           'http://localhost:4566/queue/pocket-publisher-data-queue',
       },
+      listDeleteQueue: {
+        url:
+          process.env.SQS_BATCH_DELETE_QUEUE ||
+          'http://localhost:4566/queue/pocket-list-delete-queue',
+      },
       waitTimeSeconds: 20,
+      batchSize: 10,
     },
   },
   database: {
@@ -82,5 +88,9 @@ export default {
   pagination: {
     defaultPageSize: 30,
     maxPageSize: 100,
+  },
+  queueDelete: {
+    queryLimit: 5000,
+    itemIdChunkSize: 1000,
   },
 };

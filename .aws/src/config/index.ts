@@ -2,6 +2,7 @@ const name = 'ListAPI';
 const domainPrefix = 'list-api';
 const isDev = process.env.NODE_ENV === 'development';
 const environment = isDev ? 'Dev' : 'Prod';
+const prefix = `${name}-${environment}`;
 const domain = isDev
   ? `${domainPrefix}.getpocket.dev`
   : `${domainPrefix}.readitlater.com`;
@@ -14,7 +15,7 @@ const branch = isDev ? 'dev' : 'main';
 export const config = {
   name,
   isDev,
-  prefix: `${name}-${environment}`,
+  prefix,
   circleCIPrefix: `/${name}/CircleCI/${environment}`,
   shortName: 'LSTAPI',
   environment,
@@ -38,6 +39,7 @@ export const config = {
   envVars: {
     databasePort: '3306',
     sqsPublisherDataQueueName: 'pocket-publisher-data-queue',
+    sqsBatchDeleteQueueName: `${prefix}-Sqs-Batch-Delete-Consumer-Queue`,
     unifiedEventStreamName: 'unified_event',
     databaseTz: 'US/Central',
   },
