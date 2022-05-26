@@ -199,8 +199,9 @@ workflows:
   events:
     when: << pipeline.parameters.run-build-deploy-events-lambda-job >>
     jobs: 
-      # - test_specs:
-      #     path: lambda/events
+      - test_specs:
+          path: lambda/events
+          name: test_specs_events
       # Try building the lambda on each branch
       - lambda:
           <<: *not_dev_main
