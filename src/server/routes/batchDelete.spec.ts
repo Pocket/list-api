@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import batchDeleteRouter from '../../server/routes/batchDelete';
+import batchDeleteRouter from './batchDelete';
 import sinon from 'sinon';
 import { SavedItemDataService } from '../../dataService/savedItemsService';
 import * as client from '../../database/client';
