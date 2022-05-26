@@ -129,7 +129,6 @@ jobs:
             # If this gets our of sync, you can increment the version (vX).  Just be
             # sure to match that version when saving the cache as well.
             - node-v1-<< parameters.path >>-{{ checksum "package-lock.json" }}
-            - node-v1-
       - run:
           name: Authenticate with GitHub package registry
           command: echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > ~/.npmrc
@@ -142,10 +141,12 @@ jobs:
       - save_cache:
           key: node-v1-<< parameters.path >>-{{ checksum "package-lock.json" }}
           paths:
-            - ./node_modules
+            - << parameters.path >>/node_modules
       - run:
           name: run tests
-          command: npm run test
+          command: |
+            pwd
+            npm run test
 
 # here we specify our workflows, most of which are conditionally
 # executed based upon pipeline parameter values. Each workflow calls a
