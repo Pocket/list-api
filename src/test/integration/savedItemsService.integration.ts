@@ -111,4 +111,20 @@ describe('SavedItemsService', () => {
 
     expect(savedItemIds[0]).to.equal(2);
   });
+
+  it('returns an empty list if the offset is past the end of the list', async () => {
+    const context = new ContextManager({
+      request: {
+        headers: { userid: '1', apiid: '0' },
+      },
+      dbClient: readClient(),
+      eventEmitter: null,
+    });
+
+    const savedItemIds = await new SavedItemDataService(
+      context
+    ).getSavedItemIds(4, 1);
+
+    expect(savedItemIds.length).to.equal(0);
+  });
 });

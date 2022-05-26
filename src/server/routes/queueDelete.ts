@@ -19,11 +19,12 @@ export type SqsMessage = {
   email: string;
   status: 'FREE' | 'PREMIUM';
   itemIds: number[];
+  traceId: string;
 };
 
 const router = Router();
 
-const batchDeleteSchema: Schema = {
+const queueDeleteSchema: Schema = {
   traceId: {
     in: ['body'],
     optional: true,
@@ -52,7 +53,7 @@ const batchDeleteSchema: Schema = {
 
 router.post(
   '/',
-  checkSchema(batchDeleteSchema),
+  checkSchema(queueDeleteSchema),
   validate,
   (req: Request, res: Response) => {
     const traceId = req.body.traceId ?? nanoid();
@@ -103,11 +104,12 @@ export async function enqueueSavedItemIds(
           email,
           status,
           itemIds: nextChunk.value,
+          traceId: traceId,
         })
       );
 
       if (sqsEntries.length === config.aws.sqs.batchSize) {
-        sqsSends.push(sqsSendBatch(sqsEntries, traceId));
+        sqsSends.push(sqsSendBatch(sqsEntries));
         sqsEntries = []; // reset
       }
 
@@ -119,7 +121,7 @@ export async function enqueueSavedItemIds(
 
   // If there's any remaining, send to SQS
   if (sqsEntries.length) {
-    sqsSends.push(sqsSendBatch(sqsEntries, traceId));
+    sqsSends.push(sqsSendBatch(sqsEntries));
   }
 
   try {
@@ -135,11 +137,9 @@ export async function enqueueSavedItemIds(
 /**
  * Send messages in a batch to SQS
  * @param entries
- * @param traceId
  */
 async function sqsSendBatch(
-  entries: SendMessageBatchRequestEntry[],
-  traceId: string
+  entries: SendMessageBatchRequestEntry[]
 ): Promise<SendMessageBatchCommandOutput> {
   const command = new SendMessageBatchCommand({
     Entries: entries,
@@ -161,7 +161,7 @@ function convertToSqsEntry(message: SqsMessage): SendMessageBatchRequestEntry {
 }
 
 /**
- * Generate and return a list of a given size
+ * Yield chunks of a given list
  * @param list
  * @param size
  */
