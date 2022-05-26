@@ -56,18 +56,18 @@ router.post(
   checkSchema(queueDeleteSchema),
   validate,
   (req: Request, res: Response) => {
-    const traceId = req.body.traceId ?? nanoid();
+    const requestId = req.body.traceId ?? nanoid();
     const savedItemService = new SavedItemDataService({
       userId: req.body.userId.toString(),
       dbClient: readClient(),
       apiId: 'backend',
     });
 
-    enqueueSavedItemIds(req.body, savedItemService, traceId);
+    enqueueSavedItemIds(req.body, savedItemService, requestId);
 
     return res.send({
       status: 'OK',
-      message: `QueueDelete: Enqueued items for User ID: ${req.body.userId} (traceId='${traceId}')`,
+      message: `QueueDelete: Enqueued items for User ID: ${req.body.userId} (requestId='${requestId}')`,
     });
   }
 );
@@ -76,12 +76,12 @@ router.post(
  * Enqueue item IDs for deletions in batches
  * @param data
  * @param savedItemService
- * @param traceId
+ * @param requestId
  */
 export async function enqueueSavedItemIds(
   data: Omit<SqsMessage, 'itemIds'>,
   savedItemService: SavedItemDataService,
-  traceId: string
+  requestId: string
 ): Promise<void> {
   const { userId, email, status } = data;
   const limit = config.queueDelete.queryLimit;
@@ -127,7 +127,7 @@ export async function enqueueSavedItemIds(
   try {
     await Promise.all(sqsSends);
   } catch (e) {
-    const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (traceId='${traceId}')`;
+    const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (requestId='${requestId}')`;
     Sentry.addBreadcrumb({ message });
     Sentry.captureException(e);
     console.log(message);
