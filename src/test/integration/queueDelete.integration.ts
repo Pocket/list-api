@@ -1,6 +1,7 @@
 import chai, { expect } from 'chai';
 import { readClient, writeClient } from '../../database/client';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
+import shallowDeepEqual from 'chai-shallow-deep-equal';
 import sinon from 'sinon';
 import { SQS } from '@aws-sdk/client-sqs';
 import {
@@ -11,6 +12,7 @@ import { SavedItemDataService } from '../../dataService';
 import config from '../../config';
 
 chai.use(deepEqualInAnyOrder);
+chai.use(shallowDeepEqual);
 
 describe('SavedItemsService', () => {
   beforeAll(async () => {
@@ -75,12 +77,19 @@ describe('SavedItemsService', () => {
       await enqueueSavedItemIds(data as SqsMessage, savedItemService, '123');
 
       expect(sqsSendMock.callCount).to.equal(2);
-      expect(
-        JSON.parse(sqsSendMock.getCall(0).args[0].input.Entries[0].MessageBody)
-      ).to.deep.equal({ ...data, itemIds: [1, 2, 3] });
-      expect(
-        JSON.parse(sqsSendMock.getCall(1).args[0].input.Entries[0].MessageBody)
-      ).to.deep.equal({ ...data, itemIds: [4, 5, 6] });
+      const firstMessage = JSON.parse(
+        sqsSendMock.getCall(0).args[0].input.Entries[0].MessageBody
+      );
+      const secondMessage = JSON.parse(
+        sqsSendMock.getCall(1).args[0].input.Entries[0].MessageBody
+      );
+      expect(firstMessage).to.shallowDeepEqual({ ...data, itemIds: [1, 2, 3] });
+      expect(firstMessage.traceId).to.not.be.empty;
+      expect(secondMessage).to.shallowDeepEqual({
+        ...data,
+        itemIds: [4, 5, 6],
+      });
+      expect(secondMessage.traceId).to.not.be.empty;
     });
   });
 });
