@@ -158,6 +158,7 @@ workflows:
     jobs: 
       - test_specs:
           path: lambda/batchDelete
+          name: test_specs_batchDelete
       # Try building the lambda on each branch
       - lambda:
           <<: *not_dev_main
