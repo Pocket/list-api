@@ -1,4 +1,4 @@
-import { handlers } from './handlers';
+import { Event, handlers } from './handlers';
 import { processor } from './index';
 import sinon from 'sinon';
 import { SQSEvent } from 'aws-lambda';
@@ -14,12 +14,12 @@ describe('event handlers', () => {
   afterAll(() => sinon.restore());
   describe('with no handler errors', () => {
     beforeEach(() => {
-      deleteStub = sinon.stub(handlers, 'ACCOUNT_DELETE').resolves();
+      deleteStub = sinon.stub(handlers, Event.ACCOUNT_DELETION).resolves();
     });
     it('routes to the correct handler function based on detail-type', async () => {
       const records = {
         Records: [
-          { body: JSON.stringify({ 'detail-type': 'ACCOUNT_DELETE' }) },
+          { body: JSON.stringify({ 'detail-type': Event.ACCOUNT_DELETION }) },
         ],
       };
       await processor(records as SQSEvent);
@@ -46,14 +46,14 @@ describe('event handlers', () => {
   describe('with handler errors', () => {
     beforeEach(() => {
       deleteStub = sinon
-        .stub(handlers, 'ACCOUNT_DELETE')
+        .stub(handlers, Event.ACCOUNT_DELETION)
         .rejects(Error('got an error'));
     });
     it('returns batchItemFailure and logs to Sentry if handler throws error', async () => {
       const records = {
         Records: [
           {
-            body: JSON.stringify({ 'detail-type': 'ACCOUNT_DELETE' }),
+            body: JSON.stringify({ 'detail-type': Event.ACCOUNT_DELETION }),
             messageId: 'abc',
           },
         ],
