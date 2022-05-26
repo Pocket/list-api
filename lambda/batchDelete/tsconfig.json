@@ -6,7 +6,7 @@
       "sourceMap": true,
       "esModuleInterop": true,
     },
-    "exclude": ["node_modules", "**/*.spec.ts", "**/*.integration.ts"],
+    "exclude": ["node_modules", "**/*.spec.ts", "**/*.integration.ts",  "jest.config.js", "jest.setup.js"],
     "include": ["./**/*.ts", "./config"]
   }
   

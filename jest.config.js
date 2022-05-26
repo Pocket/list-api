@@ -9,7 +9,8 @@ process.env.AWS_DEFAULT_REGION = 'us-east-1';
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ['**/?(*.)+(spec|integration).[jt]s?(x)'],
-  testPathIgnorePatterns: ['/dist/'],
+  testMatch: ['**/src/**/?(*.)+(spec|integration).[jt]s?(x)'],
+  testPathIgnorePatterns: ['/dist/', '/lambda/'],
   testTimeout: 10000,
+  displayName: 'list-api',
 };
