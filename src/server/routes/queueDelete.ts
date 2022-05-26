@@ -104,7 +104,7 @@ export async function enqueueSavedItemIds(
           email,
           status,
           itemIds: nextChunk.value,
-          traceId: traceId,
+          traceId: nanoid(),
         })
       );
 
