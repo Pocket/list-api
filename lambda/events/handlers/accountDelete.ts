@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
  * @throws Error if response is not ok
  */
 export async function accountDeleteHandler(record: SQSRecord) {
-  const message = JSON.parse(record.body)['detail'];
+  const message = JSON.parse(JSON.parse(record.body).Message)['detail'];
   const postBody = {
     userId: message['userId'],
     email: message['email'],

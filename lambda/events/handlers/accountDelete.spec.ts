@@ -13,7 +13,13 @@ describe('accountDelete handler', () => {
     expect.assertions(2);
     const record = {
       body: JSON.stringify({
-        detail: { userId: 1, email: '1@2.com', status: 'FREE' },
+        Message: JSON.stringify({
+          detail: {
+            userId: 1,
+            email: '1@2.com',
+            status: 'FREE',
+          },
+        }),
       }),
     };
     try {

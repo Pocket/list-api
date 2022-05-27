@@ -19,7 +19,13 @@ describe('event handlers', () => {
     it('routes to the correct handler function based on detail-type', async () => {
       const records = {
         Records: [
-          { body: JSON.stringify({ 'detail-type': Event.ACCOUNT_DELETION }) },
+          {
+            body: JSON.stringify({
+              Message: JSON.stringify({
+                'detail-type': Event.ACCOUNT_DELETION,
+              }),
+            }),
+          },
         ],
       };
       await processor(records as SQSEvent);
@@ -30,7 +36,9 @@ describe('event handlers', () => {
       const records = {
         Records: [
           {
-            body: JSON.stringify({ 'detail-type': 'NOT_A_TYPE' }),
+            body: JSON.stringify({
+              Message: JSON.stringify({ 'detail-type': 'NOT_A_TYPE' }),
+            }),
             messageId: 'abc',
           },
         ],
@@ -53,7 +61,11 @@ describe('event handlers', () => {
       const records = {
         Records: [
           {
-            body: JSON.stringify({ 'detail-type': Event.ACCOUNT_DELETION }),
+            body: JSON.stringify({
+              Message: JSON.stringify({
+                'detail-type': Event.ACCOUNT_DELETION,
+              }),
+            }),
             messageId: 'abc',
           },
         ],
