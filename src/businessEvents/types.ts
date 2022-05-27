@@ -1,10 +1,6 @@
 import { SavedItem, SavedItemStatus } from '../types';
 import { ListItem } from '../snowplow/schema';
 
-export interface IListener {
-  process: (data: any) => void;
-}
-
 export enum EventType {
   ADD_ITEM = 'ADD_ITEM',
   DELETE_ITEM = 'DELETE_ITEM',

@@ -1,16 +1,16 @@
-import { SQS } from '@aws-sdk/client-sqs';
 import sinon from 'sinon';
 import { SqsListener } from './sqsListener';
-import { ItemsEventEmitter } from './itemsEventEmitter';
-import { SavedItem } from '../types';
-import { EventType, SQSEvents } from './types';
+import { ItemsEventEmitter } from '../itemsEventEmitter';
+import { SavedItem } from '../../types';
+import { EventType } from '../types';
+import config from '../../config';
+import { sqs } from '../../aws/sqs';
 
 describe('SqsListener spec test', function () {
   function fakeSendError() {
     throw new Error('some SQS error');
   }
 
-  const sqs = new SQS({ region: 'us-east-1' });
   let stub = null;
   afterAll(() => {
     stub.reset();
@@ -19,8 +19,12 @@ describe('SqsListener spec test', function () {
   it('should log error when sqs send fails', async () => {
     const eventEmitter = new ItemsEventEmitter();
     stub = sinon.stub(sqs, 'send').callsFake(fakeSendError);
-    const sqsListener = new SqsListener(eventEmitter, sqs, 'someurl', [
-      'some sqs events',
+    const sqsListener = new SqsListener(eventEmitter, [
+      {
+        transformer: async (data) => data,
+        queueUrl: config.aws.sqs.publisherQueue.url,
+        events: [EventType.ADD_ITEM],
+      },
     ]);
     const consoleSpy = jest.spyOn(console, 'log');
 
@@ -41,10 +45,9 @@ describe('SqsListener spec test', function () {
       eventType: EventType.ADD_ITEM,
     };
 
-    await sqsListener.process(eventData);
+    await sqsListener.process(config.aws.sqs.publisherQueue.url, eventData);
     expect(consoleSpy.mock.calls[0][0]).toContain(
-      `unable to add event ${SQSEvents['ADD_ITEM']} to the queue
-       for userId ${eventData.user.id} and itemId ${testSavedItem.id}`
+      `unable to add event to queue: ${config.aws.sqs.publisherQueue.url}`
     );
   });
 });
