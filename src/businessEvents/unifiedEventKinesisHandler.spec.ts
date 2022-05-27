@@ -30,7 +30,7 @@ describe('UnifiedEventHandler', () => {
     const eventStub = {
       source: config.events.source,
       version: config.events.version,
-      user: { id: '1' },
+      user: { id: '1', isPremium: false },
       apiUser: { apiId: '1' },
       eventType: EventType.ADD_ITEM,
       data: { abc: '123' },
@@ -77,7 +77,7 @@ describe('UnifiedEventHandler', () => {
     const eventStub = {
       source: config.events.source,
       version: config.events.version,
-      user: { id: '1' },
+      user: { id: '1', isPremium: false },
       tagsUpdated: ['tagA', 'tagB'],
       apiUser: { apiId: '1' },
       eventType: EventType.ADD_TAGS,
@@ -107,7 +107,7 @@ describe('UnifiedEventHandler', () => {
     const eventStub = {
       source: config.events.source,
       version: config.events.version,
-      user: { id: '1' },
+      user: { id: '1', isPremium: false },
       apiUser: { apiId: '1' },
       eventType: EventType.ADD_ITEM,
       tagsUpdated: ['tagA', 'tagB'],

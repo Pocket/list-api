@@ -361,7 +361,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
     });
 
-    it('should push addItem event to queues when an item is added', async () => {
+    it('should push addItem event to publisher data queue when an item is added', async () => {
       const variables = {
         url: 'http://addingtoqueue.com',
       };
@@ -392,6 +392,34 @@ describe('UpsertSavedItem Mutation', () => {
       expect(publisherQueueMessageBody.user_id).equals(1);
       expect(publisherQueueMessageBody.item_id).equals(25);
       expect(publisherQueueMessageBody.api_id).equals(0);
+
+      const permLibQueueData = await getSqsMessages(
+        config.aws.sqs.permLibItemMainQueue.url
+      );
+      // Should not send for non-premium users
+      expect(permLibQueueData?.Messages).is.undefined;
+    });
+
+    it('should push addItem event to perm lib queue for premium users', async () => {
+      const variables = {
+        url: 'http://addingtoqueue.com',
+      };
+
+      const ADD_AN_ITEM = gql`
+        mutation addAnItem($url: String!) {
+          upsertSavedItem(input: { url: $url }) {
+            id
+            url
+          }
+        }
+      `;
+
+      const server = getServer('1', db, itemsEventEmitter, { premium: 'true' });
+      const mutationResult = await server.executeOperation({
+        query: ADD_AN_ITEM,
+        variables,
+      });
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
 
       const permLibQueueData = await getSqsMessages(
         config.aws.sqs.permLibItemMainQueue.url
