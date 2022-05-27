@@ -11,11 +11,15 @@ import {
   SQSEvents,
   SqsListener,
 } from '../../../businessEvents';
-import { ReceiveMessageCommand } from '@aws-sdk/client-sqs';
+import {
+  ReceiveMessageCommand,
+  ReceiveMessageCommandOutput,
+} from '@aws-sdk/client-sqs';
 import { sqs } from '../../../aws/sqs';
 import sinon from 'sinon';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
+import { transformers } from '../../../businessEvents/sqs/transformers';
 
 chai.use(chaiDateTime);
 
@@ -27,16 +31,30 @@ function mockParserGetItemRequest(urlToParse: string, data: any) {
     .persist();
 }
 
+async function getSqsMessages(
+  queueUrl: string
+): Promise<ReceiveMessageCommandOutput> {
+  const receiveParams = {
+    AttributeNames: ['All'],
+    MaxNumberOfMessages: 10,
+    MessageAttributeNames: ['All'],
+    QueueUrl: queueUrl,
+    VisibilityTimeout: 20,
+    WaitTimeSeconds: 4,
+  };
+  const receiveCommand = new ReceiveMessageCommand(receiveParams);
+
+  try {
+    return await sqs.send(receiveCommand);
+  } catch (err) {
+    console.log('unable to read message from the queue', err);
+  }
+}
+
 describe('UpsertSavedItem Mutation', () => {
   const db = writeClient();
   const itemsEventEmitter = new ItemsEventEmitter();
-  const sqsEventsToListen = Object.values(config.aws.sqs.publisherQueue.events);
-  new SqsListener(
-    itemsEventEmitter,
-    sqs,
-    config.aws.sqs.publisherQueue.url,
-    sqsEventsToListen
-  );
+  new SqsListener(itemsEventEmitter, transformers);
   const server = getServer('1', db, itemsEventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);
@@ -58,6 +76,7 @@ describe('UpsertSavedItem Mutation', () => {
 
   beforeEach(async () => {
     await sqs.purgeQueue({ QueueUrl: config.aws.sqs.publisherQueue.url });
+    await sqs.purgeQueue({ QueueUrl: config.aws.sqs.permLibItemMainQueue.url });
     await db('item_tags').truncate();
     await db('list').truncate();
     await db('item_tags').insert([
@@ -342,7 +361,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
     });
 
-    it('should push addItem event to queue when an item is added', async () => {
+    it('should push addItem event to queues when an item is added', async () => {
       const variables = {
         url: 'http://addingtoqueue.com',
       };
@@ -362,29 +381,28 @@ describe('UpsertSavedItem Mutation', () => {
       });
       expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
 
-      const receiveParams = {
-        AttributeNames: ['All'],
-        MaxNumberOfMessages: 10,
-        MessageAttributeNames: ['All'],
-        QueueUrl: config.aws.sqs.publisherQueue.url,
-        VisibilityTimeout: 20,
-        WaitTimeSeconds: 4,
-      };
-      const receiveCommand = new ReceiveMessageCommand(receiveParams);
+      const publisherQueueMessages = await getSqsMessages(
+        config.aws.sqs.publisherQueue.url
+      );
+      expect(publisherQueueMessages?.Messages[0]?.Body).is.not.null;
+      const publisherQueueMessageBody = JSON.parse(
+        publisherQueueMessages?.Messages[0]?.Body
+      );
+      expect(publisherQueueMessageBody.action).equals(SQSEvents.ADD_ITEM);
+      expect(publisherQueueMessageBody.user_id).equals(1);
+      expect(publisherQueueMessageBody.item_id).equals(25);
+      expect(publisherQueueMessageBody.api_id).equals(0);
 
-      let receiveData = null;
-      try {
-        receiveData = await sqs.send(receiveCommand);
-      } catch (err) {
-        console.log('unable to read message from the queue', err);
-      }
-
-      expect(receiveData?.Messages[0]?.Body).is.not.null;
-      const body = JSON.parse(receiveData?.Messages[0]?.Body);
-      expect(body.action).equals(SQSEvents.ADD_ITEM);
-      expect(body.user_id).equals(1);
-      expect(body.item_id).equals(25);
-      expect(body.api_id).equals(0);
+      const permLibQueueData = await getSqsMessages(
+        config.aws.sqs.permLibItemMainQueue.url
+      );
+      expect(permLibQueueData?.Messages[0]?.Body).is.not.null;
+      const permLibQueueBody = JSON.parse(permLibQueueData?.Messages[0]?.Body);
+      expect(permLibQueueBody.userId).equals(1);
+      expect(permLibQueueBody.itemId).equals(25);
+      expect(permLibQueueBody.givenUrl).equals(variables.url);
+      expect(permLibQueueBody.timeAdded).equals('2021-10-06 03:22:00');
+      expect(permLibQueueBody.resolvedId).equals(25);
     });
     describe(' - on existing savedItem: ', () => {
       const ADD_AN_ITEM = gql`

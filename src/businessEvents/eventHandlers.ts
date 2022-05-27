@@ -1,11 +1,11 @@
 import { EventBatchProcessor } from './eventBatchProcessor';
 import { unifiedEventKinesisHandler } from './unifiedEventKinesisHandler';
-import { SqsListener } from './sqsListener';
-import { sqs } from '../aws/sqs';
+import { SqsListener } from './sqs/sqsListener';
 import { ItemsEventEmitter } from './itemsEventEmitter';
 import { SnowplowHandler } from './snowplowHandler';
 import { tracker } from '../snowplow/tracker';
 import config from '../config';
+import { transformers } from './sqs/transformers';
 
 export type ItemEventHandlerFn = (emitter: ItemsEventEmitter) => void;
 
@@ -33,15 +33,7 @@ export function unifiedEventHandler(emitter: ItemsEventEmitter): void {
  */
 export function sqsEventHandler(emitter: ItemsEventEmitter): void {
   // Init SQS events handler
-  const sqsEventsToListen = Object.values(
-    config.aws.sqs.publisherQueue.events
-  ) as string[];
-  new SqsListener(
-    emitter,
-    sqs,
-    config.aws.sqs.publisherQueue.url,
-    sqsEventsToListen
-  );
+  new SqsListener(emitter, transformers);
 }
 
 /**

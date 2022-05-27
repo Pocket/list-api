@@ -246,8 +246,12 @@ class ListAPI extends TerraformStack {
               value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsPublisherDataQueueName}`,
             },
             {
-              name: 'SQS_BATCH_DELETE_QUEUE',
+              name: 'SQS_BATCH_DELETE_QUEUE_URL',
               value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsBatchDeleteQueueName}`,
+            },
+            {
+              name: 'SQS_PERMLIB_ITEMMAIN_QUEUE_URL',
+              value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsPermLibItemMainQueueName}`,
             },
             {
               name: 'KINESIS_UNIFIED_EVENT_STREAM',
@@ -356,6 +360,7 @@ class ListAPI extends TerraformStack {
             actions: ['sqs:SendMessage', 'sqs:SendMessageBatch'],
             resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPublisherDataQueueName}`,
+              `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPermLibItemMainQueueName}`,
             ],
             effect: 'Allow',
           },

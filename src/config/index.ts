@@ -47,15 +47,21 @@ export default {
     },
     sqs: {
       publisherQueue: {
-        events: EventType,
+        events: Object.values(EventType) as string[],
         url:
           process.env.SQS_PUBLISHER_DATA_QUEUE_URL ||
           'http://localhost:4566/queue/pocket-publisher-data-queue',
       },
       listDeleteQueue: {
         url:
-          process.env.SQS_BATCH_DELETE_QUEUE ||
+          process.env.SQS_BATCH_DELETE_QUEUE_URL ||
           'http://localhost:4566/queue/pocket-list-delete-queue',
+      },
+      permLibItemMainQueue: {
+        events: [EventType.ADD_ITEM],
+        url:
+          process.env.SQS_PERMLIB_ITEMMAIN_QUEUE_URL ||
+          'http://localhost:4566/queue/PermLib-Local-ItemMain',
       },
       waitTimeSeconds: 20,
       batchSize: 10,
