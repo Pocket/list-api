@@ -30,6 +30,7 @@ export type BasicItemEventPayloadContext = {
     email?: string;
     guid?: number;
     hashedGuid?: string;
+    isPremium: boolean;
   };
   apiUser: {
     apiId: string;

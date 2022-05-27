@@ -44,6 +44,8 @@ export async function publisherDataSqsTransformer(data: ItemEventPayload) {
  * @param data
  */
 export async function permLibSqsTransformer(data: ItemEventPayload) {
+  if (!data.user.isPremium) return null;
+
   const savedItem = await data.savedItem;
   return {
     userId: parseInt(data.user.id),

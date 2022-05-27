@@ -128,6 +128,7 @@ export class ContextManager implements IContext {
         email: this.headers.email,
         guid: parseInt(this.headers.guid),
         hashedGuid: this.headers.encodedguid,
+        isPremium: this.userIsPremium,
       },
       apiUser: {
         apiId: this.apiId,
