@@ -1,7 +1,6 @@
 import { EventBatchProcessor } from './eventBatchProcessor';
 import { unifiedEventKinesisHandler } from './unifiedEventKinesisHandler';
 import { SqsListener } from './sqs/sqsListener';
-import { sqs } from '../aws/sqs';
 import { ItemsEventEmitter } from './itemsEventEmitter';
 import { SnowplowHandler } from './snowplowHandler';
 import { tracker } from '../snowplow/tracker';
