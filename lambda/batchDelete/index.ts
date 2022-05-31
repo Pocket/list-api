@@ -11,7 +11,7 @@ type BatchDeleteMessage = {
 
 /**
  * The main handler function which will be wrapped by Sentry prior to export.
- * Takes a message from the SQS queue containing batches of SavedItem IDs to 
+ * Takes a message from the SQS queue containing batches of SavedItem IDs to
  * delete from a user's list (typically via account deletion), and calls endpoint
  * to delete those records from the database.
  * @param event
