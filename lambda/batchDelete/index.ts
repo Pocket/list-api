@@ -10,7 +10,10 @@ type BatchDeleteMessage = {
 };
 
 /**
- * The main handler function which will be wrapped by Sentry prior to export
+ * The main handler function which will be wrapped by Sentry prior to export.
+ * Takes a message from the SQS queue containing batches of SavedItem IDs to 
+ * delete from a user's list (typically via account deletion), and calls endpoint
+ * to delete those records from the database.
  * @param event
  * @returns
  */
@@ -30,7 +33,9 @@ export async function processor(event: SQSEvent): Promise<SQSBatchResponse> {
 }
 
 /**
- * The logic for each individual message in the SQS batch
+ * The logic for each individual message in the SQS batch.
+ * Call the batchDelete endpoint on the application to trigger
+ * deletion of the Saved Item IDs in the message.
  * @param message
  */
 export async function postBatchDelete(

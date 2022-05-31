@@ -3,7 +3,9 @@ import * as Sentry from '@sentry/serverless';
 import { handlers } from './handlers';
 
 /**
- * The main handler function which will be wrapped by Sentry prior to export
+ * The main handler function which will be wrapped by Sentry prior to export.
+ * Processes messages originating from event bridge. The detail-type field in
+ * the message is used to determine which handler should be used for processing.
  * @param event
  * @returns
  */

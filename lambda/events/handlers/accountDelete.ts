@@ -3,8 +3,9 @@ import { config } from '../config';
 import fetch from 'node-fetch';
 
 /**
- * Logic for processing individual events forwarded to SQS from
- * event bridge, to queue chunks of list for deletion.
+ * Given an account delete event, queue SQS messages to delete chunks of the
+ * user's list and tags from the database. Since the list size could be very large,
+ * don't do this in a single operation but in chunks.
  * @param record SQSRecord containing forwarded event from eventbridge
  * @throws Error if response is not ok
  */
