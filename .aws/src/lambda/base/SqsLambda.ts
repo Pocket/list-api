@@ -1,79 +1,71 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { config } from './config';
+import { config as stackConfig } from '../../config';
 import { PocketVPC } from '@pocket-tools/terraform-modules';
 import { PocketSQSWithLambdaTarget } from '@pocket-tools/terraform-modules';
 import { LAMBDA_RUNTIMES } from '@pocket-tools/terraform-modules';
 import { ssm } from '@cdktf/provider-aws';
 import { PocketPagerDuty } from '@pocket-tools/terraform-modules';
+import { PocketVersionedLambdaProps } from '@pocket-tools/terraform-modules';
+
+export interface SqsLambdaProps {
+  vpc: PocketVPC;
+  batchSize: number;
+  pagerDuty?: PocketPagerDuty;
+  alarms?: PocketVersionedLambdaProps['lambda']['alarms'];
+}
 
 export class SqsLambda extends Resource {
-  constructor(
-    scope: Construct,
-    private name: string,
-    vpc: PocketVPC,
-    batchSize: number,
-    pagerDuty?: PocketPagerDuty
-  ) {
+  public readonly lambda: PocketSQSWithLambdaTarget;
+
+  constructor(scope: Construct, private name: string, config: SqsLambdaProps) {
     super(scope, name.toLowerCase());
 
     const { sentryDsn, gitSha } = this.getEnvVariableValues();
 
-    new PocketSQSWithLambdaTarget(this, name.toLowerCase(), {
-      name: `${config.prefix}-${name}`,
-      batchSize,
+    this.lambda = new PocketSQSWithLambdaTarget(this, name.toLowerCase(), {
+      name: `${stackConfig.prefix}-${name}`,
+      batchSize: config.batchSize,
       batchWindow: 60,
       sqsQueue: {
         maxReceiveCount: 3,
         visibilityTimeoutSeconds: 300,
       },
       lambda: {
-        runtime: LAMBDA_RUNTIMES.NODEJS14,
+        runtime: LAMBDA_RUNTIMES.NODEJS16,
         handler: 'index.handler',
         timeout: 120,
         environment: {
           SENTRY_DSN: sentryDsn,
           GIT_SHA: gitSha,
           ENVIRONMENT:
-            config.environment === 'Prod' ? 'production' : 'development',
+            stackConfig.environment === 'Prod' ? 'production' : 'development',
           LIST_API_URI:
-            config.environment === 'Prod'
+            stackConfig.environment === 'Prod'
               ? 'https://list-api.readitlater.com'
               : 'https://list-api.getpocket.dev',
         },
         vpcConfig: {
-          securityGroupIds: vpc.defaultSecurityGroups.ids,
-          subnetIds: vpc.privateSubnetIds,
+          securityGroupIds: config.vpc.defaultSecurityGroups.ids,
+          subnetIds: config.vpc.privateSubnetIds,
         },
         codeDeploy: {
-          region: vpc.region,
-          accountId: vpc.accountId,
+          region: config.vpc.region,
+          accountId: config.vpc.accountId,
         },
-        alarms: {
-          // TODO: set proper alarm values, check dev
-          /*
-          errors: {
-            evaluationPeriods: 3,
-            period: 3600, // 1 hour
-            threshold: 20,
-            actions: config.isDev
-              ? []
-              : [pagerDuty!.snsNonCriticalAlarmTopic.arn],
-          },
-          */
-        },
+        alarms: config.alarms,
       },
-      tags: config.tags,
+      tags: stackConfig.tags,
     });
   }
 
   private getEnvVariableValues() {
     const sentryDsn = new ssm.DataAwsSsmParameter(this, 'sentry-dsn', {
-      name: `/${config.name}/${config.environment}/SENTRY_DSN`,
+      name: `/${stackConfig.name}/${stackConfig.environment}/SENTRY_DSN`,
     });
 
     const serviceHash = new ssm.DataAwsSsmParameter(this, 'service-hash', {
-      name: `${config.circleCIPrefix}/SERVICE_HASH`,
+      name: `${stackConfig.circleCIPrefix}/SERVICE_HASH`,
     });
 
     return { sentryDsn: sentryDsn.value, gitSha: serviceHash.value };

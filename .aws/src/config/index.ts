@@ -44,4 +44,9 @@ export const config = {
     unifiedEventStreamName: 'unified_event',
     databaseTz: 'US/Central',
   },
+  lambda: {
+    snsTopicName: {
+      userEvents: `PocketEventBridge-${environment}-UserEventTopic`,
+    },
+  },
 };

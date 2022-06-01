@@ -18,7 +18,8 @@ import { PagerdutyProvider } from '@cdktf/provider-pagerduty';
 import { NullProvider } from '@cdktf/provider-null';
 import { LocalProvider } from '@cdktf/provider-local';
 import { ArchiveProvider } from '@cdktf/provider-archive';
-import { SqsLambda } from './SqsLambda';
+import { EventLambda } from './lambda/EventLambda';
+import { BatchDeleteLambda } from './lambda/BatchDeleteLambda';
 
 class ListAPI extends TerraformStack {
   constructor(scope: Construct, name: string) {
@@ -40,8 +41,10 @@ class ListAPI extends TerraformStack {
     const region = new datasources.DataAwsRegion(this, 'region');
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
-    new SqsLambda(this, 'Sqs-Event-Consumer', pocketVPC, 10);
-    new SqsLambda(this, 'Sqs-Batch-Delete-Consumer', pocketVPC, 1);
+    new EventLambda(this, 'Sqs-Event-Consumer', { vpc: pocketVPC });
+    new BatchDeleteLambda(this, 'Sqs-Batch-Delete-Consumer', {
+      vpc: pocketVPC,
+    });
 
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
