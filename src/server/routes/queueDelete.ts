@@ -72,7 +72,11 @@ router.post(
 );
 
 /**
- * Enqueue item IDs for deletions in batches
+ * Enqueue item IDs for deletions in batches. This is used to purge
+ * user list and tag data when a user deletes their account. Since
+ * the data to clear could be large, we don't want to keep the api
+ * connection open while it's happening. Instead these processes
+ * will happen asynchronously in the background using queues.
  * @param data
  * @param savedItemService
  * @param requestId
@@ -126,6 +130,7 @@ export async function enqueueSavedItemIds(
   try {
     await Promise.allSettled(
       sqsCommands.map((command) => {
+        // Handle logging individual errors as the promises are resolved
         return sqs.send(command).catch((err) => {
           const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (command=\n${JSON.stringify(
             command
@@ -137,6 +142,7 @@ export async function enqueueSavedItemIds(
       })
     );
   } catch (e) {
+    // Also provide top-level logging
     const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (requestId='${requestId}')`;
     Sentry.addBreadcrumb({ message });
     Sentry.captureException(e);
@@ -145,7 +151,7 @@ export async function enqueueSavedItemIds(
 }
 
 /**
- * Build command for sendign messages to the delete queue,
+ * Build command for sending messages to the delete queue,
  * for purging user data after account deletion.
  * @param entries
  */
