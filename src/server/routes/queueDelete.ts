@@ -127,27 +127,19 @@ export async function enqueueSavedItemIds(
     sqsCommands.push(buildSqsCommand(sqsEntries));
   }
 
-  try {
-    await Promise.allSettled(
-      sqsCommands.map((command) => {
-        // Handle logging individual errors as the promises are resolved
-        return sqs.send(command).catch((err) => {
-          const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (command=\n${JSON.stringify(
-            command
-          )})`;
-          Sentry.addBreadcrumb({ message });
-          Sentry.captureException(err);
-          console.log(message);
-        });
-      })
-    );
-  } catch (e) {
-    // Also provide top-level logging
-    const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (requestId='${requestId}')`;
-    Sentry.addBreadcrumb({ message });
-    Sentry.captureException(e);
-    console.log(message);
-  }
+  await Promise.allSettled(
+    sqsCommands.map((command) => {
+      // Handle logging individual errors as the promises are resolved
+      return sqs.send(command).catch((err) => {
+        const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (command=\n${JSON.stringify(
+          command
+        )})`;
+        Sentry.addBreadcrumb({ message });
+        Sentry.captureException(err);
+        console.log(message);
+      });
+    })
+  );
 }
 
 /**
