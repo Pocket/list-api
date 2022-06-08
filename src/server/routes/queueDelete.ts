@@ -7,7 +7,6 @@ import config from '../../config';
 import { sqs } from '../../aws/sqs';
 import {
   SendMessageBatchCommand,
-  SendMessageBatchCommandOutput,
   SendMessageBatchRequestEntry,
 } from '@aws-sdk/client-sqs';
 import { nanoid } from 'nanoid';
@@ -73,7 +72,11 @@ router.post(
 );
 
 /**
- * Enqueue item IDs for deletions in batches
+ * Enqueue item IDs for deletions in batches. This is used to purge
+ * user list and tag data when a user deletes their account. Since
+ * the data to clear could be large, we don't want to keep the api
+ * connection open while it's happening. Instead these processes
+ * will happen asynchronously in the background using queues.
  * @param data
  * @param savedItemService
  * @param requestId
@@ -86,7 +89,7 @@ export async function enqueueSavedItemIds(
   const { userId, email, status } = data;
   const limit = config.queueDelete.queryLimit;
   let offset = 0;
-  const sqsSends: Promise<SendMessageBatchCommandOutput>[] = [];
+  const sqsCommands: SendMessageBatchCommand[] = [];
   let sqsEntries: SendMessageBatchRequestEntry[] = [];
 
   const loopCondition = true;
@@ -109,7 +112,7 @@ export async function enqueueSavedItemIds(
       );
 
       if (sqsEntries.length === config.aws.sqs.batchSize) {
-        sqsSends.push(sqsSendBatch(sqsEntries));
+        sqsCommands.push(buildSqsCommand(sqsEntries));
         sqsEntries = []; // reset
       }
 
@@ -121,32 +124,37 @@ export async function enqueueSavedItemIds(
 
   // If there's any remaining, send to SQS
   if (sqsEntries.length) {
-    sqsSends.push(sqsSendBatch(sqsEntries));
+    sqsCommands.push(buildSqsCommand(sqsEntries));
   }
 
-  try {
-    await Promise.all(sqsSends);
-  } catch (e) {
-    const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (requestId='${requestId}')`;
-    Sentry.addBreadcrumb({ message });
-    Sentry.captureException(e);
-    console.log(message);
-  }
+  await Promise.allSettled(
+    sqsCommands.map((command) => {
+      // Handle logging individual errors as the promises are resolved
+      return sqs.send(command).catch((err) => {
+        const message = `QueueDelete: Error - Failed to enqueue saved items for userId: ${userId} (command=\n${JSON.stringify(
+          command
+        )})`;
+        Sentry.addBreadcrumb({ message });
+        Sentry.captureException(err);
+        console.log(message);
+      });
+    })
+  );
 }
 
 /**
- * Send messages in a batch to SQS
+ * Build command for sending messages to the delete queue,
+ * for purging user data after account deletion.
  * @param entries
  */
-async function sqsSendBatch(
+function buildSqsCommand(
   entries: SendMessageBatchRequestEntry[]
-): Promise<SendMessageBatchCommandOutput> {
+): SendMessageBatchCommand {
   const command = new SendMessageBatchCommand({
     Entries: entries,
     QueueUrl: config.aws.sqs.listDeleteQueue.url,
   });
-
-  return sqs.send(command);
+  return command;
 }
 
 /**
