@@ -189,7 +189,7 @@ describe('getSavedItemByItemId', () => {
       true
     );
     expect(archivedRes.data?._entities[0].savedItemById.archivedAt).to.equal(
-      unixDate1
+      getUnixTimestamp(date)
     );
     expect(nonArchivedRes.data?._entities[0].savedItemById.isArchived).to.equal(
       false
