@@ -16,7 +16,7 @@ import { validate } from './validator';
 export type SqsMessage = {
   userId: number;
   email: string;
-  status: 'FREE' | 'PREMIUM';
+  isPremium: boolean;
   itemIds: number[];
   traceId: string;
 };
@@ -41,12 +41,11 @@ const queueDeleteSchema: Schema = {
     errorMessage: 'Must provide valid email',
     isEmail: true,
   },
-  status: {
+  isPremium: {
     in: ['body'],
-    errorMessage: 'Must provide valid status (FREE or PREMIUM)',
-    custom: {
-      options: (status) => ['FREE', 'PREMIUM'].includes(status),
-    },
+    errorMessage: 'Must provide valid isPremium (true | false)',
+    notEmpty: true,
+    isBoolean: true,
   },
 };
 
@@ -86,7 +85,7 @@ export async function enqueueSavedItemIds(
   savedItemService: SavedItemDataService,
   requestId: string
 ): Promise<void> {
-  const { userId, email, status } = data;
+  const { userId, email, isPremium } = data;
   const limit = config.queueDelete.queryLimit;
   let offset = 0;
   const sqsCommands: SendMessageBatchCommand[] = [];
@@ -105,7 +104,7 @@ export async function enqueueSavedItemIds(
         convertToSqsEntry({
           userId,
           email,
-          status,
+          isPremium,
           itemIds: nextChunk.value,
           traceId: nanoid(),
         })

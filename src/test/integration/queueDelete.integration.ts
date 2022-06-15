@@ -84,7 +84,7 @@ describe('SavedItemsService', () => {
       const data = {
         userId,
         email: 'test@yolo.com',
-        status: 'FREE',
+        isPremium: false,
       };
 
       await enqueueSavedItemIds(data as SqsMessage, savedItemService, '123');
@@ -133,7 +133,7 @@ describe('SavedItemsService', () => {
       const data = {
         userId,
         email: 'test@yolo.com',
-        status: 'FREE',
+        isPremium: false,
       };
 
       await enqueueSavedItemIds(data as SqsMessage, savedItemService, '123');
