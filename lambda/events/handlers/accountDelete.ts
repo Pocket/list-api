@@ -14,7 +14,7 @@ export async function accountDeleteHandler(record: SQSRecord) {
   const postBody = {
     userId: message['userId'],
     email: message['email'],
-    status: message['status'],
+    isPremium: message['isPremium'],
   };
   if (message['traceId']) {
     postBody['traceId'] = message['traceId'];
