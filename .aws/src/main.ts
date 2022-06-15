@@ -364,6 +364,7 @@ class ListAPI extends TerraformStack {
             resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPublisherDataQueueName}`,
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPermLibItemMainQueueName}`,
+              `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsBatchDeleteQueueName}`,
             ],
             effect: 'Allow',
           },
