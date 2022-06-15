@@ -17,7 +17,7 @@ describe('accountDelete handler', () => {
           detail: {
             userId: 1,
             email: '1@2.com',
-            status: 'FREE',
+            isPremium: false,
           },
         }),
       }),

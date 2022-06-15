@@ -44,7 +44,6 @@ const queueDeleteSchema: Schema = {
   isPremium: {
     in: ['body'],
     errorMessage: 'Must provide valid isPremium (true | false)',
-    notEmpty: true,
     isBoolean: true,
   },
 };
