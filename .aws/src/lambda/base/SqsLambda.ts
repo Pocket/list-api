@@ -31,6 +31,7 @@ export class SqsLambda extends Resource {
         maxReceiveCount: 3,
         visibilityTimeoutSeconds: 300,
       },
+      functionResponseTypes: ['ReportBatchItemFailures'],
       lambda: {
         runtime: LAMBDA_RUNTIMES.NODEJS16,
         handler: 'index.handler',
