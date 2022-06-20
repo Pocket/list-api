@@ -63,7 +63,7 @@
     "chai-shallow-deep-equal": "^1.4.6",
     "deep-equal-in-any-order": "1.1.19",
     "jest": "27.5.1",
-    "nock": "13.2.4",
+    "nock": "13.2.7",
     "nodemon": "2.0.16",
     "prettier": "2.6.2",
     "sinon": "13.0.2",
