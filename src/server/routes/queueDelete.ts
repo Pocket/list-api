@@ -117,7 +117,7 @@ export async function enqueueSavedItemIds(
       nextChunk = chunkedIds.next();
     }
 
-    offset += offset + limit;
+    offset = offset + limit;
   }
 
   // If there's any remaining, send to SQS
