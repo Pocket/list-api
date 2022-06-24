@@ -13,6 +13,7 @@ export interface SqsLambdaProps {
   batchSize: number;
   pagerDuty?: PocketPagerDuty;
   alarms?: PocketVersionedLambdaProps['lambda']['alarms'];
+  reservedConcurrencyLimit?: number;
 }
 
 export class SqsLambda extends Resource {
@@ -36,6 +37,7 @@ export class SqsLambda extends Resource {
         runtime: LAMBDA_RUNTIMES.NODEJS16,
         handler: 'index.handler',
         timeout: 120,
+        reservedConcurrencyLimit: config.reservedConcurrencyLimit,
         environment: {
           SENTRY_DSN: sentryDsn,
           GIT_SHA: gitSha,
