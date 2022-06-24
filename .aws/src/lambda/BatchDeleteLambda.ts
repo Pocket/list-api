@@ -13,6 +13,7 @@ export class BatchDeleteLambda extends Resource {
     new SqsLambda(this, 'Sqs-Batch-Delete-Consumer', {
       vpc: config.vpc,
       batchSize: 1,
+      reservedConcurrencyLimit: 1,
     });
   }
 }
