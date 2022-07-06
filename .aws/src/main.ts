@@ -321,6 +321,11 @@ class ListAPI extends TerraformStack {
       codeDeploy: {
         useCodeDeploy: true,
         useCodePipeline: true,
+        notifications: {
+          notifyOnFailed: true,
+          notifyOnStarted: false,
+          notifyOnSucceeded: false,
+        },
         snsNotificationTopicArn: snsTopic.arn,
       },
       exposedContainer: {
