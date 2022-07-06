@@ -41,7 +41,6 @@ class ListAPI extends TerraformStack {
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
     new EventLambda(this, 'Sqs-Event-Consumer', { vpc: pocketVPC });
-
     new ApplicationSQSQueue(
       this,
       'batch-delete-consumer-queue',
@@ -376,7 +375,6 @@ class ListAPI extends TerraformStack {
             resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPublisherDataQueueName}`,
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPermLibItemMainQueueName}`,
-              `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsBatchDeleteQueueName}`,
             ],
             effect: 'Allow',
           },
