@@ -8,11 +8,12 @@ import {
 import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
-  ApplicationRDSCluster, ApplicationSQSQueue,
+  ApplicationRDSCluster,
+  ApplicationSQSQueue,
   PocketALBApplication,
   PocketECSCodePipeline,
   PocketPagerDuty,
-  PocketVPC
+  PocketVPC,
 } from '@pocket-tools/terraform-modules';
 import { PagerdutyProvider } from '@cdktf/provider-pagerduty';
 import { NullProvider } from '@cdktf/provider-null';
@@ -41,16 +42,12 @@ class ListAPI extends TerraformStack {
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
     new EventLambda(this, 'Sqs-Event-Consumer', { vpc: pocketVPC });
-    new ApplicationSQSQueue(
-      this,
-      'batch-delete-consumer-queue',
-      {
-        name: config.envVars.sqsBatchDeleteQueueName,
-        tags: config.tags,
-        //need to set maxReceiveCount to enable DLQ
-        maxReceiveCount: 2,
-      }
-    );
+    new ApplicationSQSQueue(this, 'batch-delete-consumer-queue', {
+      name: config.envVars.sqsBatchDeleteQueueName,
+      tags: config.tags,
+      //need to set maxReceiveCount to enable DLQ
+      maxReceiveCount: 2,
+    });
 
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
