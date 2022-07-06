@@ -96,7 +96,7 @@ export default {
     maxPageSize: 30,
   },
   queueDelete: {
-    queryLimit: 5000,
-    itemIdChunkSize: 1000,
+    queryLimit: 500,
+    itemIdChunkSize: 100,
   },
 };
