@@ -8,18 +8,17 @@ import {
 import { AwsProvider, datasources, kms, sns } from '@cdktf/provider-aws';
 import { config } from './config';
 import {
-  ApplicationRDSCluster,
+  ApplicationRDSCluster, ApplicationSQSQueue,
   PocketALBApplication,
   PocketECSCodePipeline,
   PocketPagerDuty,
-  PocketVPC,
+  PocketVPC
 } from '@pocket-tools/terraform-modules';
 import { PagerdutyProvider } from '@cdktf/provider-pagerduty';
 import { NullProvider } from '@cdktf/provider-null';
 import { LocalProvider } from '@cdktf/provider-local';
 import { ArchiveProvider } from '@cdktf/provider-archive';
 import { EventLambda } from './lambda/EventLambda';
-import { BatchDeleteLambda } from './lambda/BatchDeleteLambda';
 
 class ListAPI extends TerraformStack {
   constructor(scope: Construct, name: string) {
@@ -42,9 +41,17 @@ class ListAPI extends TerraformStack {
     const caller = new datasources.DataAwsCallerIdentity(this, 'caller');
 
     new EventLambda(this, 'Sqs-Event-Consumer', { vpc: pocketVPC });
-    new BatchDeleteLambda(this, 'Sqs-Batch-Delete-Consumer', {
-      vpc: pocketVPC,
-    });
+
+    new ApplicationSQSQueue(
+      this,
+      'batch-delete-consumer-queue',
+      {
+        name: config.envVars.sqsBatchDeleteQueueName,
+        tags: config.tags,
+        //need to set maxReceiveCount to enable DLQ
+        maxReceiveCount: 2,
+      }
+    );
 
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
@@ -369,6 +376,14 @@ class ListAPI extends TerraformStack {
             resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPublisherDataQueueName}`,
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPermLibItemMainQueueName}`,
+              `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsBatchDeleteQueueName}`,
+            ],
+            effect: 'Allow',
+          },
+          {
+            //no permission for batchReceive as we want only one message polled at a time
+            actions: ['sqs:ReceiveMessage', 'sqs:DeleteMessage'],
+            resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsBatchDeleteQueueName}`,
             ],
             effect: 'Allow',
