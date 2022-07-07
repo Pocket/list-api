@@ -12,8 +12,9 @@ import {
   sqsEventHandler,
   unifiedEventHandler,
 } from '../businessEvents';
-import batchDeleteRouter from './routes/batchDelete';
 import queueDeleteRouter from './routes/queueDelete';
+import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
+import { EventEmitter } from 'stream';
 
 //Set XRAY to just log if the context is missing instead of a runtime error
 
@@ -40,8 +41,10 @@ const app = express();
 app.use(express.json());
 
 // Initialize routes
-app.use('/batchDelete', batchDeleteRouter);
 app.use('/queueDelete', queueDeleteRouter);
+
+// Start BatchDelete queue polling
+new BatchDeleteHandler(new EventEmitter());
 
 // Initialize event handlers
 initItemEventHandlers(itemsEventEmitter, [

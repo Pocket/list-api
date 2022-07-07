@@ -46,7 +46,7 @@ class ListAPI extends TerraformStack {
       name: config.envVars.sqsBatchDeleteQueueName,
       tags: config.tags,
       //need to set maxReceiveCount to enable DLQ
-      maxReceiveCount: 2,
+      maxReceiveCount: 3,
     });
 
     const pocketApp = this.createPocketAlbApplication({
@@ -377,7 +377,12 @@ class ListAPI extends TerraformStack {
           },
           {
             //no permission for batchReceive as we want only one message polled at a time
-            actions: ['sqs:ReceiveMessage', 'sqs:DeleteMessage'],
+            actions: [
+              'sqs:ReceiveMessage',
+              'sqs:DeleteMessage',
+              'sqs:SendMessage',
+              'sqs:SendMessageBatch',
+            ],
             resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsBatchDeleteQueueName}`,
             ],
