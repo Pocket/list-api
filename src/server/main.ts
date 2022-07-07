@@ -14,7 +14,7 @@ import {
 } from '../businessEvents';
 import queueDeleteRouter from './routes/queueDelete';
 import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
-import { EventEmitter } from 'stream';
+import { EventEmitter } from 'events';
 
 //Set XRAY to just log if the context is missing instead of a runtime error
 
