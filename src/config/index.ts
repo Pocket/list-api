@@ -26,7 +26,7 @@ export default {
     appId: 'pocket-backend-list-api',
     events: EventType,
     schemas: {
-      listItemUpdate: 'iglu:com.pocket/list_item_update/jsonschema/1-0-0',
+      listItemUpdate: 'iglu:com.pocket/list_item_update/jsonschema/1-0-1',
       listItem: 'iglu:com.pocket/list_item/jsonschema/1-0-1',
       content: 'iglu:com.pocket/content/jsonschema/1-0-0',
       user: 'iglu:com.pocket/user/jsonschema/1-0-0',
