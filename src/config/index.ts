@@ -56,7 +56,8 @@ export default {
         url:
           process.env.SQS_BATCH_DELETE_QUEUE_URL ||
           'http://localhost:4566/queue/pocket-list-delete-queue',
-        visibilityTimeout: 300,
+        visibilityTimeout: 10000,
+        messageRetentionSeconds: 1209600,
         maxMessages: 1,
         waitTimeSeconds: 0,
         defaultPollIntervalSeconds: 300,

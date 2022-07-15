@@ -47,6 +47,8 @@ class ListAPI extends TerraformStack {
       tags: config.tags,
       //need to set maxReceiveCount to enable DLQ
       maxReceiveCount: 3,
+      visibilityTimeoutSeconds: 10000,
+      messageRetentionSeconds: 1209600,
     });
 
     const pocketApp = this.createPocketAlbApplication({
