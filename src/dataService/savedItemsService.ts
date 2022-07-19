@@ -303,7 +303,7 @@ export class SavedItemDataService {
             console.log(`BatchDelete: Processing request ID=${requestId}`);
           }
           console.log(
-            `deleted row from list tables for ${tables} for user: ${this.userId} and itemId: ${id}`
+            `deleted row from table: ${table} for user: ${this.userId} and itemId: ${id}`
           );
           await setTimeout(config.batchDelete.deleteDelayInMilliSec);
         } catch (error) {
