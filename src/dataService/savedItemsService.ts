@@ -286,7 +286,6 @@ export class SavedItemDataService {
       'item_ads',
       'item_time_spent',
       'item_currently_reading',
-      'item_session',
       'list_extras',
       'list_meta',
       'list_shares',
@@ -297,8 +296,8 @@ export class SavedItemDataService {
         try {
           await this.db(table)
             .delete()
-            .where('item_id', id)
-            .andWhere({ user_id: this.userId });
+            .where({ user_id: this.userId })
+            .andWhere('item_id', id);
 
           if (requestId) {
             console.log(`BatchDelete: Processing request ID=${requestId}`);
