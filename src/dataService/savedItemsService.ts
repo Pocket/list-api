@@ -5,7 +5,6 @@ import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import * as Sentry from '@sentry/node';
-import { item } from '../resolvers/savedItem';
 import { setTimeout } from 'timers/promises';
 
 type DbResult = {
@@ -292,8 +291,8 @@ export class SavedItemDataService {
       'list_shares',
     ];
 
-    for (let id of itemIds) {
-      for (let table of tables) {
+    for (const id of itemIds) {
+      for (const table of tables) {
         try {
           await this.db(table)
             .delete()
@@ -306,7 +305,7 @@ export class SavedItemDataService {
           console.log(
             `deleted row from list tables for ${tables} for user: ${this.userId} and itemId: ${id}`
           );
-          await setTimeout(10000);
+          await setTimeout(config.batchDelete.deleteDelayInMilliSec);
         } catch (error) {
           const message = `BatchDelete: Error - transaction failed (userId=${this.userId}, requestId=${requestId})`;
           Sentry.addBreadcrumb({ message });

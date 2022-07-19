@@ -105,4 +105,7 @@ export default {
     queryLimit: 500,
     itemIdChunkSize: 20,
   },
+  batchDelete: {
+    deleteDelayInMilliSec: 20000,
+  },
 };
