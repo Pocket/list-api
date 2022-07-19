@@ -5,6 +5,8 @@ import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import * as Sentry from '@sentry/node';
+import { item } from '../resolvers/savedItem';
+import { setTimeout } from 'timers/promises';
 
 type DbResult = {
   user_id?: number;
@@ -268,8 +270,9 @@ export class SavedItemDataService {
   }
 
   /**
-   * Batch delete saved items, along with accompanying data (tags, item_attribution,
-   * scroll sync data). This is a 'hard' delete.
+   * For a given itemId, deletes one row at a time from list related tables and sleeps for X times.
+   * Note: we are not wrapping the deletes in a transactions as the deletes are un-related and
+   * and we don't want the transaction to get session lock for longer time.
    * @param itemIds: the ids of the items to delete from the user's list, along with tags
    * and accompanying metadata
    * @param requestId: optional unique request ID for tracing
@@ -288,26 +291,30 @@ export class SavedItemDataService {
       'list_meta',
       'list_shares',
     ];
-    try {
-      await this.db.transaction(async (trx) => {
-        const baseDelete = trx
-          .delete()
-          .whereIn('item_id', itemIds)
-          .andWhere({ user_id: this.userId });
-        const deletePromises = tables.map((table) =>
-          baseDelete.clone().from(table)
-        );
-        await Promise.all(deletePromises);
-      });
-      if (requestId) {
-        console.log(`BatchDelete: Processing request ID=${requestId}`);
+
+    for (let id of itemIds) {
+      for (let table of tables) {
+        try {
+          await this.db(table)
+            .delete()
+            .where('item_id', id)
+            .andWhere({ user_id: this.userId });
+
+          if (requestId) {
+            console.log(`BatchDelete: Processing request ID=${requestId}`);
+          }
+          console.log(
+            `deleted row from list tables for ${tables} for user: ${this.userId} and itemId: ${id}`
+          );
+          await setTimeout(10000);
+        } catch (error) {
+          const message = `BatchDelete: Error - transaction failed (userId=${this.userId}, requestId=${requestId})`;
+          Sentry.addBreadcrumb({ message });
+          Sentry.captureException(error);
+          console.log(message);
+          console.log(error);
+        }
       }
-    } catch (error) {
-      const message = `BatchDelete: Error - transaction failed (userId=${this.userId}, requestId=${requestId})`;
-      Sentry.addBreadcrumb({ message });
-      Sentry.captureException(error);
-      console.log(message);
-      console.log(error);
     }
   }
 
