@@ -296,8 +296,8 @@ export class SavedItemDataService {
         try {
           await this.db(table)
             .delete()
-            .where('item_id', id)
-            .andWhere({ user_id: this.userId });
+            .where({ user_id: this.userId })
+            .andWhere('item_id', id);
 
           if (requestId) {
             console.log(`BatchDelete: Processing request ID=${requestId}`);
