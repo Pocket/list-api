@@ -286,7 +286,6 @@ export class SavedItemDataService {
       'item_ads',
       'item_time_spent',
       'item_currently_reading',
-      'item_session',
       'list_extras',
       'list_meta',
       'list_shares',
