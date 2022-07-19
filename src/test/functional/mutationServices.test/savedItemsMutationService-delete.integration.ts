@@ -8,6 +8,7 @@ import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
 import { SavedItemDataService } from '../../../dataService';
+import config from '../../../config';
 
 chai.use(chaiDateTime);
 
@@ -80,6 +81,7 @@ describe('Delete/Undelete SavedItem: ', () => {
   const date = new Date('2020-10-03 10:20:30');
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
+  let batchDeleteDelay;
 
   afterAll(async () => {
     await writeClient().destroy();
@@ -87,6 +89,8 @@ describe('Delete/Undelete SavedItem: ', () => {
   });
 
   beforeAll(() => {
+    batchDeleteDelay = config.batchDelete.deleteDelayInMilliSec;
+    config.batchDelete.deleteDelayInMilliSec = 1;
     // Mock Date.now() to get a consistent date for inserting data
     clock = sinon.useFakeTimers({
       now: updateDate,
@@ -99,6 +103,11 @@ describe('Delete/Undelete SavedItem: ', () => {
     await db('item_tags').truncate();
     await db('item_attribution').truncate();
     await db('items_scroll').truncate();
+  });
+
+  afterAll(() => {
+    //rest config variables
+    config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;
   });
 
   it('should batch delete saved items', async () => {
