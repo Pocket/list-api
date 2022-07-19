@@ -272,6 +272,7 @@ export class SavedItemDataService {
    * For a given itemId, deletes one row at a time from list related tables and sleeps for X times.
    * Note: we are not wrapping the deletes in a transactions as the deletes are un-related and
    * and we don't want the transaction to get session lock for longer time.
+   * If a single deletion fails, log error and move on to the next record.
    * @param itemIds: the ids of the items to delete from the user's list, along with tags
    * and accompanying metadata
    * @param requestId: optional unique request ID for tracing
@@ -307,7 +308,9 @@ export class SavedItemDataService {
           );
           await setTimeout(config.batchDelete.deleteDelayInMilliSec);
         } catch (error) {
-          const message = `BatchDelete: Error - transaction failed (userId=${this.userId}, requestId=${requestId})`;
+          const message =
+            `BatchDelete: Error deleting from table ${table}` +
+            `for itemId: ${id} for (userId=${this.userId}, requestId=${requestId}).`;
           Sentry.addBreadcrumb({ message });
           Sentry.captureException(error);
           console.log(message);
