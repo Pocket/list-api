@@ -107,5 +107,15 @@ export default {
   },
   batchDelete: {
     deleteDelayInMilliSec: 20000,
+    tablesWithPii: ['item_tags', 'list', 'item_attribution'],
+    tablesWithUserIdAlone: [
+      'list_meta',
+      'items_scroll',
+      'item_ads',
+      'item_time_spent',
+      'item_currently_reading',
+      'list_extras',
+      'list_shares',
+    ],
   },
 };
