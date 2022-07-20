@@ -68,9 +68,9 @@ export class BatchDeleteHandler {
     try {
       await this.sqsClient.send(new DeleteMessageCommand(deleteParams));
     } catch (error) {
-      const errorMessage = 'Error deleting message from queue';
-      console.error(errorMessage, error);
-      console.error(JSON.stringify(message));
+      const errorMessage = 'BatchDelete: Error deleting message from queue';
+      console.log(errorMessage + error);
+      console.log(JSON.stringify(message));
       Sentry.addBreadcrumb({ message: errorMessage, data: message });
       Sentry.captureException(error);
     }
@@ -155,6 +155,11 @@ export class BatchDeleteHandler {
     if (body != null) {
       const wasSuccess = await this.handleMessage(body);
       if (wasSuccess) {
+        console.log(
+          `BatchDelete: attempting to delete message ${JSON.stringify(
+            data.Messages[0]
+          )} from the queue`
+        );
         await this.deleteMessage(data.Messages[0]);
       }
       // Schedule next message poll
