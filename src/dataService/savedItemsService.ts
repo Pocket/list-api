@@ -278,18 +278,7 @@ export class SavedItemDataService {
    * @param requestId: optional unique request ID for tracing
    */
   public async batchDeleteSavedItems(itemIds: number[], requestId?: string) {
-    const tables = [
-      'item_tags',
-      'list',
-      'item_attribution',
-      'items_scroll',
-      'item_ads',
-      'item_time_spent',
-      'item_currently_reading',
-      'list_extras',
-      'list_meta',
-      'list_shares',
-    ];
+    const tables = [...config.batchDelete.tablesWithPii];
 
     for (const id of itemIds) {
       for (const table of tables) {
