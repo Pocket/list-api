@@ -12,6 +12,7 @@
     "lint-fix": "eslint --fix \"src/**/*.ts\""
   },
   "dependencies": {
+    "@aws-sdk/client-eventbridge": "3.92.0",
     "@aws-sdk/client-kinesis": "3.53.0",
     "@aws-sdk/client-sqs": "3.53.0",
     "@graphql-tools/mock": "8.6.12",
