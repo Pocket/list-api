@@ -1,3 +1,7 @@
+import { AccountDeletionCompleteEventEmitter } from './accountDeletionEventEmitter';
+import { AccountDeletionEventHandler } from './accountDeletionEventHandler';
+import { eventMap } from './eventConfig';
+
 export type BaseEventBusPayload = {
   timestamp: number;
   version: string;
@@ -8,6 +12,7 @@ export type AccountDeleteEventBusPayload = BaseEventBusPayload & {
   userId: string;
   email: string;
   isPremium: boolean;
+  service: 'list';
 };
 
 export type EventHandlerCallbackMap = {
@@ -15,5 +20,12 @@ export type EventHandlerCallbackMap = {
 };
 
 export enum EventBridgeEventType {
-  ACCOUNT_DELETION = 'account-deletion',
+  ACCOUNT_DELETION_COMPLETED = 'account-deletion-complete',
+}
+
+//call this in main.ts where the server starts
+export function initAccountDeletionCompleteEvents() {
+  const emitter = new AccountDeletionCompleteEventEmitter();
+  const handler = new AccountDeletionEventHandler();
+  handler.init(emitter, eventMap);
 }

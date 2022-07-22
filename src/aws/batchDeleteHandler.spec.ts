@@ -13,6 +13,8 @@ describe('batchDeleteHandler', () => {
     traceId: 'abc-123',
     itemIds: [1, 2, 3, 4, 5],
     userId: 123,
+    email: 'test@bla.com',
+    isPremium: false,
   };
   let scheduleStub: sinon.SinonStub;
   let sentryStub: sinon.SinonStub;

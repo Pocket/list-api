@@ -5,7 +5,7 @@ import {
   PutEventsCommand,
   PutEventsCommandOutput,
 } from '@aws-sdk/client-eventbridge';
-import config from '../../config';
+import config from '../config';
 import { eventMap } from './eventConfig';
 import { IEventHandler } from './IEventHandler';
 import { EventHandlerCallbackMap } from './eventTypes';
@@ -14,14 +14,13 @@ import { EventHandlerCallbackMap } from './eventTypes';
  * This class MUST be initialized using the EventBusHandler.init() method.
  * This is done to ensure event handlers adhere to the EventHandlerInterface.
  */
-export class EventBusHandler implements IEventHandler {
+export class AccountDeletionEventHandler implements IEventHandler {
   private client: EventBridgeClient;
 
   init(emitter: EventEmitter, eventHandlerMap?: EventHandlerCallbackMap) {
     this.client = new EventBridgeClient({
       region: config.aws.region,
     });
-
     const handlerMap = eventHandlerMap ?? eventMap;
 
     Object.entries(handlerMap).forEach(([event, method]) => {
@@ -31,8 +30,6 @@ export class EventBusHandler implements IEventHandler {
           eventPayload = method(data);
           await this.sendEvent(eventPayload);
         } catch (error) {
-          // In the unlikely event that the payload generator throws an error,
-          // log to Sentry and Cloudwatch but don't halt program
           const failedEventError = new Error(
             `Failed to send event '${
               eventPayload.eventType
