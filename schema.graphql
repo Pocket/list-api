@@ -54,8 +54,10 @@ type PageInfo {
 Pagination request. To determine which edges to return, the connection
 evaluates the `before` and `after` cursors (if given) to filter the
 edges, then evaluates `first`/`last` to slice the edges (only include a
-value for either `first` or `last`, not both). If all fields are null,
-by default will return a page with the first 30 elements.
+value for either `first` or `last`, not both).
+The max allowed limit for `first`/`last` is 100. The server would reset
+this values to 100 if the request has `first`/`last` set greater than 100.
+If all fields are null, by default will return a page with the first 30 elements.
 """
 input PaginationInput {
   """
