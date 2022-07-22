@@ -1,6 +1,5 @@
 import { AccountDeletionCompleteEventEmitter } from './accountDeletionEventEmitter';
 import { AccountDeletionEventHandler } from './accountDeletionEventHandler';
-import { eventMap } from './eventConfig';
 
 export type BaseEventBusPayload = {
   timestamp: number;
@@ -27,5 +26,5 @@ export enum EventBridgeEventType {
 export function initAccountDeletionCompleteEvents() {
   const emitter = new AccountDeletionCompleteEventEmitter();
   const handler = new AccountDeletionEventHandler();
-  handler.init(emitter, eventMap);
+  handler.init(emitter);
 }

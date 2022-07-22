@@ -6,9 +6,10 @@ import {
   PutEventsCommandOutput,
 } from '@aws-sdk/client-eventbridge';
 import config from '../config';
-import { eventMap } from './eventConfig';
+import { processEventPayloadFromMessage } from './eventConfig';
 import { IEventHandler } from './IEventHandler';
-import { EventHandlerCallbackMap } from './eventTypes';
+import { EventBridgeEventType } from './eventTypes';
+import { BatchDeleteMessage } from './batchDeleteHandler';
 
 /**
  * This class MUST be initialized using the EventBusHandler.init() method.
@@ -17,17 +18,17 @@ import { EventHandlerCallbackMap } from './eventTypes';
 export class AccountDeletionEventHandler implements IEventHandler {
   private client: EventBridgeClient;
 
-  init(emitter: EventEmitter, eventHandlerMap?: EventHandlerCallbackMap) {
+  init(emitter: EventEmitter) {
     this.client = new EventBridgeClient({
       region: config.aws.region,
     });
-    const handlerMap = eventHandlerMap ?? eventMap;
 
-    Object.entries(handlerMap).forEach(([event, method]) => {
-      emitter.on(event, async (data) => {
+    emitter.on(
+      EventBridgeEventType.ACCOUNT_DELETION_COMPLETED,
+      async (data: BatchDeleteMessage) => {
         let eventPayload = undefined;
         try {
-          eventPayload = method(data);
+          eventPayload = processEventPayloadFromMessage(data);
           await this.sendEvent(eventPayload);
         } catch (error) {
           const failedEventError = new Error(
@@ -41,8 +42,8 @@ export class AccountDeletionEventHandler implements IEventHandler {
           console.log(failedEventError);
           console.log(error);
         }
-      });
-    });
+      }
+    );
 
     return this;
   }
