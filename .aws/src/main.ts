@@ -401,12 +401,9 @@ class ListAPI extends TerraformStack {
         taskExecutionDefaultAttachmentArn:
           'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
       },
-      //changes done for deletion testing only
-      //todo: we need to scale it back up, or immediately prioritize to move
-      //deletion handler as a separate thread
       autoscalingConfig: {
-        targetMinCapacity: 1,
-        targetMaxCapacity: 1,
+        targetMinCapacity: 2,
+        targetMaxCapacity: 10,
       },
       alarms: {
         //TODO: When we start using this more we will change from non-critical to critical
