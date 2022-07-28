@@ -149,7 +149,7 @@ export class BatchDeleteHandler {
       const receiveError = 'Error receiving messages from queue';
       console.error(receiveError, error);
       Sentry.addBreadcrumb({ message: receiveError });
-      Sentry.captureException(error, { level: Sentry.Severity.Critical });
+      Sentry.captureException(error, { level: 'fatal' });
     }
     // Process any messages received and schedule next poll
     if (body != null) {
