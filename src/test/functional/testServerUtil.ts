@@ -23,8 +23,7 @@ export function getServer(
       ApolloServerPluginInlineTraceDisabled(),
       ApolloServerPluginUsageReportingDisabled(),
     ],
-    formatError:
-      process.env.NODE_ENV === 'production' ? errorHandler : undefined,
+    formatError: errorHandler,
     context: () => {
       return new ContextManager({
         request: {
