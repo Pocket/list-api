@@ -123,81 +123,53 @@ export class TagDataService {
     resolvedItemId: string
   ): Promise<Pick<Tag, 'name' | 'id'>[]> {
     const getTagsForItemQuery = await this.db.raw(
-      `SELECT
-            tag               AS tag,
-            tag               AS name,
-            MAX(score)        AS score
-            TO_BASE64(x.tag)  AS id
-        FROM (
-        
-        SELECT
-            tag,
-            sum AS score
-        FROM (
-        
-        SELECT
-        m.tag,
-        SUM(m.count) * 100 AS sum
-        FROM (
-        
-        SELECT
-            it.tag,
-            ig.grouping_id,
-            COUNT(1) AS count
-        FROM (
-        
-        SELECT tag, item_id, user_id
-        FROM \`readitla_ril-tmp\`.item_tags
-        WHERE user_id = :userId
-        ORDER BY item_id DESC
-        LIMIT 1000
-        
-        ) AS it
-        STRAIGHT_JOIN \`readitla_ril-tmp\`.list AS l ON (it.item_id = l.item_id AND it.user_id = l.user_id)
-        STRAIGHT_JOIN \`readitla_b\`.item_grouping AS ig ON (l.resolved_id = ig.resolved_id)
-        STRAIGHT_JOIN \`readitla_b\`.grouping AS g ON (ig.grouping_id = g.grouping_id AND g.grouping_type_id IN (2,3,19,20))
-        GROUP BY it.tag, ig.grouping_id
-        ORDER BY count DESC LIMIT 10000
-        
-        ) AS m
-        JOIN \`readitla_b\`.item_grouping ig ON (m.grouping_id = ig.grouping_id AND ig.resolved_id = :resolvedId)
-        GROUP BY m.tag
-        ORDER BY sum DESC
-        LIMIT 5
-        
-        ) related_tags
-        
-        UNION
-        
-        SELECT
-            tag               AS tag,
-            tag               AS name,
-            MAX(count)        AS score
-            TO_BASE64(x.tag)  AS id
-        FROM (
-        
-        SELECT
-            tag,
-            COUNT(1) count
-        FROM (
-        
-        SELECT tag, item_id
-        FROM \`readitla_ril-tmp\`.item_tags
-        WHERE user_id = :userId
-        ORDER BY item_id DESC
-        LIMIT 1000
-        
-        ) AS r
-        GROUP BY tag
-        ORDER BY count DESC
-        LIMIT 5
-        
-        ) AS frecent_tags
-        
-        ) AS tags
-        GROUP BY tag
-        ORDER BY score DESC
-        LIMIT 8;`,
+      `SELECT tag            AS tag,
+      tag            AS name,
+      MAX(score)     AS score,
+      TO_BASE64(tag) AS id
+      FROM (SELECT tag,
+                  sum AS score
+          FROM (SELECT m.tag,
+                        SUM(m.count) * 100 AS sum
+                FROM (SELECT it.tag,
+                              ig.grouping_id,
+                              COUNT(1) AS count
+                      FROM (SELECT tag, item_id, user_id
+                            FROM \`readitla_ril-tmp\`.item_tags
+                            WHERE user_id = :userId
+                            ORDER BY item_id DESC
+                            LIMIT 1000) AS it
+                                STRAIGHT_JOIN \`readitla_ril-tmp\`.list AS l
+                            ON (it.item_id = l.item_id AND it.user_id = l.user_id)
+                                STRAIGHT_JOIN \`readitla_b\`.item_grouping AS ig ON (l.resolved_id = ig.resolved_id)
+                                STRAIGHT_JOIN \`readitla_b\`.grouping AS g
+                            ON (ig.grouping_id = g.grouping_id AND g.grouping_type_id IN (2, 3, 19, 20))
+                      GROUP BY it.tag, ig.grouping_id
+                      ORDER BY count DESC
+                      LIMIT 10000) AS m
+                          JOIN \`readitla_b\`.item_grouping ig
+                              ON (m.grouping_id = ig.grouping_id AND ig.resolved_id = :resolvedId)
+                GROUP BY m.tag
+                ORDER BY sum DESC
+                LIMIT 5) related_tags
+
+          UNION
+
+          SELECT tag,
+                  MAX(count) AS score
+          FROM (SELECT tag,
+                        COUNT(1) count
+                FROM (SELECT tag, item_id
+                      FROM \`readitla_ril-tmp\`.item_tags
+                      WHERE user_id = :userId
+                      ORDER BY item_id DESC
+                      LIMIT 1000) AS r
+                GROUP BY tag
+                ORDER BY count DESC
+                LIMIT 5) AS frecent_tags) AS tags
+      GROUP BY tag
+      ORDER BY score DESC
+      LIMIT 8;`,
       { resolvedId: resolvedItemId, userId: this.userId }
     );
     // Returning a partial here because joining on `item_tags` to get additional
