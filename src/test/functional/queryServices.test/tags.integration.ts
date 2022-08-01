@@ -397,14 +397,14 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.edges.length
-    ).equals(2);
+    ).equals(4);
     // Default to itemId, asc on sort field collision
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.edges[0].node.url
     ).equals('http://abc');
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.totalCount
-    ).equals(2);
+    ).equals(4);
     expect(
       res.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
         .hasNextPage
@@ -631,7 +631,7 @@ describe('tags query tests - happy path', () => {
     expect(
       secondTag.savedItems.edges.map((edge) => edge.node.url)
     ).to.deep.equal(['http://abc', 'http://tagtest']);
-    expect(secondTag.savedItems.pageInfo.hasNextPage).to.be.false;
+    expect(secondTag.savedItems.pageInfo.hasNextPage).to.be.true;
   });
 
   it('return paginated SavedItems, when filtered by archived', async () => {
