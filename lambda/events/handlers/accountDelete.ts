@@ -11,11 +11,18 @@ import fetch from 'node-fetch';
  */
 export async function accountDeleteHandler(record: SQSRecord) {
   const message = JSON.parse(JSON.parse(record.body).Message)['detail'];
+
+  if (!message['userId'] || !message['email']) {
+    console.log(`invalid payload for account deletion event, ' +
+      'error processing event: ${message}`);
+    return;
+  }
   const postBody = {
     userId: message['userId'],
     email: message['email'],
     isPremium: message['isPremium'],
   };
+
   if (message['traceId']) {
     postBody['traceId'] = message['traceId'];
   }
