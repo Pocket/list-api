@@ -1,5 +1,5 @@
 import { ApolloServer } from 'apollo-server-express';
-import { buildSubgraphSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/subgraph';
 import { typeDefs } from './typeDefs';
 import { resolvers } from '../resolvers';
 import { errorHandler } from '@pocket-tools/apollo-utils';
