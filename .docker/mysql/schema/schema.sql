@@ -110,30 +110,30 @@ CREATE TABLE `items_scroll` (
   KEY `updated_at` (`updated_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
--- Suggested Tags Tables
-CREATE TABLE `suggested_tags_user_grouping_tags` (
-    user_id        int unsigned            not null,
-    grouping_id    bigint unsigned         not null,
-    tag            varchar(25)             not null,
-    weighted_count decimal(11, 4) unsigned not null,
-    count          int unsigned            not null,
-    primary key (user_id, grouping_id, tag)
-) COLLATE=utf8_unicode_ci;
-
-CREATE INDEX `user_tag_idx` ON suggested_tags_user_grouping_tags (user_id, tag);
-
-CREATE TABLE `suggested_tags_user_groupings`
-(
-    user_id        int unsigned            not null,
-    grouping_id    bigint unsigned         not null,
-    weighted_count decimal(11, 4) unsigned not null,
-    count          int unsigned            not null,
-    primary key (user_id, grouping_id)
-) COLLATE = utf8_unicode_ci;
 
 CREATE DATABASE IF NOT EXISTS `readitla_b`;
-
 USE readitla_b;
+
+-- Suggested Tags Tables
+CREATE TABLE `grouping`
+(
+    `grouping_id`        bigint unsigned auto_increment PRIMARY KEY,
+    `parent_grouping_id` bigint unsigned                      NULL,
+    `name`               varchar(100) collate utf8_unicode_ci NOT NULL,
+    `stemmed_name`       varchar(100) collate utf8_unicode_ci NULL,
+    `grouping_type_id`   smallint unsigned                    NOT NULL,
+    `origin_id`          bigint unsigned                      NULL,
+    `entity_type`        varchar(50)                          NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE INDEX parent_grouping_idx
+    ON `grouping` (parent_grouping_id);
+
+CREATE INDEX type_name_idx
+    ON `grouping` (grouping_type_id, name);
+
+CREATE INDEX type_origin_idx
+    ON `grouping` (grouping_type_id, origin_id);
 
 -- NOTE: This is a subset of fields in the actual table, for test purposes
 CREATE TABLE `items_extended` (
