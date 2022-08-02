@@ -5,7 +5,7 @@ import {
   ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from 'apollo-server-core';
-import { buildSubgraphSchema } from '@apollo/federation';
+import { buildSubgraphSchema } from '@apollo/subgraph';
 import { typeDefs } from '../../server/typeDefs';
 import { resolvers } from '../../resolvers';
 import { ContextManager } from '../../server/context';

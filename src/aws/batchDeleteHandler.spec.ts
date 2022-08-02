@@ -45,13 +45,13 @@ describe('batchDeleteHandler', () => {
     await batchDeleteHandler.pollQueue();
     expect(scheduleStub.calledOnceWithExactly(300000)).toBe(true);
   });
-  it('logs critical error if could not receive messages, and reschedules', async () => {
+  it('logs fatal error if could not receive messages, and reschedules', async () => {
     const error = new Error(`You got Q'd`);
     sinon.stub(SQSClient.prototype, 'send').rejects(error);
     await batchDeleteHandler.pollQueue();
     expect(
       sentryStub.calledOnceWithExactly(error, {
-        level: Sentry.Severity.Critical,
+        level: 'fatal',
       })
     ).toBe(true);
     expect(consoleStub.callCount).toEqual(1);
