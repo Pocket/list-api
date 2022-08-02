@@ -20,7 +20,6 @@ const userEventData: BatchDeleteMessage = {
   userId: 1,
   email: 'test@email.com',
   isPremium: false,
-  isComplete: true,
 };
 
 describe('AccountDeleteCompletion Error handler', () => {

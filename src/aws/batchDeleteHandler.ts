@@ -19,7 +19,6 @@ export type BatchDeleteMessage = {
   itemIds?: number[];
   email: string;
   isPremium: boolean;
-  isComplete?: boolean;
 };
 
 export class BatchDeleteHandler {
