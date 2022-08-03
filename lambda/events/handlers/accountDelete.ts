@@ -14,9 +14,10 @@ export async function accountDeleteHandler(record: SQSRecord) {
 
   if (!message['userId'] || !message['email']) {
     console.log(`invalid payload for account deletion event, ' +
-      'error processing event: ${message}`);
+      'error processing 'detail': ${JSON.stringify(message)}`);
     return;
   }
+
   const postBody = {
     userId: message['userId'],
     email: message['email'],
