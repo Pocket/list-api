@@ -63,7 +63,7 @@
     "nodemon": "2.0.19",
     "prettier": "2.7.1",
     "sinon": "14.0.0",
-    "supertest": "6.2.3",
+    "supertest": "6.2.4",
     "ts-jest": "28.0.7",
     "ts-node": "10.9.1"
   }
