@@ -269,6 +269,10 @@ class ListAPI extends TerraformStack {
               name: 'DATABASE_TZ',
               value: config.envVars.databaseTz,
             },
+            {
+              name: 'EVENT_BUS_NAME',
+              value: config.envVars.eventBusName,
+            },
           ],
           secretEnvVars: [
             {
@@ -394,6 +398,13 @@ class ListAPI extends TerraformStack {
             actions: ['kinesis:PutRecord', 'kinesis:PutRecords'],
             resources: [
               `arn:aws:kinesis:${region.name}:${caller.accountId}:stream/${config.envVars.unifiedEventStreamName}`,
+            ],
+            effect: 'Allow',
+          },
+          {
+            actions: ['events:PutEvents'],
+            resources: [
+              `arn:aws:events:${region.name}:${caller.accountId}:event-bus/${config.envVars.eventBusName}`,
             ],
             effect: 'Allow',
           },

@@ -16,7 +16,9 @@ import { setTimeout } from 'timers/promises';
 export type BatchDeleteMessage = {
   traceId: string;
   userId: number;
-  itemIds: number[];
+  itemIds?: number[];
+  email: string;
+  isPremium: boolean;
 };
 
 export class BatchDeleteHandler {
