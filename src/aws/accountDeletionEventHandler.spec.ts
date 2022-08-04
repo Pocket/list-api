@@ -9,13 +9,13 @@ import {
   EventBridgeEventType,
 } from './eventTypes';
 import { AccountDeletionEventHandler } from './accountDeletionEventHandler';
-import { BatchDeleteMessage } from './batchDeleteHandler';
+import { UserMessageBase } from './batchDeleteHandler';
 import * as EventConfig from './eventConfig';
 
 /**
  * Mock event payload
  */
-const userEventData: BatchDeleteMessage = {
+const userEventData: UserMessageBase = {
   traceId: 'bla-123',
   userId: 1,
   email: 'test@email.com',
