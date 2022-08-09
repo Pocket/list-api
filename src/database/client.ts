@@ -50,6 +50,8 @@ export function createConnection(dbConfig: {
       charset: 'utf8mb4',
     },
     pool: {
+      min: 0, //knex docs state to set to 0 so that idle connections are released. Default was 2 for legacy knex reasons (according to docs)
+      max: 10, //knex default
       /**
        * Explicitly set the session timezone. We don't want to take any chances with this
        */
