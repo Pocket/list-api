@@ -343,7 +343,7 @@ export class ListPaginationService {
       .raw(`${insertStatement} ${initialCursorQuery}`)
       .connection(connection);
 
-    const listTempTable = `${ListPaginationService.LIST_TEMP_TABLE}`;
+    const listTempTable = ListPaginationService.LIST_TEMP_TABLE;
     // Get location (index) of previous cursor
     const prevCursorSeq = (
       await trx(listTempTable)
@@ -487,7 +487,7 @@ export class ListPaginationService {
     // Don't want to do aggregate functions inside our pagination query,
     // So use a temp table and simplify, so it's just a join
     await this.hlTempTableQuery(trx, connection);
-    const highlightsTempTable = `${ListPaginationService.HIGHLIGHTS_TEMP_TABLE}`;
+    const highlightsTempTable = ListPaginationService.HIGHLIGHTS_TEMP_TABLE;
     const insertStatement = `INSERT INTO \`${highlightsTempTable}\` (item_id) `;
     const highlightsQuery = trx('user_annotations')
       .select(trx.raw(`distinct item_id as item_id`))
@@ -531,7 +531,7 @@ export class ListPaginationService {
     // that we need to find
     const untaggedIndex = tagNames.indexOf('_untagged_');
     await this.tagsTempQuery(trx, connection);
-    const tagsTempTable = `${ListPaginationService.TAGS_TEMP_TABLE}`;
+    const tagsTempTable = ListPaginationService.TAGS_TEMP_TABLE;
     const insertStatement = `INSERT INTO \`${tagsTempTable}\` (item_id) `;
     const tagsSubQuery = trx('item_tags')
       .select('tag', 'item_id', 'user_id')
@@ -636,39 +636,45 @@ export class ListPaginationService {
 
     const connection = await this.context.dbClient.client.acquireConnection();
 
-    // Drop temp tables if exists.
-    await this.dropTempTables(this.context.dbClient, connection);
+    //Define these outside the try statement to be used later
+    let totalCount;
+    let pageResult;
+    try {
+      // Drop temp tables if exists.
+      await this.dropTempTables(this.context.dbClient, connection);
 
-    await this.listTempTableQuery(this.context.dbClient, connection);
-    const baseQuery = this.context
-      .dbClient('list')
-      .where('list.user_id', this.context.userId);
-    if (savedItemIds?.length) {
-      baseQuery.whereIn('list.item_id', savedItemIds);
-    }
-    if (filter != null) {
-      await this.buildFilterQuery(
-        baseQuery,
+      await this.listTempTableQuery(this.context.dbClient, connection);
+      const baseQuery = this.context
+        .dbClient('list')
+        .where('list.user_id', this.context.userId);
+      if (savedItemIds?.length) {
+        baseQuery.whereIn('list.item_id', savedItemIds);
+      }
+      if (filter != null) {
+        await this.buildFilterQuery(
+          baseQuery,
+          this.context.dbClient,
+          filter,
+          connection
+        );
+      }
+      totalCount = (await this.context.dbClient
+        .count('* as count')
+        .from(baseQuery.clone().select('list.*').limit(5000).as('countQuery'))
+        .first()
+        .connection(connection)
+        .then((_) => _?.count ?? 0)) as number;
+      pageResult = await this.paginatedResult(
+        baseQuery as any,
         this.context.dbClient,
-        filter,
+        pagination,
+        sort,
         connection
       );
+    } finally {
+      //ensure we always release the connection back to the rest of the pool to play with its friends
+      await this.context.dbClient.client.releaseConnection(connection);
     }
-    const totalCount = (await this.context.dbClient
-      .count('* as count')
-      .from(baseQuery.clone().select('list.*').limit(5000).as('countQuery'))
-      .first()
-      .connection(connection)
-      .then((_) => _?.count ?? 0)) as number;
-    const pageResult = await this.paginatedResult(
-      baseQuery as any,
-      this.context.dbClient,
-      pagination,
-      sort,
-      connection
-    );
-
-    await this.context.dbClient.client.releaseConnection(connection);
 
     const pageInfo: any = this.hydratePageInfo(pageResult, pagination);
     let nodes: SavedItemResult[];
