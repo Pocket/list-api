@@ -13,7 +13,6 @@ import { cleanAndValidateTag, mysqlTimeString } from './utils';
 import config from '../config';
 import { PaginationInput } from '@pocket-tools/apollo-utils';
 import { UserInputError } from 'apollo-server-express';
-import { nanoid } from 'nanoid';
 
 interface ListEntity {
   user_id?: number;
@@ -129,70 +128,80 @@ export class ListPaginationService {
   /**
    * Utility method to create the list temp table within a transaction
    * @param trx Open transaction object
-   * @returns Knex.Raw -- await this to create the table within a transaction
+   * @returns Knex.Raw -- await this to create the table within the connection
    */
-  private listTempTableQuery = (trx: Knex, trxId: string): Knex.Raw =>
-    trx.raw(
-      `CREATE TEMPORARY TABLE \`${ListPaginationService.LIST_TEMP_TABLE}_${trxId}\` ` +
-        '(' +
-        '`seq` int NOT NULL AUTO_INCREMENT PRIMARY KEY, ' +
-        '`item_id` int(10) unsigned NOT NULL, ' +
-        '`resolved_id` int(10) unsigned NOT NULL, ' +
-        /*
-         * Setting VARCHAR length for given_url to 5,000. This is a hack to get it
-         * reasonably high to prevent url from getting truncated since the
-         * corresponding column in the db has a TEXT data type, and mysql
-         * temporary tables do not support BLOB/TEXT
-         */
-        '`given_url` varchar(5000) COLLATE utf8_unicode_ci NOT NULL, ' +
-        '`given_title` varchar(75) COLLATE utf8_unicode_ci NOT NULL, ' +
-        '`favorite` tinyint(3) unsigned NOT NULL, ' +
-        '`status` tinyint(3) unsigned NOT NULL, ' +
-        '`time_added` int(10), ' +
-        '`time_updated` int(10), ' +
-        '`time_read` int(10), ' +
-        '`time_favorited` int(10) ' +
-        ') ENGINE = MEMORY'
-    );
+  private listTempTableQuery = (trx: Knex, connection: any): Knex.Raw =>
+    trx
+      .raw(
+        `CREATE TEMPORARY TABLE \`${ListPaginationService.LIST_TEMP_TABLE}\` ` +
+          '(' +
+          '`seq` int NOT NULL AUTO_INCREMENT PRIMARY KEY, ' +
+          '`item_id` int(10) unsigned NOT NULL, ' +
+          '`resolved_id` int(10) unsigned NOT NULL, ' +
+          /*
+           * Setting VARCHAR length for given_url to 5,000. This is a hack to get it
+           * reasonably high to prevent url from getting truncated since the
+           * corresponding column in the db has a TEXT data type, and mysql
+           * temporary tables do not support BLOB/TEXT
+           */
+          '`given_url` varchar(5000) COLLATE utf8_unicode_ci NOT NULL, ' +
+          '`given_title` varchar(75) COLLATE utf8_unicode_ci NOT NULL, ' +
+          '`favorite` tinyint(3) unsigned NOT NULL, ' +
+          '`status` tinyint(3) unsigned NOT NULL, ' +
+          '`time_added` int(10), ' +
+          '`time_updated` int(10), ' +
+          '`time_read` int(10), ' +
+          '`time_favorited` int(10) ' +
+          ') ENGINE = MEMORY'
+      )
+      .connection(connection);
 
   /**
    * Utility method to create the highlights temp table within a transaction
-   * @param trx Open transaction object
+   * @param trx Knex query object
+   * @param connection The db connection session to use
    * @returns Knex.Raw -- await this to create the table within a transaction
    */
-  private hlTempTableQuery = (trx: Knex, trxId: string) =>
-    trx.raw(
-      `CREATE TEMPORARY TABLE \`${ListPaginationService.HIGHLIGHTS_TEMP_TABLE}_${trxId}\` ` +
-        '(' +
-        '`item_id` int(10) unsigned NOT NULL PRIMARY KEY' +
-        ') ENGINE = MEMORY'
-    );
+  private hlTempTableQuery = (trx: Knex, connection: any) =>
+    trx
+      .raw(
+        `CREATE TEMPORARY TABLE \`${ListPaginationService.HIGHLIGHTS_TEMP_TABLE}\` ` +
+          '(' +
+          '`item_id` int(10) unsigned NOT NULL PRIMARY KEY' +
+          ') ENGINE = MEMORY'
+      )
+      .connection(connection);
 
   /**
    * Utility method to create the tags temp table within a transaction
-   * @param trx Open transaction object
+   * @param trx Knex query object
+   * @param connection The db connection session to use
    * @returns Knex.Raw -- await this to create the table within a transaction
    */
-  private tagsTempQuery = (trx: Knex, trxId: string) =>
-    trx.raw(
-      `CREATE TEMPORARY TABLE \`${ListPaginationService.TAGS_TEMP_TABLE}_${trxId}\` ` +
-        '(' +
-        '`item_id` int(10) unsigned NOT NULL PRIMARY KEY' +
-        ') ENGINE = MEMORY'
-    );
+  private tagsTempQuery = (trx: Knex, connection: any) =>
+    trx
+      .raw(
+        `CREATE TEMPORARY TABLE \`${ListPaginationService.TAGS_TEMP_TABLE}\` ` +
+          '(' +
+          '`item_id` int(10) unsigned NOT NULL PRIMARY KEY' +
+          ') ENGINE = MEMORY'
+      )
+      .connection(connection);
 
   /**
    * Returns a promise to clean up all temp tables created using `this.createTempTable`
    * within a transaction
-   * @param trx Open transaction object
+   * @param trx Knex query object
+   * @param connection The db connection session to use
    * @returns Promise to delete all tables created; await this to perform deletion
    */
-  private dropTempTables(trx: Knex, trxId: string): any {
+  private dropTempTables(trx: Knex, connection: any): any {
     return Promise.all(
-      ListPaginationService.TEMP_TABLES.map((tableName) => {
-        tableName = `${tableName}_${trxId}`;
-        trx.raw(`DROP TEMPORARY TABLE IF EXISTS \`${tableName}\``);
-      })
+      ListPaginationService.TEMP_TABLES.map((tableName) =>
+        trx
+          .raw(`DROP TEMPORARY TABLE IF EXISTS \`${tableName}\``)
+          .connection(connection)
+      )
     );
   }
 
@@ -205,7 +214,7 @@ export class ListPaginationService {
     trx: Knex,
     pagination: PaginationInput,
     sort: SavedItemsSort,
-    trxId: string
+    connection: any
   ) {
     const queryBuilder = query.select(
       'list.item_id',
@@ -220,7 +229,7 @@ export class ListPaginationService {
       trx.raw('UNIX_TIMESTAMP(list.time_favorited) AS time_favorited')
     );
     // needs to be same order as above
-    const insertStatement = `INSERT INTO \`${ListPaginationService.LIST_TEMP_TABLE}_${trxId}\` (item_id, resolved_id, given_url, given_title, favorite, status, time_added, time_updated, time_read, time_favorited) `;
+    const insertStatement = `INSERT INTO \`${ListPaginationService.LIST_TEMP_TABLE}\` (item_id, resolved_id, given_url, given_title, favorite, status, time_added, time_updated, time_read, time_favorited) `;
     const cursor = pagination.after ?? pagination.before ?? null;
     if (cursor) {
       return this.pageAfterorBefore(
@@ -230,7 +239,7 @@ export class ListPaginationService {
         cursor,
         pagination,
         sort,
-        trxId
+        connection
       );
     } else {
       return this.pageFirstLast(
@@ -239,7 +248,7 @@ export class ListPaginationService {
         insertStatement,
         sort,
         pagination,
-        trxId
+        connection
       );
     }
   }
@@ -253,7 +262,7 @@ export class ListPaginationService {
     insertStatement: string,
     sort: SavedItemsSort,
     pagination: PaginationInput,
-    trxId: string
+    connection: any
   ) {
     const pageSize = pagination.first ?? pagination.last;
     const sortOrder = new Sort(sort);
@@ -272,9 +281,9 @@ export class ListPaginationService {
       ])
       .limit(pageSize + 1)
       .toString();
-    await trx.raw(`${insertStatement} ${queryString}`);
+    await trx.raw(`${insertStatement} ${queryString}`).connection(connection);
     const returnQuery = trx(
-      `${ListPaginationService.LIST_TEMP_TABLE}_${trxId}`
+      `${ListPaginationService.LIST_TEMP_TABLE}`
     ).select();
     if (pagination.last) {
       // Need to reorder for last
@@ -283,7 +292,7 @@ export class ListPaginationService {
         { column: 'item_id' },
       ]);
     }
-    return returnQuery;
+    return returnQuery.connection(connection);
   }
 
   /**
@@ -297,7 +306,7 @@ export class ListPaginationService {
     cursor: string,
     pagination: PaginationInput,
     sort: SavedItemsSort,
-    trxId: string
+    connection: any
   ) {
     const pageSize = pagination.first ?? pagination.last;
     // Since we don't have a unique sequential column for cursor-based pagination
@@ -330,12 +339,17 @@ export class ListPaginationService {
       .andWhere(sortColumn, timeCursor)
       .limit(5000)
       .toString();
-    await trx.raw(`${insertStatement} ${initialCursorQuery}`);
+    await trx
+      .raw(`${insertStatement} ${initialCursorQuery}`)
+      .connection(connection);
 
-    const listTempTable = `${ListPaginationService.LIST_TEMP_TABLE}_${trxId}`;
+    const listTempTable = `${ListPaginationService.LIST_TEMP_TABLE}`;
     // Get location (index) of previous cursor
     const prevCursorSeq = (
-      await trx(listTempTable).where('item_id', itemId).pluck('seq')
+      await trx(listTempTable)
+        .where('item_id', itemId)
+        .pluck('seq')
+        .connection(connection)
     )[0];
     // Remove anything prior and up to the cursor (inclusive)
     // Note that the reverse ordering from 'before' pagination
@@ -343,12 +357,16 @@ export class ListPaginationService {
     if (prevCursorSeq == null) {
       throw new UserInputError('Cursor not found.');
     }
-    await trx(listTempTable).where('seq', '<=', prevCursorSeq).del();
+    await trx(listTempTable)
+      .where('seq', '<=', prevCursorSeq)
+      .del()
+      .connection(connection);
     // Compute how many we have in the table; if there are a lot of
     // collisions we may not even need to fetch more
     const currCount = (await trx(listTempTable)
       .count('* as count')
       .first()
+      .connection(connection)
       .then((_) => _?.count ?? 0)) as number;
     const limit = pageSize + 1 - currCount;
     if (limit > 0) {
@@ -360,7 +378,7 @@ export class ListPaginationService {
         .andWhere(sortColumn, order === 'desc' ? '<' : '>', timeCursor)
         .limit(limit)
         .toString();
-      await trx.raw(`${insertStatement} ${restOfQuery}`);
+      await trx.raw(`${insertStatement} ${restOfQuery}`).connection(connection);
     }
     const returnQuery = trx(listTempTable)
       .select()
@@ -371,7 +389,7 @@ export class ListPaginationService {
         { column: 'item_id' },
       ]);
     }
-    return returnQuery;
+    return returnQuery.connection(connection);
   }
 
   /**
@@ -405,7 +423,7 @@ export class ListPaginationService {
     baseQuery: any,
     trx: Knex,
     filter: SavedItemsFilter,
-    trxId: string
+    connection: any
   ): Promise<any> {
     // The base query will always have a 'where' statement selecting
     // the user ID, so use andWhere for all additional methods
@@ -443,7 +461,7 @@ export class ListPaginationService {
         baseQuery,
         trx,
         filter.isHighlighted,
-        trxId
+        connection
       );
     }
     if (filter.contentType != null) {
@@ -452,7 +470,7 @@ export class ListPaginationService {
     // Tags has to go last due to select distinct
     if (filter.tagNames != null && filter.tagNames.length > 0) {
       const cleanTags = filter.tagNames.map(cleanAndValidateTag);
-      await this.tagNameFilter(baseQuery, trx, cleanTags, trxId);
+      await this.tagNameFilter(baseQuery, trx, cleanTags, connection);
     }
   }
 
@@ -464,19 +482,21 @@ export class ListPaginationService {
     baseQuery: Knex,
     trx: Knex,
     isHighlighted: boolean,
-    trxId: string
+    connection: any
   ) {
     // Don't want to do aggregate functions inside our pagination query,
     // So use a temp table and simplify, so it's just a join
-    await this.hlTempTableQuery(trx, trxId);
-    const highlightsTempTable = `${ListPaginationService.HIGHLIGHTS_TEMP_TABLE}_${trxId}`;
+    await this.hlTempTableQuery(trx, connection);
+    const highlightsTempTable = `${ListPaginationService.HIGHLIGHTS_TEMP_TABLE}`;
     const insertStatement = `INSERT INTO \`${highlightsTempTable}\` (item_id) `;
     const highlightsQuery = trx('user_annotations')
       .select(trx.raw(`distinct item_id as item_id`))
       .where('user_id', this.context.userId)
       .andWhere('status', 1)
       .toString();
-    await trx.raw(`${insertStatement} ${highlightsQuery}`);
+    await trx
+      .raw(`${insertStatement} ${highlightsQuery}`)
+      .connection(connection);
     if (isHighlighted) {
       baseQuery.innerJoin(
         highlightsTempTable,
@@ -502,7 +522,7 @@ export class ListPaginationService {
     baseQuery: Knex.QueryBuilder,
     trx: Knex,
     tagNames: string[],
-    trxId: string
+    connection: any
   ) {
     if (tagNames.length === 0) {
       return baseQuery;
@@ -510,8 +530,8 @@ export class ListPaginationService {
     // Can't do a straight inner join since we may have "untagged" items
     // that we need to find
     const untaggedIndex = tagNames.indexOf('_untagged_');
-    await this.tagsTempQuery(trx, trxId);
-    const tagsTempTable = `${ListPaginationService.TAGS_TEMP_TABLE}_${trxId}`;
+    await this.tagsTempQuery(trx, connection);
+    const tagsTempTable = `${ListPaginationService.TAGS_TEMP_TABLE}`;
     const insertStatement = `INSERT INTO \`${tagsTempTable}\` (item_id) `;
     const tagsSubQuery = trx('item_tags')
       .select('tag', 'item_id', 'user_id')
@@ -542,7 +562,7 @@ export class ListPaginationService {
       .select(trx.raw(`distinct lt.item_id as item_id`))
       .from(listTags.as('lt'))
       .toString();
-    await trx.raw(`${insertStatement} ${insertQuery}`);
+    await trx.raw(`${insertStatement} ${insertQuery}`).connection(connection);
     baseQuery.join(tagsTempTable, 'list.item_id', `${tagsTempTable}.item_id`);
   }
 
@@ -613,12 +633,13 @@ export class ListPaginationService {
     if (pagination == null) {
       pagination = { first: config.pagination.defaultPageSize };
     }
-    const trxId = nanoid();
+
+    const connection = await this.context.dbClient.client.acquireConnection();
 
     // Drop temp tables if exists.
-    await this.dropTempTables(this.context.dbClient, trxId);
+    await this.dropTempTables(this.context.dbClient, connection);
 
-    await this.listTempTableQuery(this.context.dbClient, trxId);
+    await this.listTempTableQuery(this.context.dbClient, connection);
     const baseQuery = this.context
       .dbClient('list')
       .where('list.user_id', this.context.userId);
@@ -630,21 +651,24 @@ export class ListPaginationService {
         baseQuery,
         this.context.dbClient,
         filter,
-        trxId
+        connection
       );
     }
     const totalCount = (await this.context.dbClient
       .count('* as count')
       .from(baseQuery.clone().select('list.*').limit(5000).as('countQuery'))
       .first()
+      .connection(connection)
       .then((_) => _?.count ?? 0)) as number;
     const pageResult = await this.paginatedResult(
       baseQuery as any,
       this.context.dbClient,
       pagination,
       sort,
-      trxId
+      connection
     );
+
+    await this.context.dbClient.client.releaseConnection(connection);
 
     const pageInfo: any = this.hydratePageInfo(pageResult, pagination);
     let nodes: SavedItemResult[];

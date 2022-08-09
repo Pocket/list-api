@@ -50,11 +50,8 @@ export function createConnection(dbConfig: {
       charset: 'utf8mb4',
     },
     pool: {
-      //Because we use temporary tables outside a transaction we can not use a connection pool.
-      //Even though we give the temporary tables unique names, wihtout our connection pool set to 1 conenction, there is no guarantee that we will get the same connection that had the temp table
-      //Given this is how the Web repo operates today, this is acceptable level of risk unitl List gets a new datastore.
-      min: 0,
-      max: 1,
+      min: 0, //knex docs state to set to 0 so that idle connections are released. Default was 2 for legacy knex reasons (according to docs)
+      max: 10, //knex default
       /**
        * Explicitly set the session timezone. We don't want to take any chances with this
        */
