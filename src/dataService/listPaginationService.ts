@@ -130,7 +130,7 @@ export class ListPaginationService {
    * @param trx Open transaction object
    * @returns Knex.Raw -- await this to create the table within a transaction
    */
-  private listTempTableQuery = (trx: Knex.Transaction): Knex.Raw =>
+  private listTempTableQuery = (trx: Knex): Knex.Raw =>
     trx.raw(
       `CREATE TEMPORARY TABLE \`${ListPaginationService.LIST_TEMP_TABLE}\` ` +
         '(' +
@@ -186,7 +186,7 @@ export class ListPaginationService {
    * @param trx Open transaction object
    * @returns Promise to delete all tables created; await this to perform deletion
    */
-  private dropTempTables(trx: Knex.Transaction): any {
+  private dropTempTables(trx: Knex): any {
     return Promise.all(
       ListPaginationService.TEMP_TABLES.map((tableName) =>
         trx.raw(`DROP TEMPORARY TABLE IF EXISTS \`${tableName}\``)
@@ -200,7 +200,7 @@ export class ListPaginationService {
    */
   private async paginatedResult(
     query: Knex.QueryBuilder,
-    trx: Knex.Transaction,
+    trx: Knex,
     pagination: PaginationInput,
     sort: SavedItemsSort
   ) {
@@ -243,7 +243,7 @@ export class ListPaginationService {
    * Handle first/last pagination.
    */
   private async pageFirstLast(
-    trx: Knex.Transaction,
+    trx: Knex,
     query: Knex.QueryBuilder,
     insertStatement: string,
     sort: SavedItemsSort,
@@ -283,7 +283,7 @@ export class ListPaginationService {
    * If the provided cursor does not exist, throws UserInputError.
    */
   private async pageAfterorBefore(
-    trx: Knex.Transaction,
+    trx: Knex,
     baseQuery: Knex.QueryBuilder,
     insertStatement: string,
     cursor: string,
@@ -394,7 +394,7 @@ export class ListPaginationService {
    */
   private async buildFilterQuery(
     baseQuery: any,
-    trx: Knex.Transaction,
+    trx: Knex,
     filter: SavedItemsFilter
   ): Promise<any> {
     // The base query will always have a 'where' statement selecting
@@ -447,7 +447,7 @@ export class ListPaginationService {
    */
   private async isHighlightedFilter(
     baseQuery: Knex,
-    trx: Knex.Transaction,
+    trx: Knex,
     isHighlighted: boolean
   ) {
     // Don't want to do aggregate functions inside our pagination query,
@@ -484,7 +484,7 @@ export class ListPaginationService {
    */
   private async tagNameFilter(
     baseQuery: Knex.QueryBuilder,
-    trx: Knex.Transaction,
+    trx: Knex,
     tagNames: string[]
   ) {
     if (tagNames.length === 0) {
@@ -596,36 +596,32 @@ export class ListPaginationService {
     if (pagination == null) {
       pagination = { first: config.pagination.defaultPageSize };
     }
-    const { totalCount, pageResult } = await this.context.dbClient.transaction(
-      async (trx) => {
-        // Drop temp tables if exists.
-        await this.dropTempTables(trx);
 
-        await this.listTempTableQuery(trx);
-        const baseQuery = trx('list').where(
-          'list.user_id',
-          this.context.userId
-        );
-        if (savedItemIds?.length) {
-          baseQuery.whereIn('list.item_id', savedItemIds);
-        }
-        if (filter != null) {
-          await this.buildFilterQuery(baseQuery, trx, filter);
-        }
-        const totalCount = (await trx
-          .count('* as count')
-          .from(baseQuery.clone().select('list.*').limit(5000).as('countQuery'))
-          .first()
-          .then((_) => _?.count ?? 0)) as number;
-        const pageResult = await this.paginatedResult(
-          baseQuery as any,
-          trx,
-          pagination,
-          sort
-        );
-        return { totalCount, pageResult };
-      }
+    // Drop temp tables if exists.
+    await this.dropTempTables(this.context.dbClient);
+
+    await this.listTempTableQuery(this.context.dbClient);
+    const baseQuery = this.context
+      .dbClient('list')
+      .where('list.user_id', this.context.userId);
+    if (savedItemIds?.length) {
+      baseQuery.whereIn('list.item_id', savedItemIds);
+    }
+    if (filter != null) {
+      await this.buildFilterQuery(baseQuery, this.context.dbClient, filter);
+    }
+    const totalCount = (await this.context.dbClient
+      .count('* as count')
+      .from(baseQuery.clone().select('list.*').limit(5000).as('countQuery'))
+      .first()
+      .then((_) => _?.count ?? 0)) as number;
+    const pageResult = await this.paginatedResult(
+      baseQuery as any,
+      this.context.dbClient,
+      pagination,
+      sort
     );
+
     const pageInfo: any = this.hydratePageInfo(pageResult, pagination);
     let nodes: SavedItemResult[];
     if (pagination.first) {
