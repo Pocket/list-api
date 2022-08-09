@@ -126,8 +126,8 @@ export class ListPaginationService {
   }
 
   /**
-   * Utility method to create the list temp table within a transaction
-   * @param trx Open transaction object
+   * Utility method to create the list temp table within a session
+   * @param trx Open knex object
    * @returns Knex.Raw -- await this to create the table within the connection
    */
   private listTempTableQuery = (trx: Knex, connection: any): Knex.Raw =>
@@ -157,10 +157,10 @@ export class ListPaginationService {
       .connection(connection);
 
   /**
-   * Utility method to create the highlights temp table within a transaction
+   * Utility method to create the highlights temp table within a session
    * @param trx Knex query object
    * @param connection The db connection session to use
-   * @returns Knex.Raw -- await this to create the table within a transaction
+   * @returns Knex.Raw -- await this to create the table within a session
    */
   private hlTempTableQuery = (trx: Knex, connection: any) =>
     trx
@@ -173,10 +173,10 @@ export class ListPaginationService {
       .connection(connection);
 
   /**
-   * Utility method to create the tags temp table within a transaction
+   * Utility method to create the tags temp table within a session
    * @param trx Knex query object
    * @param connection The db connection session to use
-   * @returns Knex.Raw -- await this to create the table within a transaction
+   * @returns Knex.Raw -- await this to create the table within a session
    */
   private tagsTempQuery = (trx: Knex, connection: any) =>
     trx
@@ -190,7 +190,7 @@ export class ListPaginationService {
 
   /**
    * Returns a promise to clean up all temp tables created using `this.createTempTable`
-   * within a transaction
+   * within a session
    * @param trx Knex query object
    * @param connection The db connection session to use
    * @returns Promise to delete all tables created; await this to perform deletion
