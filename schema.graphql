@@ -1,3 +1,7 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.0",
+        import: ["@key", "@shareable", "@external", "@requires"])
+
 scalar Url
 
 """
@@ -143,6 +147,10 @@ type SavedItem implements RemoteEntity @key(fields: "id") @key(fields: "url") {
   Unix timestamp of when the entity was deleted, 30 days after this date this entity will be HARD deleted from the database and no longer exist
   """
   _deletedAt: Int
+  """
+  Determines for the client to open in article view or webview and provides the necessary data for that view
+  """
+  openView: OpenArticleView @requires(fields: "item { ...on Item { isArticle article } }")  # marticle
 }
 enum SavedItemStatus {
   ARCHIVED
@@ -460,7 +468,7 @@ type SavedItemTagAssociation {
   tagId: ID!
 }
 
-extend type User @key(fields: "id") {
+type User @key(fields: "id") {
   #Note more properties exist here but are defined in another service.
 
   """
@@ -507,9 +515,40 @@ type PendingItem @key(fields: "url") {
   status: PendingItemStatus
 }
 
-extend type Item @key(fields: "givenUrl") {
+
+"""
+Union type representing which view to open an article in
+"""
+union OpenArticleView = ArticleView | WebView
+
+"""
+Informs client that they should open the article in the Web View with the underlying url.
+"""
+type WebView {
+  url: Url!
+}
+
+"""
+Informs client that they should open the article in article view and provides the parsed html or marticle for rendering.
+"""
+type ArticleView {
+  "Pocket's original parsed article format"
+  articleHTML: String
+  # "The marticle article format"
+  # marticle: [MarticleComponent!] @external
+}
+
+type Item @key(fields: "givenUrl") @key(fields: "id") {
   "key field to identify the Item entity in the Parser service"
   givenUrl: Url! @external
+
+  id: String @external
+
+  article: String @external
+
+  isArticle: Boolean @external
+
+  # marticle: [MarticleComponent!] @external
 
   #Note more properties exist here but are defined in another service.
 

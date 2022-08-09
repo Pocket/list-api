@@ -18,7 +18,7 @@ describe('getSavedItemByItemId', () => {
 
   const GET_SAVED_ITEM = gql`
     query getSavedItem($userId: ID!, $itemId: ID!) {
-      _entities(representations: { id: $userId, __typename: "User" }) {
+      _entities(representations: [{ id: $userId, __typename: "User" }]) {
         ... on User {
           savedItemById(id: $itemId) {
             id

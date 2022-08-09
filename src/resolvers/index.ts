@@ -53,6 +53,17 @@ const resolvers = {
         return await context.dataLoaders.savedItemsByUrl.load(savedItem.url);
       }
     },
+    openView: (savedItem) => {
+      const webView = {
+        url: savedItem.item.url,
+      };
+      if (savedItem.item.__typename === 'Item') {
+        const articleView = { articleHTML: savedItem.item.article };
+        return savedItem.item.isArticle ? articleView : webView;
+      } else {
+        return webView;
+      }
+    },
   },
   Tag: {
     savedItems: tagsSavedItems,
