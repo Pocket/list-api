@@ -11,7 +11,7 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
-import { uuid4 } from '@sentry/utils';
+import { nanoid } from 'nanoid';
 
 export interface IContext {
   userId: string;
@@ -51,7 +51,7 @@ export class ContextManager implements IContext {
       ...createSavedItemDataLoaders(this),
     };
     this.dbClient = config.dbClient;
-    this.randomRequestId = uuid4();
+    this.randomRequestId = nanoid();
   }
   randomRequestId: string;
 
