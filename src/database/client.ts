@@ -50,6 +50,11 @@ export function createConnection(dbConfig: {
       charset: 'utf8mb4',
     },
     pool: {
+      //Because we use temporary tables outside a transaction we can not use a connection pool.
+      //The altenative is to give all the temporary tables unique names, but then we can not see aggregate query statements in performance insights
+      //Given this is how the Web repo operates today, this is acceptable level of risk unitl List gets a new datastore.
+      min: 0,
+      max: 1,
       /**
        * Explicitly set the session timezone. We don't want to take any chances with this
        */
