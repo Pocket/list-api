@@ -11,7 +11,6 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
-import { nanoid } from 'nanoid';
 
 export interface IContext {
   userId: string;
@@ -20,7 +19,6 @@ export interface IContext {
   userIsPremium: boolean;
   dbClient: Knex;
   eventEmitter: ItemsEventEmitter;
-  randomRequestId: string;
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
     savedItemsByUrl: DataLoader<string, SavedItem>;
@@ -51,9 +49,7 @@ export class ContextManager implements IContext {
       ...createSavedItemDataLoaders(this),
     };
     this.dbClient = config.dbClient;
-    this.randomRequestId = nanoid();
   }
-  randomRequestId: string;
 
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
