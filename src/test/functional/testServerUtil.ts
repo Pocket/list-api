@@ -23,7 +23,7 @@ export function getServer(
       ApolloServerPluginInlineTraceDisabled(),
       ApolloServerPluginUsageReportingDisabled(),
     ],
-    formatError: errorHandler,
+    //formatError: errorHandler,
     context: () => {
       return new ContextManager({
         request: {
