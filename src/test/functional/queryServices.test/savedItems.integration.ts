@@ -17,6 +17,8 @@ describe('getSavedItems', () => {
   const date1 = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date2 = new Date('2020-10-03 10:22:30'); // Consistent date for seeding
   const date3 = new Date('2020-10-03 10:25:30'); // Consistent date for seeding
+  const date4 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
+
   const nullDate = new Date('0000-00-00 00:00:00');
 
   const GET_SAVED_ITEMS = gql`
@@ -139,6 +141,82 @@ describe('getSavedItems', () => {
     expect(res.data?._entities[0].savedItems.edges[0].node.status).to.equal(
       'UNREAD'
     );
+  });
+
+  it('should return the same result set consistently in asc vs desc', async () => {
+    await db('list').insert([
+      {
+        user_id: 1,
+        item_id: 4,
+        resolved_id: 51,
+        given_url: 'http://avsdf',
+        title: 'mytitle',
+        time_added: date4,
+        time_updated: date4,
+        time_read: date3,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 0,
+        favorite: 1,
+        api_id_updated: 'apiid',
+      },
+      {
+        user_id: 1,
+        item_id: 5,
+        resolved_id: 3,
+        given_url: 'http://asdadsasdasdasd',
+        title: 'mytitle',
+        time_added: date4,
+        time_updated: date4,
+        time_read: date3,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 0,
+        favorite: 1,
+        api_id_updated: 'apiid',
+      },
+      {
+        user_id: 1,
+        item_id: 6,
+        resolved_id: 5,
+        given_url: 'http://asdfsdfsdfsvsdf',
+        title: 'mytitle',
+        time_added: date4,
+        time_updated: date4,
+        time_read: date3,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 0,
+        favorite: 1,
+        api_id_updated: 'apiid',
+      },
+    ]);
+
+    const variables = {
+      id: '1',
+      pagination: { first: 6 },
+      sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
+    };
+    const ascResult = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+
+    const urlsInAsc = ascResult.data?._entities[0].savedItems.edges.map(
+      (item) => item.node.url
+    );
+
+    variables.sort.sortOrder = 'DESC';
+    const descResult = await server.executeOperation({
+      query: GET_SAVED_ITEMS,
+      variables,
+    });
+    const expectedUrlsInDesc = urlsInAsc.reverse();
+    const actualUrlsInDesc = descResult.data?._entities[0].savedItems.edges.map(
+      (item) => item.node.url
+    );
+
+    expect(actualUrlsInDesc).to.equal(expectedUrlsInDesc);
   });
 
   it('should return a paginated list of most recently added items, with more next pages and all expected properties', async () => {
