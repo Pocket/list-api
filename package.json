@@ -65,7 +65,7 @@
     "prettier": "2.7.1",
     "sinon": "14.0.0",
     "supertest": "6.2.3",
-    "ts-jest": "28.0.7",
+    "ts-jest": "28.0.8",
     "ts-node": "10.9.1"
   }
 }
