@@ -15,6 +15,7 @@ import {
 import queueDeleteRouter from './routes/queueDelete';
 import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
 import { EventEmitter } from 'events';
+import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
 
 //Set XRAY to just log if the context is missing instead of a runtime error
 
@@ -51,6 +52,7 @@ initItemEventHandlers(itemsEventEmitter, [
   unifiedEventHandler,
   sqsEventHandler,
   snowplowEventHandler,
+  initAccountDeletionCompleteEvents,
 ]);
 
 // Inject initialized event emittters to create context factory function

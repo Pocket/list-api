@@ -13,11 +13,14 @@ import { writeClient } from '../database/client';
 import { SavedItemDataService } from '../dataService/savedItemsService';
 import { setTimeout } from 'timers/promises';
 
-export type BatchDeleteMessage = {
+export type UserMessageBase = {
   traceId: string;
   userId: number;
-  itemIds: number[];
+  email: string;
+  isPremium: boolean;
 };
+
+export type BatchDeleteMessage = UserMessageBase & { itemIds: number[] };
 
 export class BatchDeleteHandler {
   readonly sqsClient: SQSClient;

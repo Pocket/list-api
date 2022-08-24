@@ -3,8 +3,8 @@ set -x
 
 SQS=(
 pocket-publisher-data-queue
-pocket-list-delete-queue
 PermLib-Local-ItemMain
+pocket-list-delete-queue
 )
 
 for sqs_queue in "${SQS[@]}"; do
