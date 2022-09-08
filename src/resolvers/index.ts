@@ -59,22 +59,6 @@ const resolvers = {
     id: (parent: Tag) => {
       return parent?.id ?? Buffer.from(parent.name).toString('base64');
     },
-    // Fetching the below values in the suggested tags query (via join to `item_tags`)
-    // dramatically reduces performance; only return them if requested. If the field is
-    // already provided on the parent context, return that rather than fetching again.
-    // Otherwise, batch load with DataLoader to avoid repeat calls to the database.
-    _createdAt: (
-      parent: Tag,
-      args,
-      context: IContext
-    ): Promise<Tag['_createdAt']> =>
-      lazyLoadTagAttribute(parent, context, '_createdAt'),
-    _updatedAt: (parent: Tag, args, context: IContext) =>
-      lazyLoadTagAttribute(parent, context, '_updatedAt'),
-    _version: (parent: Tag, args, context: IContext) =>
-      lazyLoadTagAttribute(parent, context, '_version'),
-    _deletedAt: (parent: Tag, args, context: IContext) =>
-      lazyLoadTagAttribute(parent, context, '_deletedAt'),
   },
   Mutation: {
     upsertSavedItem,
