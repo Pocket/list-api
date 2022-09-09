@@ -5,7 +5,6 @@ import {
   tags as savedItemTags,
   suggestedTags as savedItemSuggestedTags,
 } from './savedItem';
-import { lazyParentLoad } from './utils';
 import {
   createTags,
   createSavedItemTags,
@@ -106,27 +105,6 @@ export function executeMutation<Args, ReturnType>(
     context.dbClient = writeClient();
     return mutate(parent, args, context);
   };
-}
-
-/**
- * Convenience method for lazily loading Tag attributes, since
- * decorators are experimental in TS
- * @param parent Parent in the resolver chain
- * @param context GraphQL Context
- * @param attr attribute to fetch (name of field)
- * @returns the value keyed by `attr`
- */
-function lazyLoadTagAttribute<A extends keyof Tag>(
-  parent: Tag,
-  context: IContext,
-  attr: A
-): Promise<Tag[A]> {
-  return lazyParentLoad<Tag, string, A>(
-    parent.name,
-    context.dataLoaders.tagsByName,
-    parent,
-    attr
-  );
 }
 
 export { resolvers };

@@ -4,7 +4,6 @@ import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
-import { TagDataService } from '../../../dataService';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 
