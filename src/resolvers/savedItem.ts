@@ -39,7 +39,7 @@ export async function suggestedTags(
   return new TagDataService(
     context,
     new SavedItemDataService(context)
-  ).getSuggestedTagsByUserItem(parent.resolvedId);
+  ).getSuggestedTags(parent);
 }
 
 /**
