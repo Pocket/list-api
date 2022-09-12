@@ -5,7 +5,6 @@ import {
   tags as savedItemTags,
   suggestedTags as savedItemSuggestedTags,
 } from './savedItem';
-import { lazyParentLoad } from './utils';
 import {
   createTags,
   createSavedItemTags,
@@ -59,22 +58,6 @@ const resolvers = {
     id: (parent: Tag) => {
       return parent?.id ?? Buffer.from(parent.name).toString('base64');
     },
-    // Fetching the below values in the suggested tags query (via join to `item_tags`)
-    // dramatically reduces performance; only return them if requested. If the field is
-    // already provided on the parent context, return that rather than fetching again.
-    // Otherwise, batch load with DataLoader to avoid repeat calls to the database.
-    _createdAt: (
-      parent: Tag,
-      args,
-      context: IContext
-    ): Promise<Tag['_createdAt']> =>
-      lazyLoadTagAttribute(parent, context, '_createdAt'),
-    _updatedAt: (parent: Tag, args, context: IContext) =>
-      lazyLoadTagAttribute(parent, context, '_updatedAt'),
-    _version: (parent: Tag, args, context: IContext) =>
-      lazyLoadTagAttribute(parent, context, '_version'),
-    _deletedAt: (parent: Tag, args, context: IContext) =>
-      lazyLoadTagAttribute(parent, context, '_deletedAt'),
   },
   Mutation: {
     upsertSavedItem,
@@ -122,27 +105,6 @@ export function executeMutation<Args, ReturnType>(
     context.dbClient = writeClient();
     return mutate(parent, args, context);
   };
-}
-
-/**
- * Convenience method for lazily loading Tag attributes, since
- * decorators are experimental in TS
- * @param parent Parent in the resolver chain
- * @param context GraphQL Context
- * @param attr attribute to fetch (name of field)
- * @returns the value keyed by `attr`
- */
-function lazyLoadTagAttribute<A extends keyof Tag>(
-  parent: Tag,
-  context: IContext,
-  attr: A
-): Promise<Tag[A]> {
-  return lazyParentLoad<Tag, string, A>(
-    parent.name,
-    context.dataLoaders.tagsByName,
-    parent,
-    attr
-  );
 }
 
 export { resolvers };

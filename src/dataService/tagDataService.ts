@@ -103,85 +103,30 @@ export class TagDataService {
   }
 
   /**
-   * For a given item_id, retrieves suggested tags
-   * ----TAKEN FROM THE WEB REPO.----
-   * - Attempts to get 8 suggested tags for a user and itemid
-   * - We only show you tags that you’ve already created — no new suggestions
-   * -- This means that when you save an item, we get the Google entities and Google categories for that item, and
-   * suggest tags you’ve used for other items you’ve also tagged with those entities and categories
-   * - We’re dropping support for looking at how other users tag items
-   * -— this means that if you save an item with specific Google entities and categories that you haven’t previously
-   * tagged before, we can’t offer you tag suggestions
-   * -- When we reinvest in this tech in the future, we’ll set this up to continue to look at how other people tag
-   * items, but ONLY surface tags you’ve already used.
-   *  - In the new version, we’ll no longer exclude entities / categories that were sensitive/adult subjects since
-   *  we’re only showing you your own tags
-   * - Those tags still need to have a relevance score of at least 0.005 to be eligible to appear as a Suggested Tag
-   * @param itemId
+   Returns the latest 3 tags used by the Pocket User
+   TODO: DataLoader
    */
-  public async getSuggestedTagsByUserItem(
-    resolvedItemId: string
-  ): Promise<Pick<Tag, 'name' | 'id'>[]> {
-    const getTagsForItemQuery = await this.db.raw(
-      `SELECT tag            AS tag,
-      tag            AS name,
-      MAX(score)     AS score,
-      TO_BASE64(tag) AS id
-      FROM (SELECT tag,
-                  sum AS score
-          FROM (SELECT m.tag,
-                        SUM(m.count) * 100 AS sum
-                FROM (SELECT it.tag,
-                              ig.grouping_id,
-                              COUNT(1) AS count
-                      FROM (SELECT tag, item_id, user_id
-                            FROM \`readitla_ril-tmp\`.item_tags
-                            WHERE user_id = :userId
-                            ORDER BY item_id DESC
-                            LIMIT 1000) AS it
-                                STRAIGHT_JOIN \`readitla_ril-tmp\`.list AS l
-                            ON (it.item_id = l.item_id AND it.user_id = l.user_id)
-                                STRAIGHT_JOIN \`readitla_b\`.item_grouping AS ig ON (l.resolved_id = ig.resolved_id)
-                                STRAIGHT_JOIN \`readitla_b\`.grouping AS g
-                            ON (ig.grouping_id = g.grouping_id AND g.grouping_type_id IN (2, 3, 19, 20))
-                      GROUP BY it.tag, ig.grouping_id
-                      ORDER BY count DESC
-                      LIMIT 10000) AS m
-                          JOIN \`readitla_b\`.item_grouping ig
-                              ON (m.grouping_id = ig.grouping_id AND ig.resolved_id = :resolvedId)
-                GROUP BY m.tag
-                ORDER BY sum DESC
-                LIMIT 5) related_tags
+  public async getSuggestedTags(save: SavedItem): Promise<Tag[]> {
+    const existingTags = this.db('item_tags')
+      .select('tag')
+      .where({ user_id: parseInt(this.userId), item_id: parseInt(save.id) });
 
-          UNION
+    const latestTags = await this.db('item_tags')
+      .select('tag')
+      .distinct()
+      .orderBy('time_updated', 'desc')
+      .whereNotIn('tag', existingTags)
+      .andWhere({ user_id: parseInt(this.userId) })
+      .limit(3)
+      .pluck('tag');
+    const tags = await this.getTagsByUserSubQuery()
+      .whereIn('tag', latestTags)
+      .orderBy('_updatedAt', 'desc');
 
-          SELECT tag,
-                  MAX(count) AS score
-          FROM (SELECT tag,
-                        COUNT(1) count
-                FROM (SELECT tag, item_id
-                      FROM \`readitla_ril-tmp\`.item_tags
-                      WHERE user_id = :userId
-                      ORDER BY item_id DESC
-                      LIMIT 1000) AS r
-                GROUP BY tag
-                ORDER BY count DESC
-                LIMIT 5) AS frecent_tags) AS tags
-      GROUP BY tag
-      ORDER BY score DESC
-      LIMIT 8;`,
-      { resolvedId: resolvedItemId, userId: this.userId }
-    );
-    // Returning a partial here because joining on `item_tags` to get additional
-    // data is very expensive; lazily load those fields at the resolver level
-    // only if they are requested.
-    return getTagsForItemQuery[0].map((row) => ({
-      id: row.id,
-      name: row.name,
-    }));
+    return tags.map(TagObjectMapper.mapDbModelToDomainEntity);
   }
 
-  public async getTagsByName(names: string[]): Promise<any> {
+  public async getTagsByName(names: string[]): Promise<Tag[]> {
     const cleanTags = names.map(cleanAndValidateTag);
     const tags = await this.getTagsByUserSubQuery().andWhere(function () {
       this.whereIn('tag', cleanTags);
