@@ -61,7 +61,7 @@
     "deep-equal-in-any-order": "2.0.0",
     "jest": "29.0.3",
     "nock": "13.2.7",
-    "nodemon": "2.0.19",
+    "nodemon": "2.0.20",
     "prettier": "2.7.1",
     "sinon": "14.0.0",
     "supertest": "6.2.3",
