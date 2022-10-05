@@ -1,4 +1,4 @@
-FROM node:16-bullseye-slim@sha256:95d4fdef5e12916a89f7d56dca6d8099de61df875c3c61106cb53e0ba1a48d44
+FROM node:16-bullseye-slim@sha256:4fc367c89d498b455c6497cdd6211cc6a180bede77d8df80dea9acbcd5ffa19c
 WORKDIR /usr/src/app
 
 ARG GIT_SHA
