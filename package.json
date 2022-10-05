@@ -52,7 +52,7 @@
     "@types/jest": "28.1.8",
     "@types/locutus": "0.0.6",
     "@types/luxon": "2.3.2",
-    "@types/node": "16.11.63",
+    "@types/node": "16.11.64",
     "@types/sinon": "10.0.13",
     "chai": "4.3.6",
     "chai-as-promised": "7.1.1",
