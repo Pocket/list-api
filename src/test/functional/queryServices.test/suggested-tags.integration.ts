@@ -40,21 +40,6 @@ describe('tags query tests - happy path', () => {
         favorite: 1,
         api_id_updated: 'apiid',
       },
-      {
-        user_id: 1,
-        item_id: 2,
-        resolved_id: 2,
-        given_url: 'http://def',
-        title: 'mytitle',
-        time_added: date,
-        time_updated: date,
-        time_read: date,
-        time_favorited: date,
-        api_id: 'apiid',
-        status: 1,
-        favorite: 1,
-        api_id_updated: 'apiid',
-      },
     ]);
 
     await db('item_tags').insert([
@@ -136,23 +121,6 @@ describe('tags query tests - happy path', () => {
       expect(tags[2].name).to.equal('romance');
     });
     it('should return 3 tags even if the most recent contained duplicates', async () => {
-      await db('list').insert([
-        {
-          user_id: 1,
-          item_id: 3,
-          resolved_id: 3,
-          given_url: 'http://url',
-          title: 'Sample Title',
-          time_added: date3,
-          time_updated: date3,
-          time_read: date3,
-          time_favorited: date3,
-          api_id: 'apiid',
-          status: 1,
-          favorite: 1,
-          api_id_updated: 'apiid',
-        },
-      ]);
       await db('item_tags').insert({
         user_id: 1,
         item_id: 3,
@@ -237,36 +205,6 @@ describe('tags query tests - happy path', () => {
           item_id: 10,
           resolved_id: 10,
           given_url: 'http://def',
-          title: 'Sample Title',
-          time_added: date3,
-          time_updated: date3,
-          time_read: date3,
-          time_favorited: date3,
-          api_id: 'apiid',
-          status: 1,
-          favorite: 1,
-          api_id_updated: 'apiid',
-        },
-        {
-          user_id: 1,
-          item_id: 11,
-          resolved_id: 11,
-          given_url: 'http://ghi',
-          title: 'Sample Title',
-          time_added: date3,
-          time_updated: date3,
-          time_read: date3,
-          time_favorited: date3,
-          api_id: 'apiid',
-          status: 1,
-          favorite: 1,
-          api_id_updated: 'apiid',
-        },
-        {
-          user_id: 1,
-          item_id: 12,
-          resolved_id: 12,
-          given_url: 'http://klm',
           title: 'Sample Title',
           time_added: date3,
           time_updated: date3,

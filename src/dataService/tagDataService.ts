@@ -123,7 +123,7 @@ export class TagDataService {
       .whereNotIn('tag', existingTags)
       .andWhere({ 'item_tags.user_id': parseInt(this.userId) })
       //for now, considering time_updated from list table when item_tags
-      //time_updated is null. we can revert this after android bug is fixed.
+      //time_updated is null.
       .orderByRaw('COALESCE(item_tags.time_updated, list.time_updated) DESC')
       .limit(3)
       .pluck('tag');
