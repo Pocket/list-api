@@ -114,11 +114,20 @@ export class TagDataService {
     const latestTags = await this.db('item_tags')
       .select('tag')
       .distinct()
-      .orderBy('time_updated', 'desc')
+      .leftJoin('readitla_ril-tmp.list', function () {
+        this.on('item_tags.item_id', 'readitla_ril-tmp.list.item_id').on(
+          'item_tags.user_id',
+          'readitla_ril-tmp.list.user_id'
+        );
+      })
       .whereNotIn('tag', existingTags)
-      .andWhere({ user_id: parseInt(this.userId) })
+      .andWhere({ 'item_tags.user_id': parseInt(this.userId) })
+      //for now, considering time_updated from list table when item_tags
+      //time_updated is null. we can revert this after android bug is fixed.
+      .orderByRaw('COALESCE(item_tags.time_updated, list.time_updated) DESC')
       .limit(3)
       .pluck('tag');
+
     const tags = await this.getTagsByUserSubQuery()
       .whereIn('tag', latestTags)
       .orderBy('_updatedAt', 'desc');
