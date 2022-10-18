@@ -32,9 +32,13 @@ export async function batchGetSavedItemsByIds(
   context: IContext,
   ids: string[]
 ): Promise<SavedItem[]> {
-  const savedItems = await new SavedItemDataService(
+  let savedItems: SavedItem[] = await new SavedItemDataService(
     context
   ).batchGetSavedItemsByGivenIds(ids);
+
+  savedItems = savedItems.filter((item) => {
+    return item.status != 'DELETED';
+  });
 
   return reorderResultByKey<SavedItem, 'id'>(
     { key: 'id', values: ids },
