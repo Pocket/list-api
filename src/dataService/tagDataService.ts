@@ -56,7 +56,9 @@ export class TagDataService {
         this.db.raw(`TO_BASE64(tag) as id`),
         this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
         this.db.raw('UNIX_TIMESTAMP(MIN(time_added)) as _createdAt'),
-        this.db.raw('UNIX_TIMESTAMP(MAX(time_updated)) as _updatedAt'),
+        this.db.raw(
+          'UNIX_TIMESTAMP(MAX(COALESCE(time_updated, time_added))) as _updatedAt'
+        ),
         this.db.raw('NULL as _deletedAt'),
         this.db.raw('NULL as _version')
         //TODO: add version and deletedAt feature to tag
@@ -123,8 +125,10 @@ export class TagDataService {
       .whereNotIn('tag', existingTags)
       .andWhere({ 'item_tags.user_id': parseInt(this.userId) })
       //for now, considering time_updated from list table when item_tags
-      //time_updated is null.
-      .orderByRaw('COALESCE(item_tags.time_updated, list.time_updated) DESC')
+      // time_added is null.
+      // Not using item_tags.time_updated or coalescing with item_tags.time_added
+      // because the time_updated field is so unreliable and sparse it's not worth it
+      .orderByRaw('COALESCE(item_tags.time_added, list.time_updated) DESC')
       .limit(3)
       .pluck('tag');
 
