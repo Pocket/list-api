@@ -116,7 +116,6 @@ export class TagDataService {
 
     const latestTags = await this.db('item_tags')
       .select('tag')
-      .distinct()
       .leftJoin('readitla_ril-tmp.list', function () {
         this.on('item_tags.item_id', 'readitla_ril-tmp.list.item_id').on(
           'item_tags.user_id',
@@ -125,6 +124,7 @@ export class TagDataService {
       })
       .whereNotIn('tag', existingTags)
       .andWhere({ 'item_tags.user_id': parseInt(this.userId) })
+      .groupBy('tag')
       // Figuring out most recently used tags is difficult due to sparse data.
       // First check time_added, which is when the tag was associated to a given
       // save. This field is often null (e.g. android) because it relies on clients
