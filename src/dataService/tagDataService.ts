@@ -56,7 +56,10 @@ export class TagDataService {
         this.db.raw(`TO_BASE64(tag) as id`),
         this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
         this.db.raw('UNIX_TIMESTAMP(MIN(time_added)) as _createdAt'),
-        this.db.raw('UNIX_TIMESTAMP(MAX(time_updated)) as _updatedAt'),
+        // Coalescing because the data in time_updated is very sparse in prod db
+        this.db.raw(
+          'UNIX_TIMESTAMP(MAX(COALESCE(time_updated, time_added))) as _updatedAt'
+        ),
         this.db.raw('NULL as _deletedAt'),
         this.db.raw('NULL as _version')
         //TODO: add version and deletedAt feature to tag
@@ -113,12 +116,26 @@ export class TagDataService {
 
     const latestTags = await this.db('item_tags')
       .select('tag')
-      .distinct()
-      .orderBy('time_updated', 'desc')
+      .leftJoin('readitla_ril-tmp.list', function () {
+        this.on('item_tags.item_id', 'readitla_ril-tmp.list.item_id').on(
+          'item_tags.user_id',
+          'readitla_ril-tmp.list.user_id'
+        );
+      })
       .whereNotIn('tag', existingTags)
-      .andWhere({ user_id: parseInt(this.userId) })
+      .andWhere({ 'item_tags.user_id': parseInt(this.userId) })
+      .groupBy('tag')
+      // Figuring out most recently used tags is difficult due to sparse data.
+      // First check time_added, which is when the tag was associated to a given
+      // save. This field is often null (e.g. android) because it relies on clients
+      // to pass the timestamp data, and does not have a default value.
+      //
+      // Fall back on the time the Save was last updated. This fallback
+      // time may not be when the tag was added, but it's the best proxy we have.
+      .orderByRaw('COALESCE(item_tags.time_added, list.time_updated) DESC')
       .limit(3)
       .pluck('tag');
+
     const tags = await this.getTagsByUserSubQuery()
       .whereIn('tag', latestTags)
       .orderBy('_updatedAt', 'desc');

@@ -48,8 +48,8 @@ describe('tags query tests - happy path', () => {
         item_id: 2,
         tag: 'romance',
         status: 1,
-        time_added: date,
-        time_updated: date1,
+        time_added: date1,
+        time_updated: null,
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       },
@@ -68,8 +68,8 @@ describe('tags query tests - happy path', () => {
         item_id: 2,
         tag: 'thriller',
         status: 1,
-        time_added: date,
-        time_updated: date2,
+        time_added: date2,
+        time_updated: null,
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       },
@@ -78,8 +78,8 @@ describe('tags query tests - happy path', () => {
         item_id: 2,
         tag: 'adventure',
         status: 1,
-        time_added: date,
-        time_updated: date3,
+        time_added: date3,
+        time_updated: null,
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       },
@@ -126,11 +126,12 @@ describe('tags query tests - happy path', () => {
         item_id: 3,
         tag: 'adventure',
         status: 1,
-        time_added: date,
+        time_added: date3,
         time_updated: date3,
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       });
+
       const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
@@ -150,6 +151,7 @@ describe('tags query tests - happy path', () => {
       const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(0);
     });
+
     it('returns fewer than 3 tags if fewer than 3 are available', async () => {
       await db('item_tags').truncate();
       await db('item_tags').insert([
@@ -158,7 +160,7 @@ describe('tags query tests - happy path', () => {
           item_id: 2,
           tag: 'romance',
           status: 1,
-          time_added: date,
+          time_added: date1,
           time_updated: date1,
           api_id: 'apiid',
           api_id_updated: 'updated_api_id',
@@ -178,7 +180,7 @@ describe('tags query tests - happy path', () => {
         item_id: 1,
         tag: 'adventure',
         status: 1,
-        time_added: date,
+        time_added: date3,
         time_updated: date3,
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
@@ -192,6 +194,84 @@ describe('tags query tests - happy path', () => {
       expect(tags[0].name).to.equal('thriller');
       expect(tags[1].name).to.equal('romance');
       expect(tags[2].name).to.equal('horror');
+    });
+
+    it('should get time_updated from list table if item_tags time_updated is null', async () => {
+      await db('item_tags').truncate();
+      //add items in list tables so we can join on null time_updated
+      await db('list').insert([
+        {
+          user_id: 1,
+          item_id: 10,
+          resolved_id: 10,
+          given_url: 'http://def',
+          title: 'Sample Title',
+          time_added: date3,
+          time_updated: date3,
+          time_read: date3,
+          time_favorited: date3,
+          api_id: 'apiid',
+          status: 1,
+          favorite: 1,
+          api_id_updated: 'apiid',
+        },
+      ]);
+
+      await db('item_tags').insert([
+        {
+          user_id: 1,
+          item_id: 11,
+          tag: 'tag A',
+          status: 1,
+          time_added: date2,
+          time_updated: date2,
+          api_id: 'apiid',
+          api_id_updated: 'updated_api_id',
+        },
+        {
+          user_id: 1,
+          item_id: 12,
+          tag: 'tag B',
+          status: 1,
+          time_added: date1,
+          time_updated: date1,
+          api_id: 'apiid',
+          api_id_updated: 'updated_api_id',
+        },
+        {
+          user_id: 1,
+          item_id: 1,
+          tag: 'tag C',
+          status: 1,
+          time_added: date,
+          time_updated: date,
+          api_id: 'apiid',
+          api_id_updated: 'updated_api_id',
+        },
+        {
+          user_id: 1,
+          item_id: 10,
+          tag: 'null date',
+          status: 1,
+          time_added: null,
+          time_updated: null,
+          api_id: 'apiid',
+          api_id_updated: 'updated_api_id',
+        },
+      ]);
+
+      const res = await server.executeOperation({
+        query: GET_SUGGESTED_TAGS,
+        variables,
+      });
+
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
+      expect(tags.length).to.equal(3);
+      //tagC is not in top 3 as it has the lowest time_updated
+      //null date tag will get its time_updated from list table.
+      expect(tags[0].name).to.equal('tag A');
+      expect(tags[1].name).to.equal('tag B');
+      expect(tags[2].name).to.equal('null date');
     });
   });
 });
