@@ -13,6 +13,7 @@ describe('tags query tests - happy path', () => {
   const date1 = new Date('2021-10-03T10:20:30.000Z');
   const date2 = new Date('2022-10-03T10:20:30.000Z');
   const date3 = new Date('2023-10-03T10:20:30.000Z');
+  const date4 = new Date('2023-10-04T10:20:30.000Z');
 
   afterAll(async () => {
     await db.destroy();
@@ -235,6 +236,16 @@ describe('tags query tests - happy path', () => {
           status: 1,
           time_added: date1,
           time_updated: date1,
+          api_id: 'apiid',
+          api_id_updated: 'updated_api_id',
+        },
+        {
+          user_id: 1,
+          item_id: 10,
+          tag: 'tag B',
+          status: 1,
+          time_added: date4,
+          time_updated: date4,
           api_id: 'apiid',
           api_id_updated: 'updated_api_id',
         },
