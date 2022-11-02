@@ -132,7 +132,7 @@ export class TagDataService {
       //
       // Fall back on the time the Save was last updated. This fallback
       // time may not be when the tag was added, but it's the best proxy we have.
-      .orderByRaw('COALESCE(item_tags.time_added, list.time_updated) DESC')
+      .orderByRaw('MAX(COALESCE(item_tags.time_added, list.time_updated)) DESC')
       .limit(3)
       .pluck('tag');
 
