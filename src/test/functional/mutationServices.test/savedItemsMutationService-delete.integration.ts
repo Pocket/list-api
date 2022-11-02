@@ -18,21 +18,38 @@ async function upsertSavedItem(
   date: Date,
   archived = false
 ) {
-  await db('list').insert({
-    item_id: 1,
-    status: status,
-    favorite: 0,
-    user_id: 1,
-    resolved_id: 1,
-    given_url: 'https://1.test',
-    title: 'title 1',
-    time_added: date,
-    time_updated: date,
-    time_read: archived ? date : '0000-00-00 00:00:00',
-    time_favorited: date,
-    api_id: 'apiid',
-    api_id_updated: 'apiid',
-  });
+  await db('list').insert([
+    {
+      item_id: 1,
+      status: status,
+      favorite: 0,
+      user_id: 1,
+      resolved_id: 1,
+      given_url: 'https://1.test',
+      title: 'title 1',
+      time_added: date,
+      time_updated: date,
+      time_read: archived ? date : '0000-00-00 00:00:00',
+      time_favorited: date,
+      api_id: 'apiid',
+      api_id_updated: 'apiid',
+    },
+    {
+      item_id: 2,
+      status: status,
+      favorite: 0,
+      user_id: 1,
+      resolved_id: 1,
+      given_url: 'https://1.test',
+      title: 'title 2',
+      time_added: date,
+      time_updated: date,
+      time_read: archived ? date : '0000-00-00 00:00:00',
+      time_favorited: date,
+      api_id: 'apiid',
+      api_id_updated: 'apiid',
+    },
+  ]);
 }
 
 async function setUpSavedItem(db: Knex, date: Date) {
@@ -52,12 +69,26 @@ async function setUpSavedItem(db: Knex, date: Date) {
       time_added: date,
       time_updated: date,
     },
+    {
+      user_id: 1,
+      item_id: 2,
+      tag: 'snow',
+      time_added: date,
+      time_updated: date,
+    },
   ]);
-  await db('item_attribution').insert({
-    user_id: 1,
-    item_id: 1,
-    attribution_type_id: 101,
-  });
+  await db('item_attribution').insert([
+    {
+      user_id: 1,
+      item_id: 1,
+      attribution_type_id: 101,
+    },
+    {
+      user_id: 1,
+      item_id: 2,
+      attribution_type_id: 101,
+    },
+  ]);
   await db('items_scroll').insert({
     user_id: 1,
     item_id: 1,
@@ -117,10 +148,10 @@ describe('Delete/Undelete SavedItem: ', () => {
       userId: '1',
       apiId: 'backend',
     });
-    await savedItemService.batchDeleteSavedItems([1]);
+    await savedItemService.batchDeleteSavedItems([1, 2]);
     const tables = ['list', 'item_tags', 'item_attribution', 'items_scroll'];
     const baseQuery = db
-      .whereIn('item_id', [1])
+      .whereIn('item_id', [1, 2])
       .andWhere({ user_id: 1 })
       .count('* as count')
       .first();

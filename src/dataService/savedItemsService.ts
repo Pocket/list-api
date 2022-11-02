@@ -225,7 +225,7 @@ export class SavedItemDataService {
   }
 
   /**
-   * Soft delete a saved item. Since we delete from multiple tables,
+   * Delete a saved item. Since we delete from multiple tables,
    * we perform the entire operation as a single transaction
    * to allow us to fully rollback should any on of the
    * database statements fail.
@@ -280,30 +280,32 @@ export class SavedItemDataService {
   public async batchDeleteSavedItems(itemIds: number[], requestId?: string) {
     const tables = [...config.batchDelete.tablesWithPii];
 
-    for (const id of itemIds) {
-      for (const table of tables) {
-        try {
-          await this.db(table)
-            .delete()
-            .where({ user_id: this.userId })
-            .andWhere('item_id', id);
+    for (const table of tables) {
+      try {
+        await this.db(table)
+          .delete()
+          .where({ user_id: this.userId })
+          .andWhere('item_id', itemIds);
 
-          if (requestId) {
-            console.log(`BatchDelete: Processing request ID=${requestId}`);
-          }
-          console.log(
-            `BatchDelete: deleted row from table: ${table} for user: ${this.userId} and itemId: ${id}`
-          );
-          await setTimeout(config.batchDelete.deleteDelayInMilliSec);
-        } catch (error) {
-          const message =
-            `BatchDelete: Error deleting from table ${table}` +
-            `for itemId: ${id} for (userId=${this.userId}, requestId=${requestId}).`;
-          Sentry.addBreadcrumb({ message });
-          Sentry.captureException(error);
-          console.log(message);
-          console.log(error);
+        if (requestId) {
+          console.log(`BatchDelete: Processing request ID=${requestId}`);
         }
+        console.log(
+          `BatchDelete: deleted row from table: ${table} for user: ${
+            this.userId
+          } and itemIds: ${JSON.stringify(itemIds)}`
+        );
+        await setTimeout(config.batchDelete.deleteDelayInMilliSec);
+      } catch (error) {
+        const message =
+          `BatchDelete: Error deleting from table ${table}` +
+          `for itemId:  ${JSON.stringify(itemIds)} for (userId=${
+            this.userId
+          }, requestId=${requestId}).`;
+        Sentry.addBreadcrumb({ message });
+        Sentry.captureException(error);
+        console.log(message);
+        console.log(error);
       }
     }
   }
