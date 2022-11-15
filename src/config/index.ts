@@ -108,7 +108,7 @@ export default {
   },
   queueDelete: {
     queryLimit: 500,
-    itemIdChunkSize: 50,
+    itemIdChunkSize: 100,
   },
   batchDelete: {
     deleteDelayInMilliSec: 10000,
