@@ -111,7 +111,7 @@ export default {
     itemIdChunkSize: 100,
   },
   batchDelete: {
-    deleteDelayInMilliSec: 10000,
+    deleteDelayInMilliSec: 5000,
     tablesWithPii: ['item_tags', 'list', 'item_attribution'],
     tablesWithUserIdAlone: [
       'list_meta',
