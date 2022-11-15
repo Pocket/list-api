@@ -108,10 +108,10 @@ export default {
   },
   queueDelete: {
     queryLimit: 500,
-    itemIdChunkSize: 20,
+    itemIdChunkSize: 50,
   },
   batchDelete: {
-    deleteDelayInMilliSec: 20000,
+    deleteDelayInMilliSec: 10000,
     tablesWithPii: ['item_tags', 'list', 'item_attribution'],
     tablesWithUserIdAlone: [
       'list_meta',
