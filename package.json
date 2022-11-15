@@ -43,7 +43,7 @@
   "devDependencies": {
     "@pocket-tools/eslint-config": "2.0.0",
     "@pocket-tools/tsconfig": "2.0.1",
-    "@types/chai": "4.3.3",
+    "@types/chai": "4.3.4",
     "@types/chai-as-promised": "7.1.5",
     "@types/chai-datetime": "0.0.37",
     "@types/deep-equal-in-any-order": "1.0.1",
@@ -54,7 +54,7 @@
     "@types/luxon": "2.3.2",
     "@types/node": "16.11.68",
     "@types/sinon": "10.0.13",
-    "chai": "4.3.6",
+    "chai": "4.3.7",
     "chai-as-promised": "7.1.1",
     "chai-datetime": "1.8.0",
     "chai-shallow-deep-equal": "^1.4.6",
@@ -63,7 +63,7 @@
     "nock": "13.2.7",
     "nodemon": "2.0.20",
     "prettier": "2.7.1",
-    "sinon": "14.0.1",
+    "sinon": "14.0.2",
     "supertest": "6.2.3",
     "ts-jest": "28.0.8",
     "ts-node": "10.9.1"
