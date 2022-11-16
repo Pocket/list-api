@@ -66,7 +66,7 @@ export default {
         maxMessages: 1,
         waitTimeSeconds: 0,
         defaultPollIntervalSeconds: 300,
-        afterMessagePollIntervalSeconds: 30,
+        afterMessagePollIntervalSeconds: 10,
       },
       permLibItemMainQueue: {
         events: [EventType.ADD_ITEM],
