@@ -257,4 +257,16 @@ describe('tags mutation: replace savedItem tags', () => {
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);
     logTagSpy.restore();
   });
+  it('should not allow an empty tag', async () => {
+    const variables = {
+      input: { savedItemId: '1', tags: ['helloWorld', ''] },
+    };
+    const res = await server.executeOperation({
+      query: replaceSavedItemTags,
+      variables,
+    });
+    expect(res.errors.length).to.equal(1);
+    expect(res.errors[0].message).contains('Invalid tag: empty string');
+    expect(res.errors[0].extensions?.code).to.equal('BAD_USER_INPUT');
+  });
 });

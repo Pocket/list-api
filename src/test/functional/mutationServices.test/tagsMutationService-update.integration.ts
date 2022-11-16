@@ -238,6 +238,20 @@ describe('updateTag Mutation: ', () => {
       .pluck('value');
     expect(res[0]).to.equal(mysqlTimeString(updateDate, config.database.tz));
   });
+  it('rejects empty string tags', async () => {
+    const variables = {
+      input: { name: '', id: 'emVicmE=' },
+    };
+    const res = await server.executeOperation({
+      query: updateTagsMutation,
+      variables,
+    });
+    expect(res.errors).not.to.be.undefined;
+    expect(res.errors.length).to.equal(1);
+    expect(res.errors[0].message).to.contain('Invalid tag: empty string');
+    expect(res.errors[0].extensions.code).to.equal('BAD_USER_INPUT');
+  });
+
   it('should roll back if encounter an error during transaction', async () => {
     const listStateQuery = db('list').select();
     const tagStateQuery = db('item_tags').select();
