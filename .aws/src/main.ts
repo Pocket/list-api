@@ -417,12 +417,11 @@ class ListAPI extends TerraformStack {
         targetMaxCapacity: 10,
       },
       alarms: {
-        //TODO: When we start using this more we will change from non-critical to critical
         http5xxErrorPercentage: {
           threshold: 25,
           evaluationPeriods: 4,
           period: 300,
-          actions: [pagerDuty.snsNonCriticalAlarmTopic.arn],
+          actions: config.isDev ? [] : [pagerDuty.snsCriticalAlarmTopic.arn],
         },
       },
     });
