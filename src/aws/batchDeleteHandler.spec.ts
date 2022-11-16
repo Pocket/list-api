@@ -78,7 +78,7 @@ describe('batchDeleteHandler', () => {
         sinon.stub(batchDeleteHandler, 'handleMessage').resolves(true);
         sinon.stub(batchDeleteHandler, 'deleteMessage').resolves();
         await batchDeleteHandler.pollQueue();
-        expect(scheduleStub.calledOnceWithExactly(30000)).toBe(true);
+        expect(scheduleStub.calledOnceWithExactly(2000)).toBe(true);
       });
       it('sends a delete if message was successfully processed', async () => {
         sinon.stub(batchDeleteHandler, 'handleMessage').resolves(true);

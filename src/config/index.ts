@@ -66,7 +66,7 @@ export default {
         maxMessages: 1,
         waitTimeSeconds: 0,
         defaultPollIntervalSeconds: 300,
-        afterMessagePollIntervalSeconds: 30,
+        afterMessagePollIntervalSeconds: 2,
       },
       permLibItemMainQueue: {
         events: [EventType.ADD_ITEM],
@@ -111,7 +111,7 @@ export default {
     itemIdChunkSize: 500,
   },
   batchDelete: {
-    deleteDelayInMilliSec: 2000,
+    deleteDelayInMilliSec: 500,
     tablesWithPii: ['item_tags', 'list', 'item_attribution'],
     tablesWithUserIdAlone: [
       'list_meta',
