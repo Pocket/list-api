@@ -66,7 +66,7 @@ export default {
         maxMessages: 1,
         waitTimeSeconds: 0,
         defaultPollIntervalSeconds: 300,
-        afterMessagePollIntervalSeconds: 2,
+        afterMessagePollIntervalSeconds: 1,
       },
       permLibItemMainQueue: {
         events: [EventType.ADD_ITEM],
@@ -108,7 +108,7 @@ export default {
   },
   queueDelete: {
     queryLimit: 1000,
-    itemIdChunkSize: 500,
+    itemIdChunkSize: 250,
   },
   batchDelete: {
     deleteDelayInMilliSec: 500,
