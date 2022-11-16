@@ -116,21 +116,35 @@ describe('createTags mutation', () => {
     expect(data.savedItems.edges[0].node.id).equals('0');
   });
 
-  // This test is broken and should be fixed
-  // it('long emoji tags', async () => {
-  //   const bicycles25 = '\uD83D\uDEB4\u200D\u2640\uFE0F'.repeat(25);
-  //   const variables = {
-  //     input: [{ savedItemId: 0, name: bicycles25 }],
-  //   };
-  //   const res = await server.executeOperation({
-  //     query: createTagsMutation,
-  //     variables,
-  //   });
-  //   expect(res.errors).to.be.undefined;
-  //   expect(res.data.createTags[0].name).to.equal(
-  //     '🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️'
-  //   );
-  // });
+  it('rejects empty string tags', async () => {
+    const variables = {
+      input: [{ savedItemId: 0, name: '' }],
+    };
+    const res = await server.executeOperation({
+      query: createTagsMutation,
+      variables,
+    });
+    expect(res.errors).not.to.be.undefined;
+    expect(res.errors.length).to.equal(1);
+    expect(res.errors[0].message).to.contain('Invalid tag: empty string');
+    expect(res.errors[0].extensions.code).to.equal('BAD_USER_INPUT');
+  });
+
+  // This is broken and should be fixed eventually, but it's an edge case
+  it.skip('properly truncates long emoji tags', async () => {
+    const bicycles25 = '\uD83D\uDEB4\u200D\u2640\uFE0F'.repeat(25);
+    const variables = {
+      input: [{ savedItemId: 0, name: bicycles25 }],
+    };
+    const res = await server.executeOperation({
+      query: createTagsMutation,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data.createTags[0].name).to.equal(
+      '🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️🚴‍♀️'
+    );
+  });
 
   it('should add the same tag to multiple items', async () => {
     const variables = {

@@ -1,5 +1,6 @@
 import { addslashes } from 'locutus/php/strings';
 import { DateTime } from 'luxon';
+import { UserInputError } from 'apollo-server-errors';
 
 /**
  * Processes tag inputs prior to insertion/query in the database.
@@ -27,7 +28,7 @@ export function cleanAndValidateTag(tagName: string): string {
     .slice(0, 25)
     .join('');
   if (trimmedLower == '') {
-    throw new Error('Invalid tag: empty string');
+    throw new UserInputError('Invalid tag: empty string');
   }
   return addslashes(trimmedLower);
 }
