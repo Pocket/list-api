@@ -51,7 +51,7 @@ export async function batchGetSavedItemsByIds(
 
   //coz we filtered deleted items from savedItems,
   //and may be items for the given Id is missing.
-  //so this function could map ids with undefined
+  //so reorderResultByKey function could map ids with undefined
   return items.filter((item) => item != undefined);
 }
 
