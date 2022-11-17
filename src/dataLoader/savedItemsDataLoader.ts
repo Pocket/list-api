@@ -70,9 +70,11 @@ export async function batchGetSavedItemsByIds(
 export function createSavedItemDataLoaders(
   context: IContext
 ): Pick<IContext['dataLoaders'], 'savedItemsById' | 'savedItemsByUrl'> {
-  const savedItemDataService = new SavedItemDataService(context);
   const byIdLoader = new DataLoader(async (ids: string[]) => {
-    const items = await batchGetSavedItemsByIds(savedItemDataService, ids);
+    const items = await batchGetSavedItemsByIds(
+      new SavedItemDataService(context),
+      ids
+    );
     items.forEach((item) => {
       if (item) {
         byUrlLoader.prime(item.url, item);
@@ -81,7 +83,10 @@ export function createSavedItemDataLoaders(
     return items;
   });
   const byUrlLoader = new DataLoader(async (urls: string[]) => {
-    const items = await batchGetSavedItemsByUrls(savedItemDataService, urls);
+    const items = await batchGetSavedItemsByUrls(
+      new SavedItemDataService(context),
+      urls
+    );
     items.forEach((item) => {
       if (item) {
         byIdLoader.prime(item.id, item);

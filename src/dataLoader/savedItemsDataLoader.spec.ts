@@ -32,6 +32,15 @@ describe('savedItem data loader', function () {
       },
     },
   ];
+
+  afterAll(() => {
+    sinon.restore();
+  });
+
+  beforeAll(() => {
+    sinon.restore();
+  });
+
   it('batchGetSavedItemsByIds should not return deleted items', async () => {
     const promiseSavedItem = Promise.resolve(testSavedItem);
     const db = writeClient();
