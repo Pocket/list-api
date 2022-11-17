@@ -10,12 +10,11 @@ import { reorderResultByKey } from './utils';
  * @param urls
  */
 export async function batchGetSavedItemsByUrls(
-  context: IContext,
+  savedItemService: SavedItemDataService,
   urls: string[]
 ): Promise<SavedItem[]> {
-  let savedItems = await new SavedItemDataService(
-    context
-  ).batchGetSavedItemsByGivenUrls(urls);
+  let savedItems: SavedItem[] =
+    await savedItemService.batchGetSavedItemsByGivenUrls(urls);
 
   savedItems = savedItems.filter((item) => {
     return item.status != 'DELETED';
@@ -71,11 +70,9 @@ export async function batchGetSavedItemsByIds(
 export function createSavedItemDataLoaders(
   context: IContext
 ): Pick<IContext['dataLoaders'], 'savedItemsById' | 'savedItemsByUrl'> {
+  const savedItemDataService = new SavedItemDataService(context);
   const byIdLoader = new DataLoader(async (ids: string[]) => {
-    const items = await batchGetSavedItemsByIds(
-      new SavedItemDataService(context),
-      ids
-    );
+    const items = await batchGetSavedItemsByIds(savedItemDataService, ids);
     items.forEach((item) => {
       if (item) {
         byUrlLoader.prime(item.url, item);
@@ -84,7 +81,7 @@ export function createSavedItemDataLoaders(
     return items;
   });
   const byUrlLoader = new DataLoader(async (urls: string[]) => {
-    const items = await batchGetSavedItemsByUrls(context, urls);
+    const items = await batchGetSavedItemsByUrls(savedItemDataService, urls);
     items.forEach((item) => {
       if (item) {
         byIdLoader.prime(item.id, item);

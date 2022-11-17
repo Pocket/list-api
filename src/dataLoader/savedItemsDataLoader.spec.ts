@@ -1,7 +1,10 @@
 import { SavedItem } from '../types';
 import sinon from 'sinon';
 import { SavedItemDataService } from '../dataService';
-import { batchGetSavedItemsByIds } from './savedItemsDataLoader';
+import {
+  batchGetSavedItemsByIds,
+  batchGetSavedItemsByUrls,
+} from './savedItemsDataLoader';
 import { writeClient } from '../database/client';
 
 describe('savedItem data loader', function () {
@@ -29,7 +32,7 @@ describe('savedItem data loader', function () {
       },
     },
   ];
-  it('should not return deleted items', async () => {
+  it('batchGetSavedItemsByIds should not return deleted items', async () => {
     const promiseSavedItem = Promise.resolve(testSavedItem);
     const db = writeClient();
     const service = new SavedItemDataService({
@@ -43,9 +46,11 @@ describe('savedItem data loader', function () {
 
     const items = await batchGetSavedItemsByIds(service, ['1', '2']);
     items.forEach((item) => expect(item.id).not.toBe('2'));
+    expect(items.length).toEqual(1);
+    expect(items[0].id).toEqual('1');
   });
 
-  it('should not return undefined in the batch for non-existent IDs', async () => {
+  it('batchGetSavedItemsByIds should not return undefined in the batch for non-existent IDs', async () => {
     const promiseSavedItem = Promise.resolve(testSavedItem);
     const db = writeClient();
     const service = new SavedItemDataService({
@@ -57,7 +62,51 @@ describe('savedItem data loader', function () {
       .stub(service, 'batchGetSavedItemsByGivenIds')
       .returns(promiseSavedItem);
 
-    const items = await batchGetSavedItemsByIds(service, ['1', '3']);
-    items.forEach((item) => expect(item.id).not.toBe('undefined'));
+    const items = await batchGetSavedItemsByIds(service, ['3', '1']);
+    items.forEach((item) => expect(item.id).not.toBe(undefined));
+    expect(items.length).toEqual(1);
+    expect(items[0].id).toEqual('1');
+  });
+
+  it('batchGetSavedItemsByUrls should not return deleted items', async () => {
+    const promiseSavedItem = Promise.resolve(testSavedItem);
+    const db = writeClient();
+    const service = new SavedItemDataService({
+      dbClient: db,
+      userId: '1',
+      apiId: 'backend',
+    });
+    sinon
+      .stub(service, 'batchGetSavedItemsByGivenUrls')
+      .returns(promiseSavedItem);
+
+    const items = await batchGetSavedItemsByUrls(service, [
+      'abc.com',
+      'def.com',
+    ]);
+    items.forEach((item) => expect(item.id).not.toBe('2'));
+    expect(items.length).toEqual(1);
+    expect(items[0].url).toEqual('abc.com');
+  });
+
+  it('batchGetSavedItemsByUrls should not return undefined in the batch for non-existent IDs', async () => {
+    const promiseSavedItem = Promise.resolve(testSavedItem);
+    const db = writeClient();
+    const service = new SavedItemDataService({
+      dbClient: db,
+      userId: '1',
+      apiId: 'backend',
+    });
+    sinon
+      .stub(service, 'batchGetSavedItemsByGivenUrls')
+      .returns(promiseSavedItem);
+
+    const items = await batchGetSavedItemsByUrls(service, [
+      'notFound.com',
+      'abc.com',
+    ]);
+    items.forEach((item) => expect(item.id).not.toBe(undefined));
+    expect(items.length).toEqual(1);
+    expect(items[0].url).toEqual('abc.com');
   });
 });
