@@ -3,6 +3,7 @@ import { SavedItemDataService } from '../dataService';
 import { IContext } from '../server/context';
 import { SavedItem } from '../types';
 import { reorderResultByKey } from './utils';
+import * as Sentry from '@sentry/node';
 
 /**
  * Batch loader function to get saved items by URLs
@@ -63,12 +64,39 @@ export function createSavedItemDataLoaders(
 ): Pick<IContext['dataLoaders'], 'savedItemsById' | 'savedItemsByUrl'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
     const items = await batchGetSavedItemsByIds(context, ids);
-    items.forEach((item) => byUrlLoader.prime(item.url, item));
+    items.forEach((item) => {
+      try {
+        byUrlLoader.prime(item.url, item);
+      } catch (e) {
+        const errorMessage = `byIdDataLoader: item throwing the error -> ${JSON.stringify(
+          item
+        )}. all Ids in this batch: ${JSON.stringify(ids)}`;
+        console.log(errorMessage);
+        Sentry.addBreadcrumb({
+          message: errorMessage,
+        });
+        throw e;
+      }
+    });
     return items;
   });
+
   const byUrlLoader = new DataLoader(async (urls: string[]) => {
     const items = await batchGetSavedItemsByUrls(context, urls);
-    items.forEach((item) => byIdLoader.prime(item.id, item));
+    items.forEach((item) => {
+      try {
+        byIdLoader.prime(item.id, item);
+      } catch (e) {
+        const errorMessage = `byUrlLoader: item throwing the error -> ${JSON.stringify(
+          item
+        )}, all urls in this batch: ${JSON.stringify(urls)}`;
+        console.log(errorMessage);
+        Sentry.addBreadcrumb({
+          message: errorMessage,
+        });
+        throw e;
+      }
+    });
     return items;
   });
   return { savedItemsById: byIdLoader, savedItemsByUrl: byUrlLoader };
