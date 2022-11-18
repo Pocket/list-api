@@ -687,7 +687,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(mutationResult.errors[0].message).equals(
         `unable to add item with url: ${variables.url}`
       );
-    });
+    }, 30000);
     it('should return error when insertion throws error', async () => {
       mockParserGetItemRequest('http://databasetest.com', {
         item: {
@@ -721,6 +721,6 @@ describe('UpsertSavedItem Mutation', () => {
       expect(mutationResult.errors[0].message).equals(
         `unable to add item with url: ${variables.url}`
       );
-    });
+    }, 30000);
   });
 });
