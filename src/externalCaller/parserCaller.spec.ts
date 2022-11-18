@@ -13,13 +13,6 @@ function mockParserGetItemRequest(urlToParse: string, data: any) {
     .reply(200, data);
 }
 
-function mockParserGetItemRequestFailed(urlToParse: string, data: any) {
-  nock(config.parserDomain)
-    .get(`/${config.parserVersion}/getItemListApi`)
-    .query({ url: urlToParse, getItem: '1' })
-    .reply(500, data);
-}
-
 describe('ParserCallerTest', function () {
   const urlToParse = 'https://igiveyou.a.test';
 
@@ -77,26 +70,39 @@ describe('ParserCallerTest', function () {
   });
 
   it('should retry parser request 3 times when fails', async () => {
-    mockParserGetItemRequestFailed(urlToParse, {
-      item: {
-        given_url: urlToParse,
-        resolved_id: null,
-      },
-    });
+    nock(config.parserDomain)
+      .get(`/${config.parserVersion}/getItemListApi`)
+      .query({ url: urlToParse, getItem: '1' })
+      .reply(503, {})
+      .get(`/${config.parserVersion}/getItemListApi`)
+      .query({ url: urlToParse, getItem: '1' })
+      .reply(503, {})
+      .get(`/${config.parserVersion}/getItemListApi`)
+      .query({ url: urlToParse, getItem: '1' })
+      .reply(200, {
+        item: {
+          given_url: urlToParse,
+          resolved_id: null,
+        },
+      });
 
-    mockParserGetItemRequestFailed(urlToParse, {
-      item: {
-        given_url: urlToParse,
-        resolved_id: null,
-      },
-    });
+    // \mockParserGetItemRequestFailed(urlToParse, {
+    //   item: {
+    //     given_url: urlToParse,
+    //     resolved_id: null,
+    //   },
+    // });
 
-    mockParserGetItemRequest(urlToParse, {
-      item: {
-        given_url: urlToParse,
-        resolved_id: null,
-      },
-    });
+    // mockParserGetItemRequestFailed(urlToParse, {
+    //   item: {
+    //     given_url: urlToParse,
+    //     resolved_id: null,
+    //   },
+    // });
+
+    // mockParserGetItemRequest(urlToParse, {
+
+    // });
 
     const res = await ParserCaller.getOrCreateItem(urlToParse);
     expect(res.itemId).equals(8);

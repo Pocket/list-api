@@ -12,6 +12,7 @@
     "lint-fix": "eslint --fix \"src/**/*.ts\""
   },
   "dependencies": {
+    "@apollo/subgraph": "2.0.5",
     "@aws-sdk/client-eventbridge": "3.92.0",
     "@aws-sdk/client-kinesis": "3.53.0",
     "@aws-sdk/client-sqs": "3.53.0",
@@ -21,7 +22,6 @@
     "@sentry/node": "7.8.1",
     "@sentry/tracing": "7.8.1",
     "@snowplow/node-tracker": "3.3.1",
-    "@apollo/subgraph": "2.0.5",
     "apollo-server": "3.10.2",
     "apollo-server-core": "3.10.2",
     "apollo-server-errors": "3.3.1",
@@ -38,8 +38,7 @@
     "locutus": "2.0.16",
     "luxon": "2.3.2",
     "mysql": "2.18.1",
-    "nanoid": "3.3.4",
-    "node-fetch-retry": "2.0.1"
+    "nanoid": "3.3.4"
   },
   "devDependencies": {
     "@pocket-tools/eslint-config": "2.0.0",

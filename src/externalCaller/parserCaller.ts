@@ -1,4 +1,4 @@
-import fetch from 'node-fetch-retry';
+import fetch from 'node-fetch';
 import config from '../config';
 
 export type ItemResponse = {
@@ -14,21 +14,29 @@ export type ItemResponse = {
  * in list table.
  */
 export class ParserCaller {
-  public static async getOrCreateItem(url: string): Promise<ItemResponse> {
-    /**
-     * The parser is fun and flaky at times, and subsequent calls can be successful
-     * so lets try 3 times pausing 10ms between tries
-     */
+  public static async getOrCreateItem(
+    url: string,
+    tries = 3
+  ): Promise<ItemResponse> {
     const response = await fetch(
       `${config.parserDomain}/${
         config.parserVersion
-      }/getItemListApi?url=${encodeURIComponent(url)}&getItem=1`,
-      { method: 'GET', retry: 3, pause: 10 }
+      }/getItemListApi?url=${encodeURIComponent(url)}&getItem=1`
     );
 
     const data: any = await response.json();
     const item = data.item;
     if (!item || (item && !item.item_id) || (item && !item.resolved_id)) {
+      if (tries > 0) {
+        // The parser is fun and flaky at times, and subsequent calls can be successful.
+        // It can also return 200 with no data at times
+        // So we retry based on our response
+        console.log('Parser call failed so retrying', {
+          url: url,
+          retriesLeft: tries - 1,
+        });
+        return await this.getOrCreateItem(url, tries - 1);
+      }
       throw new Error(`Unable to parse and generate item for ${url}`);
     }
 
