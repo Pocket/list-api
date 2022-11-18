@@ -35,8 +35,8 @@ describe('ParserCallerTest', function () {
   it('should throw error when there is no item in the response', async () => {
     mockParserGetItemRequest(urlToParse, {});
 
-    const res = ParserCaller.getOrCreateItem(urlToParse);
-    expect(res).to.be.rejectedWith(
+    const res = ParserCaller.getOrCreateItem(urlToParse, 1);
+    await expect(res).to.be.rejectedWith(
       `Unable to parse and generate item for ${urlToParse}`
     );
   });
@@ -49,8 +49,8 @@ describe('ParserCallerTest', function () {
       },
     });
 
-    const res = ParserCaller.getOrCreateItem(urlToParse);
-    expect(res).to.be.rejectedWith(
+    const res = ParserCaller.getOrCreateItem(urlToParse, 1);
+    await expect(res).to.be.rejectedWith(
       `Unable to parse and generate item for ${urlToParse}`
     );
   });
@@ -63,8 +63,8 @@ describe('ParserCallerTest', function () {
       },
     });
 
-    const res = ParserCaller.getOrCreateItem(urlToParse);
-    expect(res).to.be.rejectedWith(
+    const res = ParserCaller.getOrCreateItem(urlToParse, 1);
+    await expect(res).to.be.rejectedWith(
       `Unable to parse and generate item for ${urlToParse}`
     );
   });
@@ -73,7 +73,7 @@ describe('ParserCallerTest', function () {
     nock(config.parserDomain)
       .get(`/${config.parserVersion}/getItemListApi`)
       .query({ url: urlToParse, getItem: '1' })
-      .reply(503, {})
+      .reply(200, {})
       .get(`/${config.parserVersion}/getItemListApi`)
       .query({ url: urlToParse, getItem: '1' })
       .reply(503, {})
@@ -82,27 +82,11 @@ describe('ParserCallerTest', function () {
       .reply(200, {
         item: {
           given_url: urlToParse,
-          resolved_id: null,
+          item_id: 8,
+          resolved_id: 9,
+          title: 'The Not Evil Search Engine',
         },
       });
-
-    // \mockParserGetItemRequestFailed(urlToParse, {
-    //   item: {
-    //     given_url: urlToParse,
-    //     resolved_id: null,
-    //   },
-    // });
-
-    // mockParserGetItemRequestFailed(urlToParse, {
-    //   item: {
-    //     given_url: urlToParse,
-    //     resolved_id: null,
-    //   },
-    // });
-
-    // mockParserGetItemRequest(urlToParse, {
-
-    // });
 
     const res = await ParserCaller.getOrCreateItem(urlToParse);
     expect(res.itemId).equals(8);

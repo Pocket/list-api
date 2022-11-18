@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import config from '../config';
+import { backOff } from 'exponential-backoff';
 
 export type ItemResponse = {
   itemId: string;
@@ -14,9 +15,8 @@ export type ItemResponse = {
  * in list table.
  */
 export class ParserCaller {
-  public static async getOrCreateItem(
-    url: string,
-    tries = 3
+  private static async internalGetOrCreateItem(
+    url: string
   ): Promise<ItemResponse> {
     const response = await fetch(
       `${config.parserDomain}/${
@@ -27,16 +27,6 @@ export class ParserCaller {
     const data: any = await response.json();
     const item = data.item;
     if (!item || (item && !item.item_id) || (item && !item.resolved_id)) {
-      if (tries > 0) {
-        // The parser is fun and flaky at times, and subsequent calls can be successful.
-        // It can also return 200 with no data at times
-        // So we retry based on our response
-        console.log('Parser call failed so retrying', {
-          url: url,
-          retriesLeft: tries - 1,
-        });
-        return await this.getOrCreateItem(url, tries - 1);
-      }
       throw new Error(`Unable to parse and generate item for ${url}`);
     }
 
@@ -45,5 +35,20 @@ export class ParserCaller {
       resolvedId: item.resolved_id,
       title: item.title ?? '',
     };
+  }
+
+  public static async getOrCreateItem(
+    url: string,
+    tries = 3
+  ): Promise<ItemResponse> {
+    const backOffOptions = {
+      numOfAttempts: tries, //default is 10
+      maxDelay: 10,
+    };
+
+    return (await backOff(
+      () => this.internalGetOrCreateItem(url),
+      backOffOptions
+    )) as ItemResponse;
   }
 }
