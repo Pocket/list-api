@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch from 'node-fetch-retry';
 import config from '../config';
 
 export type ItemResponse = {
@@ -15,10 +15,15 @@ export type ItemResponse = {
  */
 export class ParserCaller {
   public static async getOrCreateItem(url: string): Promise<ItemResponse> {
+    /**
+     * The parser is fun and flaky at times, and subsequent calls can be successful
+     * so lets try 3 times pausing 10ms between tries
+     */
     const response = await fetch(
       `${config.parserDomain}/${
         config.parserVersion
-      }/getItemListApi?url=${encodeURIComponent(url)}&getItem=1`
+      }/getItemListApi?url=${encodeURIComponent(url)}&getItem=1`,
+      { method: 'GET', retry: 3, pause: 10 }
     );
 
     const data: any = await response.json();
