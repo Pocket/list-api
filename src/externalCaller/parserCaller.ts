@@ -47,7 +47,7 @@ export class ParserCaller {
     };
 
     return (await backOff(
-      async () => await this.internalGetOrCreateItem(url),
+      () => this.internalGetOrCreateItem(url),
       backOffOptions
     )) as ItemResponse;
   }
