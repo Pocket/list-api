@@ -1,6 +1,5 @@
 import fetch from 'node-fetch';
 import config from '../config';
-import { backOff } from 'exponential-backoff';
 
 export type ItemResponse = {
   itemId: string;
@@ -41,14 +40,16 @@ export class ParserCaller {
     url: string,
     tries = 3
   ): Promise<ItemResponse> {
-    const backOffOptions = {
-      numOfAttempts: tries, //default is 10
-      maxDelay: 10,
-    };
+    let lastError = null;
+    while (tries > 0) {
+      try {
+        return await this.internalGetOrCreateItem(url);
+      } catch (e) {
+        lastError = e;
+      }
+      tries--;
+    }
 
-    return (await backOff(
-      () => this.internalGetOrCreateItem(url),
-      backOffOptions
-    )) as ItemResponse;
+    throw lastError;
   }
 }
