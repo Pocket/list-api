@@ -38,7 +38,7 @@ export class ParserCaller {
 
   public static async getOrCreateItem(
     url: string,
-    tries = 3
+    tries = config.parserRetries
   ): Promise<ItemResponse> {
     let lastError = null;
     while (tries > 0) {

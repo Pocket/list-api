@@ -102,6 +102,7 @@ export default {
   },
   parserDomain: process.env.PARSER_DOMAIN || 'https://parse-sir.local',
   parserVersion: process.env.PARSER_VERSION || 'v3beta',
+  parserRetries: 3,
   pagination: {
     defaultPageSize: 30,
     maxPageSize: 100,
