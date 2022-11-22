@@ -14,7 +14,9 @@ export type ItemResponse = {
  * in list table.
  */
 export class ParserCaller {
-  public static async getOrCreateItem(url: string): Promise<ItemResponse> {
+  private static async internalGetOrCreateItem(
+    url: string
+  ): Promise<ItemResponse> {
     const response = await fetch(
       `${config.parserDomain}/${
         config.parserVersion
@@ -32,5 +34,22 @@ export class ParserCaller {
       resolvedId: item.resolved_id,
       title: item.title ?? '',
     };
+  }
+
+  public static async getOrCreateItem(
+    url: string,
+    tries = config.parserRetries
+  ): Promise<ItemResponse> {
+    let lastError = null;
+    while (tries > 0) {
+      try {
+        return await this.internalGetOrCreateItem(url);
+      } catch (e) {
+        lastError = e;
+      }
+      tries--;
+    }
+
+    throw lastError;
   }
 }
