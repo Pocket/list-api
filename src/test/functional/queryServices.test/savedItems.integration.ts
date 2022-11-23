@@ -276,7 +276,7 @@ describe('getSavedItems', () => {
     expect(res.data._entities[1].id).to.equal('2');
   });
 
-  it(`doesn't throw error when Id doesn't exist`, async () => {
+  it(`call succeeds with returning null value when Id is not found`, async () => {
     await db('list').insert([
       {
         user_id: 1,
@@ -308,11 +308,11 @@ describe('getSavedItems', () => {
       _representations: [
         {
           __typename: 'SavedItem',
-          id: '1',
+          id: '100',
         },
         {
           __typename: 'SavedItem',
-          id: '100',
+          id: '1',
         },
       ],
     };
@@ -322,8 +322,42 @@ describe('getSavedItems', () => {
       variables,
     });
 
-    expect(res.data._entities[0].id).to.equal('1');
-    expect(res.data._entities[1]).is.null;
+    expect(res.data._entities[0]).is.null;
+    expect(res.data._entities[1].id).to.equal('1');
+    expect(res.data._entities.length).to.equal(2);
+  });
+
+  it('call succeeds with returning null value when Url is not found', async () => {
+    const RESOLVE_REFERENCE_QUERY = gql`
+      query ($_representations: [_Any!]!) {
+        _entities(representations: $_representations) {
+          ... on SavedItem {
+            url
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      _representations: [
+        {
+          __typename: 'SavedItem',
+          url: 'http://not-found',
+        },
+        {
+          __typename: 'SavedItem',
+          url: 'http://abc',
+        },
+      ],
+    };
+
+    const res = await server.executeOperation({
+      query: RESOLVE_REFERENCE_QUERY,
+      variables,
+    });
+
+    expect(res.data._entities[0]).is.null;
+    expect(res.data._entities[1].url).to.equal('http://abc');
     expect(res.data._entities.length).to.equal(2);
   });
 
