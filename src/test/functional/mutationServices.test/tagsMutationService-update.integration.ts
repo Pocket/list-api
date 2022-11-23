@@ -181,8 +181,8 @@ describe('updateTag Mutation: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.data).is.null;
-    expect(res.errors[0].message).equals(
-      `Tag Id does not exist ${variables.input.id}`
+    expect(res.errors[0].message).contains(
+      `Tag Id ${variables.input.id} does not exist`
     );
   });
   it('should update tag name with primary key conflict', async () => {
@@ -248,7 +248,9 @@ describe('updateTag Mutation: ', () => {
     });
     expect(res.errors).not.to.be.undefined;
     expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].message).to.contain('Invalid tag: empty string');
+    expect(res.errors[0].message).to.contain(
+      'Tag name must have at least 1 non-whitespace character.'
+    );
     expect(res.errors[0].extensions.code).to.equal('BAD_USER_INPUT');
   });
 
@@ -273,11 +275,7 @@ describe('updateTag Mutation: ', () => {
       variables,
     });
     expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].message).to.equal(
-      `updateTag: server error while updating tag ${JSON.stringify(
-        variables.input
-      )}`
-    );
+    expect(res.errors[0].extensions.code).to.equal('INTERNAL_SERVER_ERROR');
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);

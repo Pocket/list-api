@@ -6,12 +6,15 @@ import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
+import { TagModel } from '../../../models';
+import config from '../../../config';
 
 chai.use(chaiDateTime);
 
 describe('tags query tests - happy path', () => {
   const db = readClient();
-  const server = getServer('1', db, null, { premium: 'true' });
+  const server = (userId: string) =>
+    getServer(userId, db, null, { premium: 'true' });
   const date = new Date('2020-10-03T10:20:30.000Z');
   const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');
@@ -110,6 +113,21 @@ describe('tags query tests - happy path', () => {
         resolved_id: 4,
         given_url: 'http://summer.sports',
         title: 'summer sports',
+        time_added: date,
+        time_updated: date,
+        time_read: date,
+        time_favorited: date3,
+        api_id: '0',
+        status: 1,
+        favorite: 1,
+        api_id_updated: '0',
+      },
+      {
+        user_id: 2,
+        item_id: 99,
+        resolved_id: 99,
+        given_url: 'http://fall.sports',
+        title: 'fall sports',
         time_added: date,
         time_updated: date,
         time_read: date,
@@ -253,8 +271,60 @@ describe('tags query tests - happy path', () => {
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       },
+      {
+        user_id: 2,
+        item_id: 99,
+        tag: '',
+        status: 1,
+        time_added: date,
+        time_updated: date,
+        api_id: 'apiid',
+        api_id_updated: 'updated_api_id',
+      },
     ]);
   });
+
+  const GET_TAGS_FOR_SAVED_ITEM = gql`
+    query getSavedItem($userId: ID!, $itemId: ID!) {
+      _entities(representations: { id: $userId, __typename: "User" }) {
+        ... on User {
+          savedItemById(id: $itemId) {
+            url
+            tags {
+              ... on Tag {
+                id
+                name
+                _createdAt
+                _updatedAt
+                _version
+                _deletedAt
+                savedItems {
+                  edges {
+                    cursor
+                    node {
+                      url
+                      item {
+                        ... on Item {
+                          givenUrl
+                        }
+                      }
+                    }
+                  }
+                  pageInfo {
+                    startCursor
+                    endCursor
+                    hasNextPage
+                    hasPreviousPage
+                  }
+                  totalCount
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
 
   const GET_TAGS_SAVED_ITEMS = gql`
     query getTags(
@@ -317,49 +387,7 @@ describe('tags query tests - happy path', () => {
       itemId: '1',
     };
 
-    const GET_TAGS_FOR_SAVED_ITEM = gql`
-      query getSavedItem($userId: ID!, $itemId: ID!) {
-        _entities(representations: { id: $userId, __typename: "User" }) {
-          ... on User {
-            savedItemById(id: $itemId) {
-              url
-              tags {
-                ... on Tag {
-                  id
-                  name
-                  _createdAt
-                  _updatedAt
-                  _version
-                  _deletedAt
-                  savedItems {
-                    edges {
-                      cursor
-                      node {
-                        url
-                        item {
-                          ... on Item {
-                            givenUrl
-                          }
-                        }
-                      }
-                    }
-                    pageInfo {
-                      startCursor
-                      endCursor
-                      hasNextPage
-                      hasPreviousPage
-                    }
-                    totalCount
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAGS_FOR_SAVED_ITEM,
       variables,
     });
@@ -367,10 +395,9 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].savedItemById.tags[0].name).to.equal(
       'travel'
     );
-    const tagId0 = Buffer.from(
-      res.data?._entities[0].savedItemById.tags[0].id,
-      'base64'
-    ).toString();
+    const tagId0 = TagModel.decodeId(
+      res.data?._entities[0].savedItemById.tags[0].id
+    );
     expect(tagId0).to.equal('travel');
     expect(res.data?._entities[0].savedItemById.tags[0]._version).is.null;
     expect(res.data?._entities[0].savedItemById.tags[0]._deletedAt).is.null;
@@ -387,10 +414,9 @@ describe('tags query tests - happy path', () => {
       unixDate1
     );
     expect(res.data?._entities[0].savedItemById.tags[1].name).to.equal('zebra');
-    const tagId1 = Buffer.from(
-      res.data?._entities[0].savedItemById.tags[1].id,
-      'base64'
-    ).toString();
+    const tagId1 = TagModel.decodeId(
+      res.data?._entities[0].savedItemById.tags[1].id
+    );
     expect(tagId1).to.equal('zebra');
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
@@ -444,7 +470,7 @@ describe('tags query tests - happy path', () => {
         }
       `;
 
-      const res = await server.executeOperation({
+      const res = await server('1').executeOperation({
         query: GET_PAGINATED_ITEMS,
         variables,
       });
@@ -460,7 +486,7 @@ describe('tags query tests - happy path', () => {
         sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
         itemPagination: { first: 2, after: 'somecursor' },
       };
-      const res = await server.executeOperation({
+      const res = await server('1').executeOperation({
         query: GET_TAGS_SAVED_ITEMS,
         variables,
       });
@@ -479,7 +505,7 @@ describe('tags query tests - happy path', () => {
       itemPagination: { first: 2 },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAGS_SAVED_ITEMS,
       variables,
     });
@@ -520,7 +546,7 @@ describe('tags query tests - happy path', () => {
       filter: { isArchived: true },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAGS_SAVED_ITEMS,
       variables,
     });
@@ -547,7 +573,7 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2 },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -559,10 +585,9 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
       'adventure'
     );
-    const tagId = Buffer.from(
-      res.data?._entities[0].tags.edges[0].node.id,
-      'base64'
-    ).toString();
+    const tagId = TagModel.decodeId(
+      res.data?._entities[0].tags.edges[0].node.id
+    );
     expect(tagId).to.equal('adventure');
     expect(res.data?._entities[0].tags.edges[1].node.name).to.equal('travel');
   });
@@ -573,7 +598,7 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2 },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -591,7 +616,7 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2, after: 'YWR2ZW50dXJlXypfImFkdmVudHVyZSI=' },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -609,7 +634,7 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2, before: 'emVicmFfKl8iemVicmEi' },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -627,7 +652,7 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2, before: 'emVicmFfKl8iemVicmEi' },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -646,7 +671,7 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2, after: 'dHJhdmVsXypfInRyYXZlbCI=' },
     };
 
-    const res = await server.executeOperation({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -664,11 +689,30 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2 },
     };
 
-    await server.executeOperation({
+    await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
     expect(dataLoaderSpy.callCount).to.equal(0);
     dataLoaderSpy.restore();
+  });
+  it('should allow returning empty tags', async () => {
+    const variables = {
+      userId: '2',
+      itemId: '99',
+    };
+
+    const res = await server('2').executeOperation({
+      query: GET_TAGS_FOR_SAVED_ITEM,
+      variables,
+    });
+    const save = res.data?._entities[0].savedItemById;
+    expect(save.url).to.equal('http://fall.sports');
+    expect(save.tags.length).to.equal(1);
+    expect(save.tags[0].name).to.equal('');
+    expect(save.tags[0].id).to.equal(
+      Buffer.from(config.data.tagIdSuffix).toString('base64')
+    );
+    expect(res.errors).to.be.undefined;
   });
 });

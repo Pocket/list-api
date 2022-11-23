@@ -1,0 +1,1 @@
+export { TagModel } from './tag';

@@ -11,6 +11,7 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
+import { TagModel } from '../models';
 
 export interface IContext {
   userId: string;
@@ -19,6 +20,9 @@ export interface IContext {
   userIsPremium: boolean;
   dbClient: Knex;
   eventEmitter: ItemsEventEmitter;
+  models: {
+    tag: TagModel;
+  };
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
     savedItemsByUrl: DataLoader<string, SavedItem>;
@@ -44,12 +48,16 @@ export class ContextManager implements IContext {
       eventEmitter: ItemsEventEmitter;
     }
   ) {
+    this.dbClient = config.dbClient;
     this.dataLoaders = {
       ...createTagDataLoaders(this),
       ...createSavedItemDataLoaders(this),
     };
-    this.dbClient = config.dbClient;
+    this.models = {
+      tag: new TagModel(this),
+    };
   }
+  models: { tag: TagModel };
 
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
