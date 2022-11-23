@@ -1,6 +1,7 @@
 import { ItemEventPayload, SQSEvents } from '../../types';
 import config from '../../../config';
 import { mysqlTimeString } from '../../../dataService/utils';
+import * as Sentry from '@sentry/node';
 
 export type EventTransFormer = {
   transformer: (data: ItemEventPayload) => Promise<any>;
@@ -29,6 +30,10 @@ export async function publisherDataSqsTransformer(data: ItemEventPayload) {
   const action = SQSEvents[data.eventType];
 
   if (!action) return null;
+
+  Sentry.addBreadcrumb({
+    message: `action ${action}; userId: ${parseInt(data.user.id)} `,
+  });
 
   return {
     action: action,
