@@ -56,7 +56,7 @@ describe('getSavedItems', () => {
     await db.destroy();
   });
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await db('list').truncate();
     await db('list').insert([
       {
@@ -274,6 +274,91 @@ describe('getSavedItems', () => {
 
     expect(res.data._entities[0].id).to.equal('1');
     expect(res.data._entities[1].id).to.equal('2');
+  });
+
+  it(`call succeeds with returning null value when Id is not found`, async () => {
+    await db('list').insert([
+      {
+        user_id: 1,
+        item_id: 100,
+        resolved_id: 1,
+        given_url: 'http://deleted.com',
+        title: 'deleted article',
+        time_added: date3,
+        time_updated: date1,
+        time_read: date3,
+        time_favorited: date1,
+        api_id: 'apiid',
+        status: 2, //deleted
+        favorite: 1,
+        api_id_updated: 'apiid',
+      },
+    ]);
+    const RESOLVE_REFERENCE_QUERY = gql`
+      query ($_representations: [_Any!]!) {
+        _entities(representations: $_representations) {
+          ... on SavedItem {
+            id
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      _representations: [
+        {
+          __typename: 'SavedItem',
+          id: '100',
+        },
+        {
+          __typename: 'SavedItem',
+          id: '1',
+        },
+      ],
+    };
+
+    const res = await server.executeOperation({
+      query: RESOLVE_REFERENCE_QUERY,
+      variables,
+    });
+
+    expect(res.data._entities[0]).is.null;
+    expect(res.data._entities[1].id).to.equal('1');
+    expect(res.data._entities.length).to.equal(2);
+  });
+
+  it('call succeeds with returning null value when Url is not found', async () => {
+    const RESOLVE_REFERENCE_QUERY = gql`
+      query ($_representations: [_Any!]!) {
+        _entities(representations: $_representations) {
+          ... on SavedItem {
+            url
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      _representations: [
+        {
+          __typename: 'SavedItem',
+          url: 'http://not-found',
+        },
+        {
+          __typename: 'SavedItem',
+          url: 'http://abc',
+        },
+      ],
+    };
+
+    const res = await server.executeOperation({
+      query: RESOLVE_REFERENCE_QUERY,
+      variables,
+    });
+
+    expect(res.data._entities[0]).is.null;
+    expect(res.data._entities[1].url).to.equal('http://abc');
+    expect(res.data._entities.length).to.equal(2);
   });
 
   it('can resolve a entity query for a SavedItem by Url', async () => {
