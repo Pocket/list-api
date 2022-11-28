@@ -20,6 +20,9 @@ Sentry.init({
   ...config.sentry,
   debug: config.sentry.environment == 'development',
 });
+
+initTracing();
+
 const app = express();
 
 // JSON parser to enable POST body with JSON
@@ -45,6 +48,4 @@ const contextFactory = (req: express.Request) => {
 };
 
 const server = startServer(contextFactory);
-
-initTracing();
 export default app;
