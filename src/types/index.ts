@@ -23,7 +23,7 @@ export type SavedItemEdge = {
 };
 
 export type RemoteEntity = {
-  id: string;
+  id?: string;
   _createdAt?: number;
   _updatedAt?: number;
   _version?: number;
@@ -150,6 +150,11 @@ export type SavedItemTagAssociation = {
   tagId: string;
 };
 
+export type SaveTagNameConnection = {
+  savedItemId: string;
+  tagName: string;
+};
+
 export type SavedItemTagsInput = {
   savedItemId: string;
   tags: string[];
@@ -167,4 +172,9 @@ export type SavedItemTagUpdateInput = {
 
 export type SavedItemTagsMap = {
   [savedItemId: string]: string[];
+};
+
+export type DeleteSaveTagResponse = {
+  save: SavedItem;
+  removed: string[]; // Names
 };

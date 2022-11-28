@@ -134,13 +134,13 @@ describe('tags mutation: replace savedItem tags', () => {
 
     const expectedTags = [
       {
-        id: '8J+kqvCfmJI=',
+        id: '8J+kqvCfmJJfX3hwa3R4dGFneF9f',
         name: '🤪😒',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
       },
       {
-        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUuw==',
+        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
@@ -175,7 +175,7 @@ describe('tags mutation: replace savedItem tags', () => {
 
     const expectedTags = [
       {
-        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUuw==',
+        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
@@ -251,10 +251,24 @@ describe('tags mutation: replace savedItem tags', () => {
     });
 
     expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].message).contains(`Internal server error`);
+    expect(res.errors[0].extensions.code).equals('INTERNAL_SERVER_ERROR');
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);
     logTagSpy.restore();
+  });
+  it('should not allow an empty tag', async () => {
+    const variables = {
+      input: { savedItemId: '1', tags: ['helloWorld', ''] },
+    };
+    const res = await server.executeOperation({
+      query: replaceSavedItemTags,
+      variables,
+    });
+    expect(res.errors.length).to.equal(1);
+    expect(res.errors[0].message).contains(
+      'Tag name must have at least 1 non-whitespace character.'
+    );
+    expect(res.errors[0].extensions?.code).to.equal('BAD_USER_INPUT');
   });
 });

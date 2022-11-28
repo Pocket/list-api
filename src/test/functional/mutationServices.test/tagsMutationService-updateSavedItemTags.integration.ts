@@ -155,19 +155,19 @@ describe('tags mutation update: ', () => {
 
     const expectedTags = [
       {
-        id: 'Y2hhbmdlZF9uYW1l',
+        id: 'Y2hhbmdlZF9uYW1lX194cGt0eHRhZ3hfXw==',
         name: 'changed_name',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
       },
       {
-        id: '8J+kqvCfmJI=',
+        id: '8J+kqvCfmJJfX3hwa3R4dGFneF9f',
         name: '🤪😒',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
       },
       {
-        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUuw==',
+        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
@@ -227,7 +227,7 @@ describe('tags mutation update: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.errors[0].message).contains(
-      `SavedItem Id ${variables.input.savedItemId} does not exist`
+      `SavedItem ID ${variables.input.savedItemId} does not exist`
     );
     expect(res.errors[0].extensions.code).equals('NOT_FOUND');
   });
@@ -244,7 +244,7 @@ describe('tags mutation update: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.errors[0].message).contains(
-      'SavedItemTagUpdateInput.tagIds cannot be empty.'
+      'Must provide 1 or more values for tag mutations'
     );
     expect(res.errors[0].extensions.code).equals('BAD_USER_INPUT');
   });

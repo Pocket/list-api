@@ -1,32 +1,28 @@
 import {
   SavedItem,
   SavedItemUpsertInput,
-  TagCreateInput,
   TagUpdateInput,
-  Tag,
   DeleteSavedItemTagsInput,
   SavedItemTagUpdateInput,
   SavedItemTagsInput,
+  Tag,
 } from '../types';
 import { IContext } from '../server/context';
 import { ParserCaller } from '../externalCaller/parserCaller';
-import { SavedItemDataService, TagDataService } from '../dataService';
+import { SavedItemDataService } from '../dataService';
 import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
-import { decodeBase64ToPlainText } from '../dataService/utils';
-import {
-  convertToTagCreateInputs,
-  getSavedItemMapFromTags,
-  getSavedItemTagsMap,
-} from './utils';
-import { NotFoundError } from '@pocket-tools/apollo-utils';
-import { ApolloError, UserInputError } from 'apollo-server-errors';
+import { getSavedItemTagsMap } from './utils';
+import { ApolloError } from 'apollo-server-errors';
+import { TagModel } from '../models';
 
 /**
  * Create or re-add a saved item in a user's list.
  * Note that if the item already exists in a user's list, the item's 'favorite'
  * property will only be updated if 'SavedItemUpsertInput.isFavorite' == true.
  * To 'unfavorite' a SavedItem, use the updateSavedItemUnfavorite mutation instead.
+ * TODO: Revisit this favorite behavior. Do clients actually use it?
+ * (and more importantly do they *need* to use it?) Seems like a /v3 holdover.
  * @param _
  * @param args
  * @param context
@@ -214,30 +210,13 @@ export async function updateSavedItemTags(
   args: { input: SavedItemTagUpdateInput },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  if (args.input.tagIds.length <= 0) {
-    throw new UserInputError(
-      'SavedItemTagUpdateInput.tagIds cannot be empty. use mutation updateSavedItemRemoveTags to' +
-        'remove all tags'
-    );
-  }
-
-  if (
-    (await savedItemService.getSavedItemById(args.input.savedItemId)) == null
-  ) {
-    throw new NotFoundError(
-      `SavedItem Id ${args.input.savedItemId} does not exist`
-    );
-  }
-
-  const savedItem = await new TagDataService(
-    context,
-    new SavedItemDataService(context)
-  ).updateSavedItemTags(args.input);
+  const savedItem = await context.models.tag.updateTagSaveConnections(
+    args.input
+  );
   context.emitItemEvent(
     EventType.REPLACE_TAGS,
     savedItem,
-    args.input.tagIds.map((id) => decodeBase64ToPlainText(id))
+    args.input.tagIds.map((id) => TagModel.decodeId(id))
   );
   return savedItem;
 }
@@ -256,51 +235,11 @@ export async function updateSavedItemRemoveTags(
   args: { savedItemId: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const tagDataService = await new TagDataService(context, savedItemService);
-  const tagsCleared = await tagDataService.getTagsByUserItem(args.savedItemId);
-
-  const savedItem = await tagDataService.updateSavedItemRemoveTags(
+  const { save, removed } = await context.models.tag.removeSaveTags(
     args.savedItemId
   );
-
-  if (savedItem == null) {
-    throw new NotFoundError(`SavedItem Id ${args.savedItemId} does not exist`);
-  }
-
-  context.emitItemEvent(
-    EventType.CLEAR_TAGS,
-    savedItem,
-    tagsCleared.map((tag) => tag.name)
-  );
-  return savedItem;
-}
-
-export async function createTags(
-  root,
-  args: { input: TagCreateInput[] },
-  context: IContext
-): Promise<Tag[]> {
-  // TODO: Fetch by ID when ID is not just the name
-  const uniqueTagNames = [
-    ...new Set(args.input.map((tagInput) => tagInput.name)),
-  ];
-  const savedItemService = new SavedItemDataService(context);
-  const tagDataService = new TagDataService(context, savedItemService);
-
-  await tagDataService.insertTags(args.input);
-  const tags = await tagDataService.getTagsByName(uniqueTagNames);
-
-  const savedItemMap = getSavedItemMapFromTags(tags);
-  for (const savedItemId in savedItemMap) {
-    context.emitItemEvent(
-      EventType.ADD_TAGS,
-      savedItemService.getSavedItemById(savedItemId),
-      savedItemMap[savedItemId].map((tag) => tag.name)
-    );
-  }
-
-  return tags;
+  context.emitItemEvent(EventType.CLEAR_TAGS, save, removed);
+  return save;
 }
 
 /**
@@ -315,16 +254,9 @@ export async function createSavedItemTags(
   args: { input: SavedItemTagsInput[] },
   context: IContext
 ): Promise<SavedItem[]> {
-  const savedItemService = new SavedItemDataService(context);
-  const tagDataService = new TagDataService(context, savedItemService);
-
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
-  const tagCreateInput = convertToTagCreateInputs(savedItemTagsMap);
-
-  await tagDataService.insertTags(tagCreateInput);
-  const savedItemIds: string[] = args.input.map((i) => i.savedItemId);
-  const savedItems = await savedItemService.batchGetSavedItemsByGivenIds(
-    savedItemIds
+  const savedItems = await context.models.tag.createTagSaveConnections(
+    args.input
   );
 
   for (const savedItem of savedItems) {
@@ -347,34 +279,14 @@ export async function deleteSavedItemTags(
   args: { input: DeleteSavedItemTagsInput[] },
   context: IContext
 ): Promise<SavedItem[]> {
-  try {
-    const savedItemService = new SavedItemDataService(context);
-    const tagDataService = new TagDataService(context, savedItemService);
-    await tagDataService.deleteSavedItemAssociations(args.input);
-
-    const savedItemsToReturn = [];
-    for (const association of args.input) {
-      const savedItem = savedItemService.getSavedItemById(
-        association.savedItemId
-      );
-
-      context.emitItemEvent(
-        EventType.REMOVE_TAGS,
-        savedItem,
-        association.tagIds.map((id) => decodeBase64ToPlainText(id))
-      );
-      savedItemsToReturn.push(savedItem);
-    }
-    return savedItemsToReturn;
-  } catch (e) {
-    console.log(e);
-    Sentry.captureException(e);
-    throw new ApolloError(
-      `deleteSavedItemTags: server error while untagging a savedItem ${JSON.stringify(
-        args.input
-      )}`
-    );
-  }
+  const deleteOperations = await context.models.tag.deleteTagSaveConnection(
+    args.input
+  );
+  const saves = deleteOperations.map(({ save, removed }) => {
+    context.emitItemEvent(EventType.REMOVE_TAGS, save, removed);
+    return save;
+  });
+  return saves;
 }
 
 /**
@@ -386,48 +298,7 @@ export async function deleteTag(
   args: { id: string },
   context: IContext
 ): Promise<string> {
-  await new TagDataService(
-    context,
-    new SavedItemDataService(context)
-  ).deleteTagObject(args.id);
-  return args.id;
-}
-
-/**
- * rename a tag name
- * @param root
- * @param args TagUpdateInput that consist old tagId and the new tagName
- * @param context
- */
-export async function updateTag(
-  root,
-  args: { input: TagUpdateInput },
-  context: IContext
-): Promise<Tag> {
-  const tagDataService = new TagDataService(
-    context,
-    new SavedItemDataService(context)
-  );
-  const oldTagName = decodeBase64ToPlainText(args.input.id);
-  let oldTagDetails;
-  try {
-    oldTagDetails = await tagDataService.getTagByName(oldTagName);
-  } catch {
-    const error = `Tag Id does not exist ${args.input.id}`;
-    console.log(error);
-    throw new ApolloError(error);
-  }
-
-  try {
-    await tagDataService.updateTagByUser(args.input, oldTagDetails.savedItems);
-    return await tagDataService.getTagByName(args.input.name);
-  } catch (e) {
-    console.log(e);
-    Sentry.captureException(e);
-    throw new ApolloError(
-      `updateTag: server error while updating tag ${JSON.stringify(args.input)}`
-    );
-  }
+  return context.models.tag.deleteTag(args.id);
 }
 
 /**
@@ -442,12 +313,9 @@ export async function replaceSavedItemTags(
   context: IContext
 ): Promise<SavedItem[]> {
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
-  const tagCreateInputs = convertToTagCreateInputs(savedItemTagsMap);
-
-  const savedItems = await new TagDataService(
-    context,
-    new SavedItemDataService(context)
-  ).replaceSavedItemTags(tagCreateInputs);
+  const savedItems = await context.models.tag.replaceSaveTagConnections(
+    args.input
+  );
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
@@ -456,6 +324,13 @@ export async function replaceSavedItemTags(
       savedItemTagsMap[savedItem.id]
     );
   }
-
   return savedItems;
+}
+
+export async function updateTag(
+  root,
+  args: { input: TagUpdateInput },
+  context: IContext
+): Promise<Tag> {
+  return context.models.tag.renameTag(args.input);
 }

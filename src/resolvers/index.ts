@@ -6,7 +6,6 @@ import {
   suggestedTags as savedItemSuggestedTags,
 } from './savedItem';
 import {
-  createTags,
   createSavedItemTags,
   deleteSavedItem,
   deleteSavedItemTags,
@@ -55,8 +54,10 @@ const resolvers = {
   },
   Tag: {
     savedItems: tagsSavedItems,
-    id: (parent: Tag) => {
-      return parent?.id ?? Buffer.from(parent.name).toString('base64');
+    // ID isn't modeled in the DB
+    // Use resolvers to separate this from data layer logic
+    id: (parent: Tag, _, context: IContext) => {
+      return context.models.tag.resolveId(parent);
     },
   },
   Mutation: {
@@ -69,7 +70,6 @@ const resolvers = {
     updateSavedItemUnDelete,
     updateSavedItemTags,
     updateSavedItemRemoveTags,
-    createTags,
     updateTag,
     deleteSavedItemTags,
     deleteTag,

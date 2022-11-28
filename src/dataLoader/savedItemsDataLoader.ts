@@ -20,12 +20,13 @@ export async function batchGetSavedItemsByUrls(
     return item.status != 'DELETED';
   });
 
-  const items = reorderResultByKey<SavedItem, 'url'>(
+  //deleted items or non-existent should be returned in this list
+  //as <url, undefined>
+  //if we skip deleted urls, then dataloader throws error at resolver
+  return reorderResultByKey<SavedItem, 'url'>(
     { key: 'url', values: urls },
     savedItems
   );
-
-  return items.filter((item) => item != undefined);
 }
 
 /**
@@ -44,15 +45,13 @@ export async function batchGetSavedItemsByIds(
     return item.status != 'DELETED';
   });
 
-  const items = reorderResultByKey<SavedItem, 'id'>(
+  //deleted items or non-existent should be returned in this list
+  //as <id, undefined>
+  //if we skip deletedIds, then dataloader throws error at resolver
+  return reorderResultByKey<SavedItem, 'id'>(
     { key: 'id', values: ids },
     savedItems
   );
-
-  //coz we filtered deleted items from savedItems,
-  //and may be items for the given Id is missing.
-  //so reorderResultByKey function could map ids with undefined
-  return items.filter((item) => item != undefined);
 }
 
 /**
