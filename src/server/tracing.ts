@@ -9,13 +9,25 @@ import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
+// import { detectResources } from '@opentelemetry/resources';
+// import { awsEcsDetector } from '@opentelemetry/resource-detector-aws';
+import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
+
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
 // configure the SDK to export telemetry data to the console
 // enable all auto-instrumentations from the meta package
 const traceExporter = new ConsoleSpanExporter();
 
-// create a provider using the AWS ID Generator
+// const detectedResource = await detectResources({
+//   detectors: [awsEcsDetector],
+// });
+
+const mergedResource = Resource.default().merge(
+  new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: 'list-api',
+  })
+);
 
 // add OTLP exporter
 const otlpExporter = new OTLPTraceExporter({
@@ -27,15 +39,16 @@ const tracerConfig = {
   idGenerator: new AWSXRayIdGenerator(),
 
   // any instrumentations can be declared here
-  instrumentations: [getNodeAutoInstrumentations()],
+  instrumentations: [
+    getNodeAutoInstrumentations(),
+    new AwsInstrumentation({
+      // see the upstream documentation for available configuration
+    }),
+  ],
 
   // any resources can be declared here
 
-  resource: Resource.default().merge(
-    new Resource({
-      [SemanticResourceAttributes.SERVICE_NAME]: 'list-api',
-    })
-  ),
+  resource: mergedResource,
   traceExporter,
   spanProcessor: new BatchSpanProcessor(otlpExporter),
   propagator: new AWSXRayPropagator(),
