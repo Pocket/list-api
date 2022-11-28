@@ -314,17 +314,11 @@ class ListAPI extends TerraformStack {
           ],
         },
         {
-          name: 'xray-daemon',
-          containerImage: 'amazon/aws-xray-daemon',
+          name: 'aws-otel-collector',
+          containerImage: 'amazon/aws-otel-collector',
+          essential: true,
           repositoryCredentialsParam: `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/DockerHub`,
-          portMappings: [
-            {
-              hostPort: 2000,
-              containerPort: 2000,
-              protocol: 'udp',
-            },
-          ],
-          command: ['--region', 'us-east-1', '--local-mode'],
+          command: ['--config=/etc/ecs/ecs-default-config.yaml'],
         },
       ],
       codeDeploy: {
@@ -364,6 +358,11 @@ class ListAPI extends TerraformStack {
         taskRolePolicyStatements: [
           {
             actions: [
+              'logs:PutLogEvents',
+              'logs:CreateLogGroup',
+              'logs:CreateLogStream',
+              'logs:DescribeLogStreams',
+              'logs:DescribeLogGroups',
               'xray:PutTraceSegments',
               'xray:PutTelemetryRecords',
               'xray:GetSamplingRules',

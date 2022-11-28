@@ -18,6 +18,7 @@ export const config = {
   prefix,
   circleCIPrefix: `/${name}/CircleCI/${environment}`,
   shortName: 'LSTAPI',
+
   environment,
   rds: {
     minCapacity: 1,
