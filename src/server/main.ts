@@ -48,4 +48,6 @@ const contextFactory = (req: express.Request) => {
 };
 
 const server = startServer(contextFactory);
+server.then((server) => server.applyMiddleware({ app, path: '/' }));
+
 export default app;
