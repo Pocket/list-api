@@ -2,25 +2,19 @@ import { Knex } from 'knex';
 import { IContext } from '../server/context';
 import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-pagination';
 import {
-  DeleteSavedItemTagsInput,
   Pagination,
   SavedItem,
-  SavedItemTagAssociation,
-  SavedItemTagUpdateInput,
+  SaveTagNameConnection,
   Tag,
   TagCreateInput,
   TagEdge,
-  TagUpdateInput,
 } from '../types';
-import { TagObjectMapper } from './tagObjectMapper';
-import {
-  cleanAndValidateTag,
-  decodeBase64ToPlainText,
-  mysqlTimeString,
-} from './utils';
+import { mysqlTimeString } from './utils';
 import config from '../config';
 import { UsersMetaService } from './usersMetaService';
 import { SavedItemDataService } from './savedItemsService';
+import { TagModel } from '../models';
+import { NotFoundError } from '@pocket-tools/apollo-utils';
 
 /***
  * class that handles the read and write from `readitla-temp.item_tags` table.
@@ -50,10 +44,8 @@ export class TagDataService {
   private getTagsByUserSubQuery(): any {
     return this.db('item_tags')
       .select(
-        'user_id AS userId',
         'tag as name',
         'tag',
-        this.db.raw(`TO_BASE64(tag) as id`),
         this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
         this.db.raw('UNIX_TIMESTAMP(MIN(time_added)) as _createdAt'),
         // Coalescing because the data in time_updated is very sparse in prod db
@@ -102,7 +94,7 @@ export class TagDataService {
       }
     );
 
-    return result.map(TagObjectMapper.mapDbModelToDomainEntity);
+    return result.map(TagModel.toGraphqlEntity);
   }
 
   /**
@@ -140,35 +132,21 @@ export class TagDataService {
       .whereIn('tag', latestTags)
       .orderBy('_updatedAt', 'desc');
 
-    return tags.map(TagObjectMapper.mapDbModelToDomainEntity);
+    return tags.map(TagModel.toGraphqlEntity);
   }
 
   public async getTagsByName(names: string[]): Promise<Tag[]> {
-    const cleanTags = names.map(cleanAndValidateTag);
     const tags = await this.getTagsByUserSubQuery().andWhere(function () {
-      this.whereIn('tag', cleanTags);
+      this.whereIn('tag', names);
     });
-    return tags.map(TagObjectMapper.mapDbModelToDomainEntity);
+    return tags.map(TagModel.toGraphqlEntity);
   }
 
-  public async getTagByName(tagName: string): Promise<Tag> {
-    const result = await this.getTagsByUserSubQuery().where(
-      'tag',
-      cleanAndValidateTag(tagName)
-    );
-    return TagObjectMapper.mapDbModelToDomainEntity(result[0]);
-  }
-
-  public async getTagById(tagId: string): Promise<Tag> {
-    const tagName = Buffer.from(tagId, 'base64').toString();
-    return this.getTagByName(tagName);
-  }
-
-  public async getTagsById(tagIds: string[]): Promise<Tag[]> {
-    const tagNames = tagIds.map((tagId) =>
-      Buffer.from(tagId, 'base64').toString()
-    );
-    return this.getTagsByName(tagNames);
+  public async getTagByName(tagName: string): Promise<Tag | undefined> {
+    const result = await this.getTagsByUserSubQuery().where('tag', tagName);
+    return result.length > 0
+      ? result.map(TagModel.toGraphqlEntity)[0]
+      : undefined;
   }
 
   public async getTagsByUser(
@@ -199,33 +177,9 @@ export class TagDataService {
     );
 
     for (const edge of result.edges) {
-      edge.node = TagObjectMapper.mapDbModelToDomainEntity(edge.node);
+      edge.node = TagModel.toGraphqlEntity(edge.node);
     }
     return result;
-  }
-
-  /**
-   * Deduplicate a batch of tags prior to inserting in the
-   * database. Compares values for all keys of the TagCreateInput type.
-   * The keys aren't available until compile time, but if they get changed
-   * the linter should remind the dev to update.
-   * Best if this method is run after tags are 'cleaned'.
-   */
-  public static deduplicateTagInput(
-    tagInputs: TagCreateInput[]
-  ): TagCreateInput[] {
-    const deduplicated = new Map();
-    const tagKeys: Array<keyof TagCreateInput> = ['name', 'savedItemId'];
-    tagInputs.forEach((tagInput: TagCreateInput) => {
-      // Combine all values of all tag input props into a single lookup key
-      const lookupKey = tagKeys.reduce(
-        (accumulator: string, currentKey) =>
-          accumulator + `|${tagInput[currentKey]}`,
-        ''
-      );
-      deduplicated.set(lookupKey, tagInput);
-    });
-    return Array.from(deduplicated.values());
   }
 
   /**
@@ -245,18 +199,8 @@ export class TagDataService {
     tagInputs: TagCreateInput[],
     trx: Knex.Transaction<any, any[]>
   ) {
-    const cleanedTagInput = tagInputs.map((tagInput) => {
-      return {
-        name: cleanAndValidateTag(tagInput.name),
-        savedItemId: tagInput.savedItemId,
-      };
-    });
-    // Deduplicate after cleaning, since cleaning could cause duplication
-    const tagSet = TagDataService.deduplicateTagInput(cleanedTagInput);
-
     const timestamp = mysqlTimeString(new Date(), config.database.tz);
-
-    const inputData = tagSet.map((tagInput) => {
+    const inputData = tagInputs.map((tagInput) => {
       return {
         user_id: parseInt(this.userId),
         item_id: parseInt(tagInput.savedItemId),
@@ -267,7 +211,7 @@ export class TagDataService {
       };
     });
     await trx('item_tags').insert(inputData).onConflict().ignore();
-    const itemIds = tagSet.map((element) => element.savedItemId);
+    const itemIds = tagInputs.map((element) => element.savedItemId);
     await this.savedItemService.updateListItemMany(itemIds).transacting(trx);
   }
 
@@ -277,26 +221,17 @@ export class TagDataService {
    * @param input Specify the association pairs to remove
    */
   public async deleteSavedItemAssociations(
-    input: DeleteSavedItemTagsInput[]
-  ): Promise<SavedItemTagAssociation[]> {
-    // Explode itemIds list keyed on savedItem into savedItem:itemId
-    const associations: SavedItemTagAssociation[] = input.flatMap(
-      (savedItemGroup) =>
-        savedItemGroup.tagIds.map((tagId) => ({
-          savedItemId: savedItemGroup.savedItemId,
-          tagId: tagId,
-        }))
-    );
+    input: SaveTagNameConnection[]
+  ): Promise<SaveTagNameConnection[]> {
     await this.db.transaction(async (trx: Knex.Transaction) => {
       const tagDeleteSubquery = trx('item_tags')
         .andWhere('user_id', this.userId)
         .delete();
       // Build array of promises to delete association row
-      const deletePromises = associations.map((association) => {
-        const tagName = Buffer.from(association.tagId, 'base64').toString();
+      const deletePromises = input.map(({ tagName, savedItemId }) => {
         return tagDeleteSubquery
           .clone()
-          .where({ item_id: association.savedItemId, tag: tagName });
+          .where({ item_id: savedItemId, tag: tagName });
       });
       await Promise.all(deletePromises);
 
@@ -306,16 +241,15 @@ export class TagDataService {
       // Also need to update the users_meta
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
-    return associations;
+    return input;
   }
 
   /**
    * Completely remove a tag from the database for a user, and delete all
    * associations it has to a user's SavedItems
-   * @param id The ID of the tag to delete
+   * @param tagName the name of the Tag to delete
    */
-  public async deleteTagObject(id: string): Promise<void> {
-    const tagName = decodeBase64ToPlainText(id);
+  public async deleteTagObject(tagName: string): Promise<void> {
     const affectedItems = await this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .pluck('item_id');
@@ -336,25 +270,24 @@ export class TagDataService {
    * @param itemIds
    */
   public async updateTagByUser(
-    tagUpdateInput: TagUpdateInput,
+    oldName: string,
+    newName: string,
     itemIds: string[]
   ): Promise<void> {
-    const oldTagName = decodeBase64ToPlainText(tagUpdateInput.id);
-    const newTagName = cleanAndValidateTag(tagUpdateInput.name);
     await this.db.transaction(async (trx: Knex.Transaction) => {
       await trx.raw(
         `update ignore item_tags
          set tag=:newTagName,
              time_updated=:_updatedAt where user_id = :userId and tag=:oldTagName`,
         {
-          newTagName: newTagName,
+          newTagName: newName,
           userId: this.userId,
-          oldTagName: oldTagName,
+          oldTagName: oldName,
           _updatedAt: mysqlTimeString(new Date(), config.database.tz),
         }
       );
       await this.savedItemService.updateListItemMany(itemIds).transacting(trx);
-      await this.deleteTagsByName(oldTagName).transacting(trx);
+      await this.deleteTagsByName(oldName).transacting(trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
   }
@@ -364,33 +297,31 @@ export class TagDataService {
    * Note: As there is no foreign key constraint of itemId in item_tags table, we don't
    * explicitly check if savedItemId exist before replacing the tags. So right now, we can
    * create tags for a non-existent savedItem.
-   * @param savedItemTagUpdateInput gets savedItemId and the input tagIds
+   * @param inserts a list of inputs for creating new tags; every
+   * input should be associated to the SAME item ID (this is handled by
+   * the calling function).
    * @return savedItem savedItem whose tag got updated
    * todo: make a check if savedItemId exist before deleting.
    */
   public async updateSavedItemTags(
-    savedItemTagUpdateInput: SavedItemTagUpdateInput
+    inserts: TagCreateInput[]
   ): Promise<SavedItem> {
+    // No FK constraints so check in data service layer
+    const exists =
+      (await this.savedItemService.getSavedItemById(inserts[0].savedItemId)) !=
+      null;
+    if (!exists) {
+      throw new NotFoundError(
+        `SavedItem ID ${inserts[0].savedItemId} does not exist.`
+      );
+    }
     await this.db.transaction(async (trx: Knex.Transaction) => {
-      await this.deleteTagsByItemId(
-        savedItemTagUpdateInput.savedItemId
-      ).transacting(trx);
+      await this.deleteTagsByItemId(inserts[0].savedItemId).transacting(trx);
 
-      const tagCreateInput: TagCreateInput[] =
-        savedItemTagUpdateInput.tagIds.map((tagId) => {
-          return {
-            name: decodeBase64ToPlainText(tagId),
-            savedItemId: savedItemTagUpdateInput.savedItemId,
-          };
-        });
-
-      await this.insertTagAndUpdateSavedItem(tagCreateInput, trx);
+      await this.insertTagAndUpdateSavedItem(inserts, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
-
-    return await this.savedItemService.getSavedItemById(
-      savedItemTagUpdateInput.savedItemId
-    );
+    return await this.savedItemService.getSavedItemById(inserts[0].savedItemId);
   }
 
   /**

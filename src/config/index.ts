@@ -18,6 +18,11 @@ export default {
     source: 'list-api', // TODO - ok to change from 'backend-php'?
     version: '0.0.2', // TODO - version currently in documentation
   },
+  data: {
+    // A suffix that ensures the tag ID is never an empty string,
+    // because there are empty tag strings in the DB
+    tagIdSuffix: '__xpktxtagx__',
+  },
   snowplow: {
     endpoint: process.env.SNOWPLOW_ENDPOINT || 'localhost:9090',
     httpProtocol: snowplowHttpProtocol,

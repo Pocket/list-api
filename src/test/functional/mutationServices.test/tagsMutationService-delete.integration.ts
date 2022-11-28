@@ -267,9 +267,7 @@ describe('Mutation for Tag deletions: ', () => {
         variables,
       });
       expect(res.errors.length).to.equal(1);
-      expect(res.errors[0].message).contains(
-        'deleteSavedItemTags: server error while untagging a savedItem '
-      );
+      expect(res.errors[0].extensions.code).to.equal('INTERNAL_SERVER_ERROR');
       // Check that all the lists are still in the pre-operation state
       expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
       expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
