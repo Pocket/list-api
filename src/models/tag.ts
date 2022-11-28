@@ -138,20 +138,6 @@ export class TagModel {
   }
 
   /**
-   * Fetch multiple Tags by ID
-   * Will not throw a NotFoundError if a tag ID is missing,
-   * so the size of the response might differ from the number
-   * of IDs requested.
-   * @param ids array of tag IDs to retrieve
-   * @returns An array of Tag entities
-   */
-  public getManyById(ids: string[]): Promise<Tag[]> {
-    // TODO: Not found partial repsonse?
-    const names = ids.map((id) => TagModel.decodeId(id));
-    return this.tagService.getTagsByName(names);
-  }
-
-  /**
    * Remove one or more tags from one or more saves, in a batch.
    * @param deletes delete requests
    * @returns the updated saves, with the list of tag names deleted

@@ -6,7 +6,6 @@ import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
-import { TagModel } from '../../../models';
 import config from '../../../config';
 
 chai.use(chaiDateTime);
@@ -395,10 +394,9 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].savedItemById.tags[0].name).to.equal(
       'travel'
     );
-    const tagId0 = TagModel.decodeId(
-      res.data?._entities[0].savedItemById.tags[0].id
+    expect(res.data?._entities[0].savedItemById.tags[0].id).to.equal(
+      'dHJhdmVsX194cGt0eHRhZ3hfXw=='
     );
-    expect(tagId0).to.equal('travel');
     expect(res.data?._entities[0].savedItemById.tags[0]._version).is.null;
     expect(res.data?._entities[0].savedItemById.tags[0]._deletedAt).is.null;
     expect(res.data?._entities[0].savedItemById.tags[0]._createdAt).to.equal(
@@ -414,10 +412,9 @@ describe('tags query tests - happy path', () => {
       unixDate1
     );
     expect(res.data?._entities[0].savedItemById.tags[1].name).to.equal('zebra');
-    const tagId1 = TagModel.decodeId(
-      res.data?._entities[0].savedItemById.tags[1].id
+    expect(res.data?._entities[0].savedItemById.tags[1].id).to.equal(
+      'emVicmFfX3hwa3R4dGFneF9f'
     );
-    expect(tagId1).to.equal('zebra');
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
     expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
     expect(
@@ -585,10 +582,9 @@ describe('tags query tests - happy path', () => {
     expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
       'adventure'
     );
-    const tagId = TagModel.decodeId(
-      res.data?._entities[0].tags.edges[0].node.id
+    expect(res.data?._entities[0].tags.edges[0].node.id).to.equal(
+      'YWR2ZW50dXJlX194cGt0eHRhZ3hfXw=='
     );
-    expect(tagId).to.equal('adventure');
     expect(res.data?._entities[0].tags.edges[1].node.name).to.equal('travel');
   });
 
