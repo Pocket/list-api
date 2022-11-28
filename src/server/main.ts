@@ -14,14 +14,11 @@ import queueDeleteRouter from './routes/queueDelete';
 import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
 import { EventEmitter } from 'events';
 import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
-import { initTracing } from './tracing';
 
 Sentry.init({
   ...config.sentry,
   debug: config.sentry.environment == 'development',
 });
-
-initTracing();
 
 const app = express();
 

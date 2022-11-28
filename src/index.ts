@@ -1,3 +1,6 @@
+import { initTracing } from './server/tracing';
+initTracing();
+
 import app from './server/main';
 
 app.listen({ port: 4005 }, () => {

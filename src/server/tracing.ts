@@ -9,10 +9,12 @@ import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
-// import { detectResources } from '@opentelemetry/resources';
-// import { awsEcsDetector } from '@opentelemetry/resource-detector-aws';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 
+/**
+ * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
+ * and https://github.com/open-telemetry/opentelemetry-js
+ */
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
 // configure the SDK to export telemetry data to the console
