@@ -30,7 +30,7 @@ const mergedResource = Resource.default().merge(
 // add OTLP exporter
 const otlpExporter = new OTLPTraceExporter({
   // port configured in the Collector config
-  url: 'localhost:2000',
+  url: 'localhost:4317',
 });
 
 const tracerConfig = {
