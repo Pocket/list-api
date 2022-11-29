@@ -15,7 +15,8 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
  * and https://github.com/open-telemetry/opentelemetry-js
  */
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+//todo: set to warn in prod
+//diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
 // const detectedResource = await detectResources({
 //   detectors: [awsEcsDetector],
@@ -30,7 +31,7 @@ const mergedResource = Resource.default().merge(
 // add OTLP exporter
 const otlpExporter = new OTLPTraceExporter({
   // port configured in the Collector config
-  url: 'localhost:4317',
+  //url: 'http://localhost:4318',
 });
 
 const tracerConfig = {
