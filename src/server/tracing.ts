@@ -17,10 +17,6 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
  */
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
-// configure the SDK to export telemetry data to the console
-// enable all auto-instrumentations from the meta package
-const traceExporter = new ConsoleSpanExporter();
-
 // const detectedResource = await detectResources({
 //   detectors: [awsEcsDetector],
 // });
@@ -51,7 +47,6 @@ const tracerConfig = {
   // any resources can be declared here
 
   resource: mergedResource,
-  traceExporter,
   spanProcessor: new BatchSpanProcessor(otlpExporter),
   propagator: new AWSXRayPropagator(),
 };
