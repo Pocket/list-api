@@ -31,11 +31,14 @@ services:
       - EXTRA_CORS_EXPOSE_HEADERS=ETag
       - HOSTNAME_EXTERNAL=localstack
 
-  otlp-collector:
+  otlpcollector:
    image: amazon/aws-otel-collector
    command: --config=/etc/ecs/ecs-default-config.yaml
+   env_file:
+     - .docker/local.env
    ports:
      - '4137:4137'
+     - '4138:4138'
 
   app:
     image: node:16@sha256:68fc9f749931453d5c8545521b021dd97267e0692471ce15bdec0814ed1f8fc3
