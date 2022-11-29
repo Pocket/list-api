@@ -21,7 +21,7 @@ import * as Sentry from '@sentry/node';
 export class TagModel {
   private tagService: TagDataService;
   private saveService: SavedItemDataService;
-  constructor(private context: IContext) {
+  constructor(public readonly context: IContext) {
     this.saveService = new SavedItemDataService(this.context);
     this.tagService = new TagDataService(this.context, this.saveService);
   }

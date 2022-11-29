@@ -23,6 +23,7 @@ export interface IContext {
   models: {
     tag: TagModel;
   };
+  withDbClientOverride(dbClient: Knex): IContext;
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
     savedItemsByUrl: DataLoader<string, SavedItem>;
@@ -39,7 +40,7 @@ export interface IContext {
 
 export class ContextManager implements IContext {
   public readonly dataLoaders: IContext['dataLoaders'];
-  public dbClient: Knex;
+  public readonly dbClient: Knex;
 
   constructor(
     private config: {
@@ -58,6 +59,14 @@ export class ContextManager implements IContext {
     };
   }
   models: { tag: TagModel };
+
+  withDbClientOverride(dbClient: Knex): ContextManager {
+    const config = {
+      ...this.config,
+      dbClient,
+    };
+    return new ContextManager(config);
+  }
 
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
