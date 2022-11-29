@@ -321,6 +321,16 @@ class ListAPI extends TerraformStack {
           //Used default config as stated here:
           // https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/ecs-demo.md
           command: ['--config=/etc/ecs/ecs-default-config.yaml'],
+          portMappings: [
+            {
+              hostPort: 4138,
+              containerPort: 4138,
+            },
+            {
+              hostPort: 4137,
+              containerPort: 4137,
+            },
+          ],
         },
       ],
       codeDeploy: {

@@ -14,7 +14,7 @@ services:
       - TZ=US/Central
 
   localstack:
-    image: localstack/localstack:1.2@sha256:474600686aa98e8c79df96a9e7e5f689487c3a624ba8e464a0b6c3f45985cbcd
+    image: localstack/localstack:1.2
     env_file:
       - .docker/local.env
     ports:
@@ -32,13 +32,13 @@ services:
       - HOSTNAME_EXTERNAL=localstack
 
   otlpcollector:
-   image: amazon/aws-otel-collector
-   command: --config=/etc/ecs/ecs-default-config.yaml
-   env_file:
-     - .docker/local.env
-   ports:
-     - '4137:4137'
-     - '4138:4138'
+    image: amazon/aws-otel-collector
+    command: --config=/etc/ecs/ecs-default-config.yaml
+    env_file:
+      - .docker/local.env
+    ports:
+      - '4137:4137'
+      - '4138:4138'
 
   app:
     image: node:16@sha256:68fc9f749931453d5c8545521b021dd97267e0692471ce15bdec0814ed1f8fc3
@@ -58,6 +58,7 @@ services:
       - mysql
       - localstack
       - snowplow
+      - otlpcollector
 
   snowplow:
     image: pocket/snowplow-micro:prod

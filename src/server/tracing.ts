@@ -1,7 +1,6 @@
 import process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
@@ -30,11 +29,7 @@ const mergedResource = Resource.default().merge(
 );
 
 // add OTLP exporter
-const otlpExporter = new OTLPTraceExporter({
-  // port configured in the Collector config
-  //url: 'http://localhost:4318',
-  //todo: try configuring crendentials and other
-});
+const otlpExporter = new OTLPTraceExporter();
 
 const tracerConfig = {
   idGenerator: new AWSXRayIdGenerator(),
