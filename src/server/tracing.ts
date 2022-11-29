@@ -1,15 +1,16 @@
 import process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
 import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
-//import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+//import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -29,7 +30,11 @@ const mergedResource = Resource.default().merge(
 );
 
 // add OTLP exporter
-const otlpExporter = new OTLPTraceExporter();
+const otlpExporter = new OTLPTraceExporter({
+  // port configured in the Collector config
+  url: 'http://localhost:4317',
+  //todo: try configuring crendentials and other
+});
 
 const tracerConfig = {
   idGenerator: new AWSXRayIdGenerator(),
