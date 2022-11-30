@@ -311,6 +311,10 @@ class ListAPI extends TerraformStack {
               name: 'DATABASE_WRITE_PASSWORD',
               valueFrom: databaseSecretEnvVars.writePassword,
             },
+            {
+              name: 'OTLP_COLLECTOR_HOST',
+              valueFrom: config.tracing.host,
+            },
           ],
         },
         {

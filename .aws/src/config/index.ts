@@ -51,4 +51,7 @@ export const config = {
       userEvents: `PocketEventBridge-${environment}-UserEventTopic`,
     },
   },
+  tracing: {
+    host: 'localhost',
+  },
 };
