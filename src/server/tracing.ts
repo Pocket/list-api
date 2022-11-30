@@ -1,7 +1,6 @@
 import process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
@@ -15,26 +14,27 @@ import {
   SpanKind,
 } from '@opentelemetry/api';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-//import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+//todo: export trace for custom tracing
 const { trace } = require('@opentelemetry/api');
+import config from '../config/index';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
  * and https://github.com/open-telemetry/opentelemetry-js
+ * sample apps: https://github.com/aws-observability/aws-otel-community/blob/master/sample-apps/javascript-sample-app/nodeSDK.js
  */
 //todo: set to warn in prod
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
 const _resource = Resource.default().merge(
   new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'js-sample-app',
+    [SemanticResourceAttributes.SERVICE_NAME]: 'list-api',
   })
 );
 
 const _traceExporter = new OTLPTraceExporter({
-  url: 'http://localhost:4317',
-  //todo: set it as localhost for dev/prod
-  //todo: oltpcollector for local dev
+  //collector url
+  url: `http://${config.tracing.host}:4317`,
 });
 const _spanProcessor = new BatchSpanProcessor(_traceExporter);
 

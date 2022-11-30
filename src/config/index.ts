@@ -129,4 +129,7 @@ export default {
       'list_shares',
     ],
   },
+  tracing: {
+    host: process.env.OTLP_COLLECTOR_HOST || 'otlpcollector',
+  },
 };
