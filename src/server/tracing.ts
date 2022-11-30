@@ -15,15 +15,16 @@ import {
 } from '@opentelemetry/api';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 //todo: export trace for custom tracing
-const { trace } = require('@opentelemetry/api');
 import config from '../config/index';
+import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
  * and https://github.com/open-telemetry/opentelemetry-js
  * sample apps: https://github.com/aws-observability/aws-otel-community/blob/master/sample-apps/javascript-sample-app/nodeSDK.js
  */
-//todo: set to warn in prod
+
+//todo: set to error in prod
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
 const _resource = Resource.default().merge(
@@ -51,9 +52,12 @@ export async function nodeSDKBuilder() {
     textMapPropagator: new AWSXRayPropagator(),
     //metricReader: _metricReader,
     instrumentations: [
-      getNodeAutoInstrumentations(),
-      new AwsInstrumentation({
-        suppressInternalInstrumentation: true,
+      //getNodeAutoInstrumentations(),
+      // new AwsInstrumentation({
+      //   suppressInternalInstrumentation: true,
+      // }),
+      new KnexInstrumentation({
+        maxQueryLength: 200,
       }),
     ],
     resource: _resource,

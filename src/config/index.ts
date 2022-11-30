@@ -23,6 +23,7 @@ export default {
     // because there are empty tag strings in the DB
     tagIdSuffix: '__xpktxtagx__',
   },
+  awsEnvironments,
   snowplow: {
     endpoint: process.env.SNOWPLOW_ENDPOINT || 'localhost:9090',
     httpProtocol: snowplowHttpProtocol,
