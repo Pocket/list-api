@@ -7,11 +7,11 @@ import {
 import { IncomingHttpHeaders } from 'http';
 import { Knex } from 'knex';
 import { SavedItem, Tag } from '../types';
-import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
 import { TagModel } from '../models';
+import * as Sentry from '@sentry/node';
 
 export interface IContext {
   userId: string;
@@ -111,10 +111,13 @@ export class ContextManager implements IContext {
     savedItem: SavedItem | Promise<SavedItem>,
     tagsUpdated?: string[]
   ): void {
-    this.eventEmitter.emitItemEvent(
-      event,
-      this.generateEventPayload(savedItem, tagsUpdated)
-    );
+    this.generateEventPayload(savedItem, tagsUpdated)
+      .then((payload) => {
+        this.eventEmitter.emitItemEvent(event, payload);
+      })
+      .catch((error) => {
+        Sentry.captureException(error, { level: 'warning' });
+      });
   }
 
   /**
@@ -123,22 +126,26 @@ export class ContextManager implements IContext {
    * @param tagsUpdated
    * @private
    */
-  private generateEventPayload(
+  private async generateEventPayload(
     savedItem: SavedItem | Promise<SavedItem>,
     tagsUpdated: string[]
-  ): BasicItemEventPayloadWithContext {
-    const tagsFn = async () => {
-      return (
-        await new TagDataService(
-          this,
-          new SavedItemDataService(this)
-        ).getTagsByUserItem((await savedItem).id)
-      ).map((tag) => tag.name);
-    };
+  ): Promise<BasicItemEventPayloadWithContext | undefined> {
+    const save = await Promise.resolve(savedItem);
+    if (save == null) {
+      Sentry.captureEvent({
+        message: 'Save was null or undefined when generating event payload',
+        level: 'warning',
+      });
+      return;
+    }
+    const tags = (await this.models.tag.getBySaveId(save.id)).map(
+      (_) => _.name
+    );
+
     return {
-      savedItem: Promise.resolve(savedItem),
-      tags: Promise.resolve(tagsFn()),
-      tagsUpdated: tagsUpdated,
+      savedItem: save,
+      tags,
+      tagsUpdated,
       user: {
         id: this.userId,
         hashedId: this.headers.encodedid,
