@@ -319,8 +319,8 @@ class ListAPI extends TerraformStack {
           essential: true,
           repositoryCredentialsParam: `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/DockerHub`,
           //Used default config as stated here:
-          // https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/ecs-demo.md
-          command: ['--config=/etc/ecs/ecs-default-config.yaml'],
+          // Available configs here: - https://github.com/aws-observability/aws-otel-collector/tree/main/config
+          command: ['--config=/etc/ecs/ecs-xray.yaml'],
           portMappings: [
             {
               hostPort: 4138,
