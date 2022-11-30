@@ -11,8 +11,20 @@ import sinon from 'sinon';
 jest.mock('../dataService');
 
 describe('context', () => {
+  const savedItem: SavedItem = {
+    id: '1',
+    resolvedId: '1',
+    url: 'dont-care.com',
+    isFavorite: false,
+    status: 'UNREAD',
+    isArchived: false,
+    item: {
+      givenUrl: 'dont-care.com',
+    },
+  };
   describe('event emitter', () => {
-    const sentrySpy = sinon.spy(Sentry, 'captureEvent');
+    let sentryEventSpy;
+    let sentryExceptionSpy;
     const context = new ContextManager({
       request: {
         headers: { userid: '1', apiid: '0' },
@@ -20,39 +32,54 @@ describe('context', () => {
       dbClient: jest.fn() as unknown as Knex,
       eventEmitter: new ItemsEventEmitter(),
     });
-    beforeEach(() => sinon.resetHistory());
+    beforeEach(() => {
+      sinon.restore();
+      sentryEventSpy = sinon.spy(Sentry, 'captureEvent');
+      sentryExceptionSpy = sinon.spy(Sentry, 'captureException');
+    });
     afterAll(() => sinon.restore());
     it('should log a warning to Sentry if save is undefined', async () => {
-      await Promise.resolve(
-        context.emitItemEvent(EventType.ARCHIVE_ITEM, undefined)
-      );
-      expect(sentrySpy.callCount).to.equal(1);
-      const event = sentrySpy.getCall(0).args[0];
+      await context.emitItemEvent(EventType.ARCHIVE_ITEM, undefined);
+      expect(sentryEventSpy.callCount).to.equal(1);
+      const event = sentryEventSpy.getCall(0).args[0];
       expect(event.message).to.contain('Save was null or undefined');
       expect(event.level).to.equal('warning');
     });
     it('should log a warning to Sentry if save is null', async () => {
-      await Promise.resolve(
-        context.emitItemEvent(EventType.ARCHIVE_ITEM, null)
-      );
-      expect(sentrySpy.callCount).to.equal(1);
-      const event = sentrySpy.getCall(0).args[0];
+      await context.emitItemEvent(EventType.ARCHIVE_ITEM, null);
+      expect(sentryEventSpy.callCount).to.equal(1);
+      const event = sentryEventSpy.getCall(0).args[0];
       expect(event.message).to.contain('Save was null or undefined');
       expect(event.level).to.equal('warning');
     });
+    it('should emit event if data is valid', async () => {
+      const emitStub = sinon
+        .stub(context.eventEmitter, 'emitItemEvent')
+        .resolves();
+      sinon.stub(context.models.tag, 'getBySaveId').resolves([]);
+      await context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
+      expect(emitStub.callCount).to.equal(1);
+    });
+    it('should emit event to listener', async () => {
+      const listenerFn = sinon.fake();
+      // listener
+      context.eventEmitter.on(EventType.ARCHIVE_ITEM, listenerFn);
+      sinon.stub(context.models.tag, 'getBySaveId').resolves([]);
+      await context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
+      expect(listenerFn.callCount).to.equal(1);
+    });
+    it('should send exception with warning level to Sentry if payload generation fails', async () => {
+      sinon
+        .stub(context.models.tag, 'getBySaveId')
+        .rejects(new Error('my error'));
+      await context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
+      expect(sentryExceptionSpy.callCount).to.equal(1);
+      const event = sentryExceptionSpy.getCall(0).args;
+      expect(event[0].message).to.contain('my error');
+      expect(event[1].level).to.equal('warning');
+    });
   });
   describe('dataloaders', () => {
-    const savedItem: SavedItem = {
-      id: '1',
-      resolvedId: '1',
-      url: 'dont-care.com',
-      isFavorite: false,
-      status: 'UNREAD',
-      isArchived: false,
-      item: {
-        givenUrl: 'dont-care.com',
-      },
-    };
     let batchUrlFnSpy;
     let batchIdFnSpy;
     let context: IContext;

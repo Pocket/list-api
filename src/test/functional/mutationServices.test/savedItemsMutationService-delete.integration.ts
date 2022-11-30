@@ -9,6 +9,7 @@ import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
 import { SavedItemDataService } from '../../../dataService';
 import config from '../../../config';
+import { ContextManager } from '../../../server/context';
 
 chai.use(chaiDateTime);
 
@@ -106,6 +107,7 @@ describe('Delete/Undelete SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const userId = '1';
   const server = getServer(userId, db, eventEmitter);
 
@@ -117,6 +119,8 @@ describe('Delete/Undelete SavedItem: ', () => {
   afterAll(async () => {
     await writeClient().destroy();
     clock.restore();
+    sinon.restore();
+    config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;
   });
 
   beforeAll(() => {
@@ -136,10 +140,7 @@ describe('Delete/Undelete SavedItem: ', () => {
     await db('items_scroll').truncate();
   });
 
-  afterAll(() => {
-    //rest config variables
-    config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;
-  });
+  afterEach(() => sinon.resetHistory());
 
   it('should batch delete saved items', async () => {
     await setUpSavedItem(db, date);
@@ -168,8 +169,6 @@ describe('Delete/Undelete SavedItem: ', () => {
 
   it('should delete a saved item', async () => {
     await setUpSavedItem(db, date);
-    const eventTracker = sinon.fake();
-    eventEmitter.on(EventType.DELETE_ITEM, eventTracker);
     const itemId = '1';
 
     const variables = {
@@ -218,8 +217,10 @@ describe('Delete/Undelete SavedItem: ', () => {
     expect(await query('item_attribution')).to.be.undefined;
     expect(await query('items_scroll')).to.be.undefined;
     // Check for delete event
-    expect(eventTracker.callCount).to.equal(1);
-    expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(1);
+    expect(eventSpy.callCount).to.equal(1);
+    const eventData = eventSpy.getCall(0).args;
+    expect(eventData[0]).to.equal(EventType.DELETE_ITEM);
+    expect(eventData[1].id).to.equal(1);
   });
 
   it('should undelete a deleted saved item and set status to unread if not previously archived', async () => {

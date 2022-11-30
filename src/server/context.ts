@@ -35,7 +35,7 @@ export interface IContext {
     event: EventType,
     savedItem: SavedItem | Promise<SavedItem>,
     tags?: string[]
-  ): void;
+  ): Promise<void>;
 }
 
 export class ContextManager implements IContext {
@@ -106,18 +106,28 @@ export class ContextManager implements IContext {
    * @param savedItem
    * @param tagsUpdated tags updated during mutation
    */
-  emitItemEvent(
+  async emitItemEvent(
     event: EventType,
-    savedItem: SavedItem | Promise<SavedItem>,
+    savedItem: SavedItem,
     tagsUpdated?: string[]
-  ): void {
-    this.generateEventPayload(savedItem, tagsUpdated)
-      .then((payload) => {
-        this.eventEmitter.emitItemEvent(event, payload);
-      })
-      .catch((error) => {
-        Sentry.captureException(error, { level: 'warning' });
+  ): Promise<void> {
+    if (savedItem == null) {
+      Sentry.captureEvent({
+        message: 'Save was null or undefined when generating event payload',
+        level: 'warning',
       });
+      return;
+    }
+    try {
+      const tags = (await this.models.tag.getBySaveId(savedItem.id)).map(
+        (_) => _.name
+      );
+
+      const payload = this.generateEventPayload(savedItem, tags, tagsUpdated);
+      this.eventEmitter.emitItemEvent(event, payload);
+    } catch (error) {
+      Sentry.captureException(error, { level: 'warning' });
+    }
   }
 
   /**
@@ -126,22 +136,11 @@ export class ContextManager implements IContext {
    * @param tagsUpdated
    * @private
    */
-  private async generateEventPayload(
-    savedItem: SavedItem | Promise<SavedItem>,
+  generateEventPayload(
+    save: SavedItem,
+    tags: string[],
     tagsUpdated: string[]
-  ): Promise<BasicItemEventPayloadWithContext | undefined> {
-    const save = await Promise.resolve(savedItem);
-    if (save == null) {
-      Sentry.captureEvent({
-        message: 'Save was null or undefined when generating event payload',
-        level: 'warning',
-      });
-      return;
-    }
-    const tags = (await this.models.tag.getBySaveId(save.id)).map(
-      (_) => _.name
-    );
-
+  ): BasicItemEventPayloadWithContext {
     return {
       savedItem: save,
       tags,
