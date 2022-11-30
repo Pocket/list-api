@@ -33,7 +33,7 @@ export interface IContext {
 
   emitItemEvent(
     event: EventType,
-    savedItem: SavedItem | Promise<SavedItem>,
+    savedItem: SavedItem,
     tags?: string[]
   ): Promise<void>;
 }
@@ -136,7 +136,7 @@ export class ContextManager implements IContext {
    * @param tagsUpdated
    * @private
    */
-  generateEventPayload(
+  private generateEventPayload(
     save: SavedItem,
     tags: string[],
     tagsUpdated: string[]
