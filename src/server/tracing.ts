@@ -8,9 +8,15 @@ import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
 import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
+import {
+  DiagConsoleLogger,
+  DiagLogLevel,
+  diag,
+  SpanKind,
+} from '@opentelemetry/api';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 //import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+const { trace } = require('@opentelemetry/api');
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -19,57 +25,55 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 //todo: set to warn in prod
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
-// const detectedResource = await detectResources({
-//   detectors: [awsEcsDetector],
-// });
-
-const mergedResource = Resource.default().merge(
+const _resource = Resource.default().merge(
   new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'list-api',
+    [SemanticResourceAttributes.SERVICE_NAME]: 'js-sample-app',
   })
 );
 
-// add OTLP exporter
-const otlpExporter = new OTLPTraceExporter({
-  // port configured in the Collector config
+const _traceExporter = new OTLPTraceExporter({
   url: 'http://localhost:4317',
-  //todo: try configuring crendentials and other
+  //todo: set it as localhost for dev/prod
+  //todo: oltpcollector for local dev
 });
+const _spanProcessor = new BatchSpanProcessor(_traceExporter);
 
-const tracerConfig = {
+const _tracerConfig = {
   idGenerator: new AWSXRayIdGenerator(),
-
-  // any instrumentations can be declared here
-  instrumentations: [
-    getNodeAutoInstrumentations(),
-    new AwsInstrumentation({
-      // see the upstream documentation for available configuration
-    }),
-  ],
-
-  // any resources can be declared here
-
-  resource: mergedResource,
-  spanProcessor: new BatchSpanProcessor(otlpExporter),
-  propagator: new AWSXRayPropagator(),
 };
+// const _metricReader = new PeriodicExportingMetricReader({
+//   exporter: new OTLPMetricExporter(),
+//   exportIntervalMillis: 1000,
+// });
 
-const sdk = new NodeSDK(tracerConfig);
+export async function nodeSDKBuilder() {
+  const sdk = new NodeSDK({
+    textMapPropagator: new AWSXRayPropagator(),
+    //metricReader: _metricReader,
+    instrumentations: [
+      getNodeAutoInstrumentations(),
+      new AwsInstrumentation({
+        suppressInternalInstrumentation: true,
+      }),
+    ],
+    resource: _resource,
+    spanProcessor: _spanProcessor,
+    traceExporter: _traceExporter,
+  });
+  sdk.configureTracerProvider(_tracerConfig, _spanProcessor);
 
-export const initTracing = () => {
-  // initialize the SDK and register with the OpenTelemetry API
   // this enables the API to record telemetry
-  sdk
-    .start()
-    .then(() => console.log('Tracing initialized'))
-    .catch((error) => console.log('Error initializing tracing', error));
+  await sdk.start();
 
   // gracefully shut down the SDK on process exit
   process.on('SIGTERM', () => {
     sdk
       .shutdown()
-      .then(() => console.log('Tracing terminated'))
-      .catch((error) => console.log('Error terminating tracing', error))
+      .then(() => console.log('Tracing and Metrics terminated'))
+      .catch((error) =>
+        console.log('Error terminating tracing and metrics', error)
+      )
       .finally(() => process.exit(0));
   });
-};
+}
+module.exports = { nodeSDKBuilder };

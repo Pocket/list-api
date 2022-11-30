@@ -15,6 +15,7 @@ import { EventType } from '../businessEvents';
 import { getSavedItemTagsMap } from './utils';
 import { ApolloError } from 'apollo-server-errors';
 import { TagModel } from '../models';
+import { SpanKind } from '@opentelemetry/api';
 
 /**
  * Create or re-add a saved item in a user's list.
@@ -32,6 +33,10 @@ export async function upsertSavedItem(
   args,
   context: IContext
 ): Promise<SavedItem> {
+  // const serverSpan = tracer.startActiveSpan('server', {
+  //   kind: SpanKind.SERVER,
+  // }); // This span will appear as a segment in X-Ray
+
   const savedItemUpsertInput: SavedItemUpsertInput = args.input;
   const savedItemDataService = new SavedItemDataService(context);
 
@@ -70,6 +75,7 @@ export async function upsertSavedItem(
     if (shouldSendFavoriteEvent) {
       context.emitItemEvent(EventType.FAVORITE_ITEM, upsertedItem);
     }
+    //serverSpan.end();
     return upsertedItem;
   } catch (e) {
     console.log(e.message);

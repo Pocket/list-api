@@ -33,7 +33,7 @@ services:
 
   otlpcollector:
     image: amazon/aws-otel-collector
-    command: --config=/etc/ecs/ecs-default-config.yaml
+    command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=debug
     env_file:
       - .docker/local.env
     ports:
