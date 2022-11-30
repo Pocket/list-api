@@ -17,6 +17,7 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 //todo: export trace for custom tracing
 import config from '../config/index';
 import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
+import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -58,6 +59,14 @@ export async function nodeSDKBuilder() {
       // }),
       new KnexInstrumentation({
         maxQueryLength: 200,
+      }),
+      new GraphQLInstrumentation({
+        // optional params
+        //todo: have false for prod to hide pii
+        allowValues: true, //allows value to be shows
+        depth: 2, //query depth
+        mergeItems: true, //instrumentation for first item in list instead of all items
+        ignoreTrivialResolveSpans: true, //ignore resolvers that are not in graphQL schema
       }),
     ],
     resource: _resource,
