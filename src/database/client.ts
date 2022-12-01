@@ -41,6 +41,7 @@ export function createConnection(dbConfig: {
 
   return knex({
     client: 'mysql',
+    acquireConnectionTimeout: 6000, // ms
     connection: {
       host: host,
       port: parseInt(port),
