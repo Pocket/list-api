@@ -18,6 +18,7 @@ import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import config from '../config/index';
 import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
+import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -53,10 +54,11 @@ export async function nodeSDKBuilder() {
     textMapPropagator: new AWSXRayPropagator(),
     //metricReader: _metricReader,
     instrumentations: [
-      //getNodeAutoInstrumentations(),
+      // getNodeAutoInstrumentations(),
       // new AwsInstrumentation({
       //   suppressInternalInstrumentation: true,
       // }),
+      new MySQLInstrumentation(),
       new KnexInstrumentation({
         maxQueryLength: 200,
       }),
