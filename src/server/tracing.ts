@@ -7,18 +7,14 @@ import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
 import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import {
-  DiagConsoleLogger,
-  DiagLogLevel,
-  diag,
-  SpanKind,
-} from '@opentelemetry/api';
+import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-//todo: export trace for custom tracing
 import config from '../config/index';
 import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -26,6 +22,7 @@ import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
  * sample apps: https://github.com/aws-observability/aws-otel-community/blob/master/sample-apps/javascript-sample-app/nodeSDK.js
  */
 
+//todo: export trace object for custom tracing
 //todo: set to error in prod
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
@@ -54,22 +51,24 @@ export async function nodeSDKBuilder() {
     textMapPropagator: new AWSXRayPropagator(),
     //metricReader: _metricReader,
     instrumentations: [
+      //todo: enable auto instrumentation
+      //after enabling sampling
       // getNodeAutoInstrumentations(),
       // new AwsInstrumentation({
       //   suppressInternalInstrumentation: true,
       // }),
+      new HttpInstrumentation(),
+      new ExpressInstrumentation(),
       new MySQLInstrumentation(),
       new KnexInstrumentation({
         maxQueryLength: 200,
       }),
-      // new GraphQLInstrumentation({
-      //   // optional params
-      //   //todo: have false for prod to hide pii
-      //   allowValues: true, //allows value to be shows
-      //   depth: 2, //query depth
-      //   mergeItems: true, //instrumentation for first item in list instead of all items
-      //   ignoreTrivialResolveSpans: true, //ignore resolvers that are not in graphQL schema
-      // }),
+      new GraphQLInstrumentation({
+        // optional params
+        depth: 2, //query depth
+        mergeItems: true, //instrumentation for first item in list instead of all items
+        ignoreTrivialResolveSpans: true, //ignore resolvers that are not in graphQL schema
+      }),
     ],
     resource: _resource,
     spanProcessor: _spanProcessor,
