@@ -137,6 +137,10 @@ export class TagModel {
     return tag;
   }
 
+  public getBySaveId(id: string): Promise<Tag[]> {
+    return this.tagService.getTagsByUserItem(id);
+  }
+
   /**
    * Remove one or more tags from one or more saves, in a batch.
    * @param deletes delete requests

@@ -18,8 +18,8 @@ export enum EventType {
 
 // Data fields required for all events
 export type BasicItemEventPayload = {
-  savedItem: Promise<SavedItem>;
-  tags?: Promise<string[]>;
+  savedItem: SavedItem;
+  tags?: string[];
   tagsUpdated?: string[]; //unified event requires tags that are modified in mutation
 };
 

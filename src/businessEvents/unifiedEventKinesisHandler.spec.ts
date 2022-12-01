@@ -34,7 +34,7 @@ describe('UnifiedEventHandler', () => {
       apiUser: { apiId: '1' },
       eventType: EventType.ADD_ITEM,
       data: { abc: '123' },
-      savedItem: Promise.resolve(testSavedItem),
+      savedItem: testSavedItem,
     } as Omit<ItemEventPayload, 'timestamp'>;
 
     // Since you can't spy on recursive call, the wait function stands
@@ -82,7 +82,7 @@ describe('UnifiedEventHandler', () => {
       apiUser: { apiId: '1' },
       eventType: EventType.ADD_TAGS,
       data: { abc: '123' },
-      savedItem: Promise.resolve(testSavedItem),
+      savedItem: testSavedItem,
       timestamp: Date.now(),
     };
 
@@ -112,7 +112,7 @@ describe('UnifiedEventHandler', () => {
       eventType: EventType.ADD_ITEM,
       tagsUpdated: ['tagA', 'tagB'],
       data: { abc: '123' },
-      savedItem: Promise.resolve(testSavedItem),
+      savedItem: testSavedItem,
       timestamp: getUnixTimestamp(),
     };
 
