@@ -273,6 +273,10 @@ class ListAPI extends TerraformStack {
               name: 'EVENT_BUS_NAME',
               value: config.envVars.eventBusName,
             },
+            {
+              name: 'OTLP_COLLECTOR_HOST',
+              valueFrom: config.tracing.host,
+            },
           ],
           secretEnvVars: [
             {
@@ -310,10 +314,6 @@ class ListAPI extends TerraformStack {
             {
               name: 'DATABASE_WRITE_PASSWORD',
               valueFrom: databaseSecretEnvVars.writePassword,
-            },
-            {
-              name: 'OTLP_COLLECTOR_HOST',
-              valueFrom: config.tracing.host,
             },
           ],
         },
