@@ -52,9 +52,9 @@ describe('getSavedItems', () => {
     }
   `;
 
-  afterAll(async () => {
-    await db.destroy();
-  });
+  // afterAll(async () => {
+  //   await db.destroy();
+  // });
 
   beforeEach(async () => {
     await db('list').truncate();

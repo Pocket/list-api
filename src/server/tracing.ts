@@ -60,14 +60,14 @@ export async function nodeSDKBuilder() {
       new KnexInstrumentation({
         maxQueryLength: 200,
       }),
-      new GraphQLInstrumentation({
-        // optional params
-        //todo: have false for prod to hide pii
-        allowValues: true, //allows value to be shows
-        depth: 2, //query depth
-        mergeItems: true, //instrumentation for first item in list instead of all items
-        ignoreTrivialResolveSpans: true, //ignore resolvers that are not in graphQL schema
-      }),
+      // new GraphQLInstrumentation({
+      //   // optional params
+      //   //todo: have false for prod to hide pii
+      //   allowValues: true, //allows value to be shows
+      //   depth: 2, //query depth
+      //   mergeItems: true, //instrumentation for first item in list instead of all items
+      //   ignoreTrivialResolveSpans: true, //ignore resolvers that are not in graphQL schema
+      // }),
     ],
     resource: _resource,
     spanProcessor: _spanProcessor,
