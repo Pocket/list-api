@@ -275,7 +275,7 @@ class ListAPI extends TerraformStack {
             },
             {
               name: 'OTLP_COLLECTOR_HOST',
-              valueFrom: config.tracing.host,
+              value: config.tracing.host,
             },
           ],
           secretEnvVars: [
