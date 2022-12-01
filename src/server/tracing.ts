@@ -66,8 +66,6 @@ export async function nodeSDKBuilder() {
       new GraphQLInstrumentation({
         // optional params
         depth: 2, //query depth
-        mergeItems: true, //instrumentation for first item in list instead of all items
-        ignoreTrivialResolveSpans: true, //ignore resolvers that are not in graphQL schema
       }),
     ],
     resource: _resource,
