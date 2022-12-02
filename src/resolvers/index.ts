@@ -1,5 +1,4 @@
 import { savedItemById, savedItems, tags as userTags } from './user';
-import { savedItem } from './item';
 import {
   item,
   tags as savedItemTags,
