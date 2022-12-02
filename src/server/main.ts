@@ -38,10 +38,6 @@ export function _startServer() {
   // Initialize routes
   app.use('/queueDelete', queueDeleteRouter);
 
-  app.get('/health', (req, res) => {
-    return res.send('alive');
-  });
-
   // Start BatchDelete queue polling
   new BatchDeleteHandler(new EventEmitter());
 

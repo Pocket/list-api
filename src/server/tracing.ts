@@ -63,7 +63,7 @@ export async function nodeSDKBuilder() {
         suppressInternalInstrumentation: true,
       }),
       new HttpInstrumentation({
-        ignoreIncomingPaths: ['/health', '/.well-known/apollo/server-health'],
+        ignoreIncomingPaths: ['/.well-known/apollo/server-health'],
       }),
       new GraphQLInstrumentation({
         // optional params
