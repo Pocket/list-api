@@ -99,6 +99,9 @@ describe('item', () => {
       },
     ]);
   });
+  afterAll(async () => {
+    await db.destroy();
+  });
   it('resolves more than one savedItem from multiple entities', async () => {
     const expected = [
       {
