@@ -10,16 +10,15 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import config from '../config/index';
-import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
-import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+
 import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
-import { IgnoreMatcher } from '@opentelemetry/instrumentation-http/build/src/types';
+import { ExpressLayerType } from '@opentelemetry/instrumentation-express/build/src/enums/ExpressLayerType';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -27,13 +26,13 @@ import { IgnoreMatcher } from '@opentelemetry/instrumentation-http/build/src/typ
  * sample apps: https://github.com/aws-observability/aws-otel-community/blob/master/sample-apps/javascript-sample-app/nodeSDK.js
  */
 
-//todo: export trace object for custom tracing
-//todo: set to error in prod
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+//tracing level set for open-telemetry
+diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.WARN);
 
 const _resource = Resource.default().merge(
   new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'list-api',
+    [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName,
+    [SemanticResourceAttributes.SERVICE_VERSION]: config.sentry.release,
   })
 );
 
@@ -46,24 +45,26 @@ const _spanProcessor = new BatchSpanProcessor(_traceExporter);
 const _tracerConfig = {
   idGenerator: new AWSXRayIdGenerator(),
 };
-// const _metricReader = new PeriodicExportingMetricReader({
-//   exporter: new OTLPMetricExporter(),
-//   exportIntervalMillis: 1000,
-// });
 
+/**
+ * function to setup open-telemetry tracing config
+ * Note: this function has to run before initial
+ * server start and import to patch all libraries
+ */
 export async function nodeSDKBuilder() {
   const sdk = new NodeSDK({
     textMapPropagator: new AWSXRayPropagator(),
-    //metricReader: _metricReader,
     instrumentations: [
-      //todo: enable auto instrumentation
-      //after enabling sampling
       getNodeAutoInstrumentations(),
+      //add instrumentation library below if you want to configure params
       new AwsInstrumentation({
         suppressInternalInstrumentation: true,
       }),
       new HttpInstrumentation({
         ignoreIncomingPaths: ['/.well-known/apollo/server-health'],
+      }),
+      new ExpressInstrumentation({
+        ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
       }),
       new GraphQLInstrumentation({
         // optional params
@@ -94,5 +95,7 @@ export async function nodeSDKBuilder() {
       )
       .finally(() => process.exit(0));
   });
+  //todo: export tracer object to enable/test custom tracing
 }
+
 module.exports = { nodeSDKBuilder };

@@ -1,6 +1,7 @@
 // DO NOT CHANGE: circular dependency if simplified to "import { EventType } from '../businessEvents'"
 import { EventType } from '../businessEvents/types';
 
+const serviceName = 'list-api';
 const awsEnvironments = ['production', 'development'];
 let localAwsEndpoint;
 let snowplowHttpProtocol = 'https';
@@ -10,12 +11,13 @@ if (!awsEnvironments.includes(process.env.NODE_ENV)) {
 }
 
 export default {
+  serviceName,
   app: {
     environment: process.env.NODE_ENV || 'development',
     depthLimit: 8,
   },
   events: {
-    source: 'list-api', // TODO - ok to change from 'backend-php'?
+    source: serviceName, // TODO - ok to change from 'backend-php'?
     version: '0.0.2', // TODO - version currently in documentation
   },
   data: {

@@ -326,14 +326,17 @@ class ListAPI extends TerraformStack {
           // Available configs here: - https://github.com/aws-observability/aws-otel-collector/tree/main/config
           command: [
             '--config=/etc/ecs/ecs-xray.yaml',
-            '--set=service.telemetry.logs.level=debug',
+            //enable for debugging
+            //'--set=service.telemetry.logs.level=debug',
           ],
           portMappings: [
             {
+              //default http port
               hostPort: 4138,
               containerPort: 4138,
             },
             {
+              //default grpc port
               hostPort: 4137,
               containerPort: 4137,
             },

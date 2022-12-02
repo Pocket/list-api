@@ -1,6 +1,7 @@
+//this must run before all imports and server start
+//so open-telemetry can patch all libraries that we use
 import { nodeSDKBuilder } from './tracing';
 
-//todo: init the nodeSDK before main runs
 nodeSDKBuilder().then(async () => {
   const app = await _startServer();
   app.listen({ port: 4005 }, () => {
