@@ -15,6 +15,11 @@ import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import {
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} from '@opentelemetry/sdk-trace-node';
+import { IgnoreMatcher } from '@opentelemetry/instrumentation-http/build/src/types';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -53,24 +58,26 @@ export async function nodeSDKBuilder() {
     instrumentations: [
       //todo: enable auto instrumentation
       //after enabling sampling
-      // getNodeAutoInstrumentations(),
-      // new AwsInstrumentation({
-      //   suppressInternalInstrumentation: true,
-      // }),
-      new HttpInstrumentation(),
-      new ExpressInstrumentation(),
-      new MySQLInstrumentation(),
-      new KnexInstrumentation({
-        maxQueryLength: 200,
+      getNodeAutoInstrumentations(),
+      new AwsInstrumentation({
+        suppressInternalInstrumentation: true,
+      }),
+      new HttpInstrumentation({
+        ignoreIncomingPaths: ['/health', '/.well-known/apollo/server-health'],
       }),
       new GraphQLInstrumentation({
         // optional params
         depth: 2, //query depth
+        allowValues: true,
       }),
     ],
     resource: _resource,
     spanProcessor: _spanProcessor,
     traceExporter: _traceExporter,
+    sampler: new ParentBasedSampler({
+      //set at 20% sampling rate
+      root: new TraceIdRatioBasedSampler(0.2),
+    }),
   });
   sdk.configureTracerProvider(_tracerConfig, _spanProcessor);
 
