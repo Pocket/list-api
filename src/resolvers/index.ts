@@ -102,8 +102,9 @@ export function executeMutation<Args, ReturnType>(
     args: Args,
     context: IContext
   ): Promise<ReturnType> {
-    context.dbClient = writeClient();
-    return mutate(parent, args, context);
+    const dbClient = writeClient();
+    const writeContext = context.withDbClientOverride(dbClient);
+    return mutate(parent, args, writeContext);
   };
 }
 

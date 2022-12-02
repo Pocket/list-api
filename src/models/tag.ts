@@ -21,7 +21,7 @@ import * as Sentry from '@sentry/node';
 export class TagModel {
   private tagService: TagDataService;
   private saveService: SavedItemDataService;
-  constructor(private context: IContext) {
+  constructor(public readonly context: IContext) {
     this.saveService = new SavedItemDataService(this.context);
     this.tagService = new TagDataService(this.context, this.saveService);
   }
@@ -135,6 +135,10 @@ export class TagModel {
       throw new NotFoundError(`Tag with ID=${id} does not exist.`);
     }
     return tag;
+  }
+
+  public getBySaveId(id: string): Promise<Tag[]> {
+    return this.tagService.getTagsByUserItem(id);
   }
 
   /**

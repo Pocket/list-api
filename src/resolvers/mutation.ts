@@ -15,7 +15,6 @@ import { EventType } from '../businessEvents';
 import { getSavedItemTagsMap } from './utils';
 import { ApolloError } from 'apollo-server-errors';
 import { TagModel } from '../models';
-import { SpanKind } from '@opentelemetry/api';
 
 /**
  * Create or re-add a saved item in a user's list.

@@ -2,13 +2,13 @@ import { writeClient } from '../../../database/client';
 import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
-import { ItemsEventEmitter } from '../../../businessEvents';
+import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { UsersMetaService } from '../../../dataService';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
-import { BasicItemEventPayload, EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
+import { ContextManager } from '../../../server/context';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
@@ -16,7 +16,7 @@ chai.use(chaiDateTime);
 describe('tags mutation: replace savedItem tags', () => {
   const db = writeClient();
   const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
-
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const server = getServer('1', db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
@@ -33,8 +33,11 @@ describe('tags mutation: replace savedItem tags', () => {
     });
   });
 
+  afterEach(() => sinon.resetHistory());
+
   afterAll(async () => {
     await db.destroy();
+    sinon.restore();
     clock.restore();
   });
 
@@ -203,28 +206,17 @@ describe('tags mutation: replace savedItem tags', () => {
       input: [{ savedItemId: '1', tags: ['tofino', 'victoria'] }],
     };
 
-    //register event before mutation, otherwise event won't be captured
-    let eventObj = null;
-    eventEmitter.on(
-      EventType.REPLACE_TAGS,
-      (eventData: BasicItemEventPayload) => {
-        eventObj = eventData;
-      }
-    );
-
     const res = await server.executeOperation({
       query: replaceSavedItemTags,
       variables,
     });
 
     expect(res.errors).to.be.undefined;
-    expect(eventObj.user.id).equals('1');
-    expect(parseInt((await eventObj.savedItem).id)).equals(1);
-    expect(await eventObj.tags).to.deep.equalInAnyOrder(['tofino', 'victoria']);
-    expect(await eventObj.tagsUpdated).to.deep.equalInAnyOrder([
-      'tofino',
-      'victoria',
-    ]);
+    expect(eventSpy.callCount).to.equal(1);
+    const eventData = eventSpy.getCall(0).args;
+    expect(eventData[0]).to.equal(EventType.REPLACE_TAGS);
+    expect(eventData[1].id).equals(1);
+    expect(eventData[2]).to.deep.equalInAnyOrder(['tofino', 'victoria']);
   });
 
   it('replaceSavedItemTags should roll back if encounter an error during transaction', async () => {

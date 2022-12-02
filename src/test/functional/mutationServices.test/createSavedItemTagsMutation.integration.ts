@@ -1,9 +1,5 @@
 import { writeClient } from '../../../database/client';
-import {
-  BasicItemEventPayload,
-  EventType,
-  ItemsEventEmitter,
-} from '../../../businessEvents';
+import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getServer } from '../testServerUtil';
 import sinon from 'sinon';
 import { gql } from 'apollo-server-express';
@@ -11,6 +7,7 @@ import { getUnixTimestamp } from '../../../utils';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
+import { ContextManager } from '../../../server/context';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
@@ -18,6 +15,7 @@ chai.use(chaiDateTime);
 describe('createSavedItemTags mutation', function () {
   const db = writeClient();
   const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
 
   const server = getServer('1', db, eventEmitter);
 
@@ -37,7 +35,10 @@ describe('createSavedItemTags mutation', function () {
   afterAll(async () => {
     await db.destroy();
     clock.restore();
+    sinon.restore();
   });
+
+  afterEach(() => sinon.resetHistory());
 
   beforeEach(async () => {
     await db('item_tags').truncate();
@@ -203,29 +204,16 @@ describe('createSavedItemTags mutation', function () {
       input: [{ savedItemId: '1', tags: ['tofino', 'victoria'] }],
     };
 
-    //register event before mutation, otherwise event won't be captured
-    let eventObj = null;
-    eventEmitter.on(EventType.ADD_TAGS, (eventData: BasicItemEventPayload) => {
-      eventObj = eventData;
-    });
-
     const res = await server.executeOperation({
       query: createSavedItemTags,
       variables,
     });
 
     expect(res.errors).to.be.undefined;
-    expect(eventObj.user.id).equals('1');
-    expect(parseInt((await eventObj.savedItem).id)).equals(1);
-    expect(await eventObj.tags).to.deep.equalInAnyOrder([
-      'summer',
-      'tofino',
-      'victoria',
-      'zebra',
-    ]);
-    expect(await eventObj.tagsUpdated).to.deep.equalInAnyOrder([
-      'tofino',
-      'victoria',
-    ]);
+    expect(eventSpy.callCount).to.equal(1);
+    const eventData = eventSpy.getCall(0).args;
+    expect(eventData[0]).to.equal(EventType.ADD_TAGS);
+    expect(eventData[1].id).equals(1);
+    expect(eventData[2]).to.deep.equalInAnyOrder(['tofino', 'victoria']);
   });
 });
