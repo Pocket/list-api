@@ -273,6 +273,10 @@ class ListAPI extends TerraformStack {
               name: 'EVENT_BUS_NAME',
               value: config.envVars.eventBusName,
             },
+            {
+              name: 'OTLP_COLLECTOR_HOST',
+              value: config.tracing.host,
+            },
           ],
           secretEnvVars: [
             {
@@ -314,17 +318,29 @@ class ListAPI extends TerraformStack {
           ],
         },
         {
-          name: 'xray-daemon',
-          containerImage: 'amazon/aws-xray-daemon',
+          name: 'aws-otel-collector',
+          containerImage: 'amazon/aws-otel-collector',
+          essential: true,
           repositoryCredentialsParam: `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:Shared/DockerHub`,
+          //Used default config as stated here:
+          // Available configs here: - https://github.com/aws-observability/aws-otel-collector/tree/main/config
+          command: [
+            '--config=/etc/ecs/ecs-xray.yaml',
+            //enable for debugging
+            //'--set=service.telemetry.logs.level=debug',
+          ],
           portMappings: [
             {
-              hostPort: 2000,
-              containerPort: 2000,
-              protocol: 'udp',
+              //default http port
+              hostPort: 4138,
+              containerPort: 4138,
+            },
+            {
+              //default grpc port
+              hostPort: 4137,
+              containerPort: 4137,
             },
           ],
-          command: ['--region', 'us-east-1', '--local-mode'],
         },
       ],
       codeDeploy: {
@@ -364,6 +380,11 @@ class ListAPI extends TerraformStack {
         taskRolePolicyStatements: [
           {
             actions: [
+              'logs:PutLogEvents',
+              'logs:CreateLogGroup',
+              'logs:CreateLogStream',
+              'logs:DescribeLogStreams',
+              'logs:DescribeLogGroups',
               'xray:PutTraceSegments',
               'xray:PutTelemetryRecords',
               'xray:GetSamplingRules',

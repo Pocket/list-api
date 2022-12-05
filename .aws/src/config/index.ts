@@ -18,6 +18,7 @@ export const config = {
   prefix,
   circleCIPrefix: `/${name}/CircleCI/${environment}`,
   shortName: 'LSTAPI',
+
   environment,
   rds: {
     minCapacity: 1,
@@ -49,5 +50,8 @@ export const config = {
     snsTopicName: {
       userEvents: `PocketEventBridge-${environment}-UserEventTopic`,
     },
+  },
+  tracing: {
+    host: 'localhost',
   },
 };
