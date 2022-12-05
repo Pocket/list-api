@@ -1,5 +1,4 @@
 import { savedItemById, savedItems, tags as userTags } from './user';
-import { savedItem } from './item';
 import {
   item,
   tags as savedItemTags,
@@ -22,9 +21,10 @@ import {
   upsertSavedItem,
 } from './mutation';
 import { tagsSavedItems } from './tag';
-import { SavedItem, Tag } from '../types';
+import { Item, SavedItem, Tag } from '../types';
 import { IContext } from '../server/context';
 import { writeClient } from '../database/client';
+import { NotFoundError } from '@pocket-tools/apollo-utils';
 
 const resolvers = {
   ItemResult: {
@@ -38,7 +38,23 @@ const resolvers = {
     tags: userTags,
   },
   Item: {
-    savedItem,
+    savedItem: async (item: Item, args, context: IContext) => {
+      const save = await context.dataLoaders.savedItemsByUrl.load(
+        item.givenUrl
+      );
+      if (save == null) {
+        throw new NotFoundError(`No Save found for url=${item.givenUrl}`);
+      }
+      return save;
+    },
+    // This is basically a passthrough so that the givenUrl is available
+    // on the parent when the savedItem entity is resolved
+    // Possible to resolve savedItem on this reference resolver instead,
+    // but this maintains our pattern of separation of entity resolvers
+    // If other scalar fields were resolved by list on Item, they'd go here
+    __resolveReference: async (item: Item, context: IContext) => {
+      return item;
+    },
   },
   SavedItem: {
     tags: savedItemTags,
