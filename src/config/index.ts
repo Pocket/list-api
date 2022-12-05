@@ -134,5 +134,9 @@ export default {
   },
   tracing: {
     host: process.env.OTLP_COLLECTOR_HOST || 'otlpcollector',
+    graphQLDepth: 8,
+    samplingRatio: 0.2,
+    grpcDefaultPort: 4317,
+    httpDEfaultPort: 4318,
   },
 };

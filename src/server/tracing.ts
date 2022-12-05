@@ -38,7 +38,7 @@ const _resource = Resource.default().merge(
 
 const _traceExporter = new OTLPTraceExporter({
   //collector url
-  url: `http://${config.tracing.host}:4317`,
+  url: `http://${config.tracing.host}:${config.tracing.grpcDefaultPort}`,
 });
 const _spanProcessor = new BatchSpanProcessor(_traceExporter);
 
@@ -68,7 +68,7 @@ export async function nodeSDKBuilder() {
       }),
       new GraphQLInstrumentation({
         // optional params
-        depth: 2, //query depth
+        depth: config.tracing.graphQLDepth, //query depth
         allowValues: true,
       }),
     ],
@@ -77,7 +77,7 @@ export async function nodeSDKBuilder() {
     traceExporter: _traceExporter,
     sampler: new ParentBasedSampler({
       //set at 20% sampling rate
-      root: new TraceIdRatioBasedSampler(0.2),
+      root: new TraceIdRatioBasedSampler(config.tracing.samplingRatio),
     }),
   });
   sdk.configureTracerProvider(_tracerConfig, _spanProcessor);
