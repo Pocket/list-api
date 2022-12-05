@@ -13,12 +13,8 @@ export async function batchGetSavedItemsByUrls(
   savedItemService: SavedItemDataService,
   urls: string[]
 ): Promise<SavedItem[]> {
-  let savedItems: SavedItem[] =
+  const savedItems: SavedItem[] =
     await savedItemService.batchGetSavedItemsByGivenUrls(urls);
-
-  savedItems = savedItems.filter((item) => {
-    return item.status != 'DELETED';
-  });
 
   //deleted items or non-existent should be returned in this list
   //as <url, undefined>
@@ -38,12 +34,8 @@ export async function batchGetSavedItemsByIds(
   savedItemService: SavedItemDataService,
   ids: string[]
 ): Promise<SavedItem[]> {
-  let savedItems: SavedItem[] =
+  const savedItems: SavedItem[] =
     await savedItemService.batchGetSavedItemsByGivenIds(ids);
-
-  savedItems = savedItems.filter((item) => {
-    return item.status != 'DELETED';
-  });
 
   //deleted items or non-existent should be returned in this list
   //as <id, undefined>

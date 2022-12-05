@@ -277,23 +277,6 @@ describe('getSavedItems', () => {
   });
 
   it(`call succeeds with returning null value when Id is not found`, async () => {
-    await db('list').insert([
-      {
-        user_id: 1,
-        item_id: 100,
-        resolved_id: 1,
-        given_url: 'http://deleted.com',
-        title: 'deleted article',
-        time_added: date3,
-        time_updated: date1,
-        time_read: date3,
-        time_favorited: date1,
-        api_id: 'apiid',
-        status: 2, //deleted
-        favorite: 1,
-        api_id_updated: 'apiid',
-      },
-    ]);
     const RESOLVE_REFERENCE_QUERY = gql`
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
