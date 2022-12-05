@@ -9,7 +9,8 @@ import {
   Pagination,
   SavedItemConnection,
 } from '../types';
-import { cleanAndValidateTag, mysqlTimeString } from './utils';
+import * as tag from '../models/tag';
+import { mysqlTimeString } from './utils';
 import config from '../config';
 import { PaginationInput } from '@pocket-tools/apollo-utils';
 import { UserInputError } from 'apollo-server-express';
@@ -473,7 +474,7 @@ export class ListPaginationService {
     }
     // Tags has to go last due to select distinct
     if (filter.tagNames != null && filter.tagNames.length > 0) {
-      const cleanTags = filter.tagNames.map(cleanAndValidateTag);
+      const cleanTags = filter.tagNames.map(tag.sanitizeTagName);
       await this.tagNameFilter(baseQuery, dbClient, cleanTags, connection);
     }
   }

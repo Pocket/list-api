@@ -7,6 +7,7 @@ import { EventType } from '../../../businessEvents';
 import { ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
+import { ContextManager } from '../../../server/context';
 
 chai.use(chaiDateTime);
 
@@ -14,6 +15,7 @@ describe('Update Mutation for SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const server = getServer('1', db, eventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
@@ -23,6 +25,7 @@ describe('Update Mutation for SavedItem: ', () => {
   afterAll(async () => {
     await db.destroy();
     clock.restore();
+    sinon.restore();
   });
 
   beforeAll(async () => {
@@ -71,10 +74,9 @@ describe('Update Mutation for SavedItem: ', () => {
       }
     `;
     let res;
-    const eventTracker = sinon.fake();
-    eventEmitter.on(EventType.ARCHIVE_ITEM, eventTracker);
 
     beforeAll(async () => {
+      eventSpy.resetHistory();
       res = await server.executeOperation({
         query: archiveItemMutation,
         variables,
@@ -91,12 +93,10 @@ describe('Update Mutation for SavedItem: ', () => {
         .and.to.equal(getUnixTimestamp(updateDate));
     });
     it('should emit an archive event', async () => {
-      // This test is guaranteed to run after the query is completed, so
-      // can act as though event is synchronous
-      expect(eventTracker.calledOnce).to.be.true;
-      expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(
-        parseInt(variables.itemId)
-      );
+      expect(eventSpy.calledOnce).to.be.true;
+      const eventData = eventSpy.getCall(0).args;
+      expect(eventData[0]).to.equal(EventType.ARCHIVE_ITEM);
+      expect(eventData[1].id).to.equal(parseInt(variables.itemId));
     });
   });
   describe('updatedSavedItemUnArchive', () => {
@@ -115,10 +115,9 @@ describe('Update Mutation for SavedItem: ', () => {
       }
     `;
     let res;
-    const eventTracker = sinon.fake();
-    eventEmitter.on(EventType.UNARCHIVE_ITEM, eventTracker);
 
     beforeAll(async () => {
+      eventSpy.resetHistory();
       res = await server.executeOperation({
         query: unArchiveItemMutation,
         variables,
@@ -134,12 +133,10 @@ describe('Update Mutation for SavedItem: ', () => {
       expect(itemRes.archivedAt).to.be.null;
     });
     it('should emit an unarchive event', async () => {
-      // This test is guaranteed to run after the query is completed, so
-      // can act as though event is synchronous
-      expect(eventTracker.calledOnce).to.be.true;
-      expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(
-        parseInt(variables.itemId)
-      );
+      expect(eventSpy.calledOnce).to.be.true;
+      const eventData = eventSpy.getCall(0).args;
+      expect(eventData[0]).to.equal(EventType.UNARCHIVE_ITEM);
+      expect(eventData[1].id).to.equal(parseInt(variables.itemId));
     });
   });
   describe('updatedSavedItemFavorite', () => {
@@ -158,10 +155,8 @@ describe('Update Mutation for SavedItem: ', () => {
       }
     `;
 
-    const eventTracker = sinon.fake();
-    eventEmitter.on(EventType.FAVORITE_ITEM, eventTracker);
-
     beforeAll(async () => {
+      eventSpy.resetHistory();
       res = await server.executeOperation({
         query: savedItemFavoriteMutation,
         variables,
@@ -177,12 +172,10 @@ describe('Update Mutation for SavedItem: ', () => {
         .and.to.equal(getUnixTimestamp(updateDate));
     });
     it('should emit a favorite event', async () => {
-      // This test is guaranteed to run after the query is completed, so
-      // can act as though event is synchronous
-      expect(eventTracker.calledOnce).to.be.true;
-      expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(
-        parseInt(variables.itemId)
-      );
+      expect(eventSpy.calledOnce).to.be.true;
+      const eventData = eventSpy.getCall(0).args;
+      expect(eventData[0]).to.equal(EventType.FAVORITE_ITEM);
+      expect(eventData[1].id).to.equal(parseInt(variables.itemId));
     });
   });
   describe('updatedSavedItemUnFavorite', () => {
@@ -200,10 +193,9 @@ describe('Update Mutation for SavedItem: ', () => {
         }
       }
     `;
-    const eventTracker = sinon.fake();
-    eventEmitter.on(EventType.UNFAVORITE_ITEM, eventTracker);
 
     beforeAll(async () => {
+      eventSpy.resetHistory();
       res = await server.executeOperation({
         query: savedItemUnFavoriteMutation,
         variables,
@@ -218,12 +210,10 @@ describe('Update Mutation for SavedItem: ', () => {
     });
 
     it('should emit an unfavorite event', async () => {
-      // This test is guaranteed to run after the query is completed, so
-      // can act as though event is synchronous
-      expect(eventTracker.calledOnce).to.be.true;
-      expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(
-        parseInt(variables.itemId)
-      );
+      expect(eventSpy.calledOnce).to.be.true;
+      const eventData = eventSpy.getCall(0).args;
+      expect(eventData[0]).to.equal(EventType.UNFAVORITE_ITEM);
+      expect(eventData[1].id).to.equal(parseInt(variables.itemId));
     });
   });
 });

@@ -8,9 +8,10 @@ import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
-import { BasicItemEventPayload, EventType } from '../../../businessEvents';
+import { EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
+import { ContextManager } from '../../../server/context';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
@@ -18,6 +19,7 @@ chai.use(chaiDateTime);
 describe('tags mutation update: ', () => {
   const db = writeClient();
   const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
 
   const server = getServer('1', db, eventEmitter);
 
@@ -38,8 +40,11 @@ describe('tags mutation update: ', () => {
 
   afterAll(async () => {
     await db.destroy();
+    sinon.restore();
     clock.restore();
   });
+
+  afterEach(() => sinon.resetHistory());
 
   beforeEach(async () => {
     await db('item_tags').truncate();
@@ -155,19 +160,19 @@ describe('tags mutation update: ', () => {
 
     const expectedTags = [
       {
-        id: 'Y2hhbmdlZF9uYW1l',
+        id: 'Y2hhbmdlZF9uYW1lX194cGt0eHRhZ3hfXw==',
         name: 'changed_name',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
       },
       {
-        id: '8J+kqvCfmJI=',
+        id: '8J+kqvCfmJJfX3hwa3R4dGFneF9f',
         name: '🤪😒',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
       },
       {
-        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUuw==',
+        id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
         _createdAt: getUnixTimestamp(updateDate),
         _updatedAt: getUnixTimestamp(updateDate),
@@ -192,27 +197,17 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '1', tagIds: [tofino, victoria] },
     };
 
-    //register event before mutation, otherwise event won't be captured
-    let eventObj = null;
-    eventEmitter.on(
-      EventType.REPLACE_TAGS,
-      (eventData: BasicItemEventPayload) => {
-        eventObj = eventData;
-      }
-    );
-
     const res = await server.executeOperation({
       query: updateSavedItemTags,
       variables,
     });
-
     expect(res.errors).to.be.undefined;
-    expect(eventObj.user.id).equals('1');
-    expect(parseInt((await eventObj.savedItem).id)).equals(1);
-    expect(eventObj.tagsUpdated).to.deep.equalInAnyOrder([
-      'tofino',
-      'victoria',
-    ]);
+
+    expect(eventSpy.callCount).to.equal(1);
+    const eventData = eventSpy.getCall(0).args;
+    expect(eventData[0]).to.equal(EventType.REPLACE_TAGS);
+    expect(eventData[1].id).equals(1);
+    expect(eventData[2]).to.deep.equalInAnyOrder(['tofino', 'victoria']);
   });
 
   it('updateSavedItemTags should throw NOT_FOUND error if itemId doesnt exist', async () => {
@@ -227,7 +222,7 @@ describe('tags mutation update: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.errors[0].message).contains(
-      `SavedItem Id ${variables.input.savedItemId} does not exist`
+      `SavedItem ID ${variables.input.savedItemId} does not exist`
     );
     expect(res.errors[0].extensions.code).equals('NOT_FOUND');
   });
@@ -244,7 +239,7 @@ describe('tags mutation update: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.errors[0].message).contains(
-      'SavedItemTagUpdateInput.tagIds cannot be empty.'
+      'Must provide 1 or more values for tag mutations'
     );
     expect(res.errors[0].extensions.code).equals('BAD_USER_INPUT');
   });
@@ -354,24 +349,18 @@ describe('tags mutation update: ', () => {
       savedItemId: '1',
     };
 
-    //register event before mutation, otherwise event won't be captured
-    let eventObj = null;
-    eventEmitter.on(
-      EventType.CLEAR_TAGS,
-      (eventData: BasicItemEventPayload) => {
-        eventObj = eventData;
-      }
-    );
-
     const res = await server.executeOperation({
       query: updateSavedItemRemoveTags,
       variables,
     });
 
     expect(res.errors).to.be.undefined;
-    expect(eventObj.user.id).equals('1');
-    expect(parseInt((await eventObj.savedItem).id)).equals(1);
-    expect(eventObj.tagsUpdated).to.deep.equalInAnyOrder([
+
+    expect(eventSpy.callCount).to.equal(1);
+    const eventData = eventSpy.getCall(0).args;
+    expect(eventData[0]).to.equal(EventType.CLEAR_TAGS);
+    expect(eventData[1].id).equals(1);
+    expect(eventData[2]).to.deep.equalInAnyOrder([
       'summer',
       'zebra',
       'existing_tag',

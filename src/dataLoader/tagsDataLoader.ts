@@ -3,6 +3,7 @@ import DataLoader from 'dataloader';
 import { SavedItemDataService, TagDataService } from '../dataService';
 import { Tag } from '../types';
 import { reorderResultByKey } from './utils';
+import { TagModel } from '../models';
 
 /**
  * Create dataloaders to cache and batch requests for Tags made
@@ -36,10 +37,8 @@ export async function batchGetTagsByIds(
   context: IContext,
   ids: string[]
 ): Promise<Tag[]> {
-  const savedItemService = new SavedItemDataService(context);
-  const tags = await new TagDataService(context, savedItemService).getTagsById(
-    ids
-  );
+  const names = ids.map(TagModel.decodeId);
+  const tags = await batchGetTagsByNames(context, names);
   return reorderResultByKey<Tag, 'id'>({ key: 'id', values: ids }, tags);
 }
 

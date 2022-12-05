@@ -5,7 +5,6 @@ import chaiDateTime from 'chai-datetime';
 import nock from 'nock';
 import config from '../../../config';
 import {
-  BasicItemEventPayload,
   EventType,
   ItemsEventEmitter,
   SQSEvents,
@@ -20,6 +19,7 @@ import sinon from 'sinon';
 import { getUnixTimestamp } from '../../../utils';
 import { getServer } from '../testServerUtil';
 import { transformers } from '../../../businessEvents/sqs/transformers';
+import { ContextManager } from '../../../server/context';
 
 chai.use(chaiDateTime);
 
@@ -54,6 +54,7 @@ async function getSqsMessages(
 describe('UpsertSavedItem Mutation', () => {
   const db = writeClient();
   const itemsEventEmitter = new ItemsEventEmitter();
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   new SqsListener(itemsEventEmitter, transformers);
   const server = getServer('1', db, itemsEventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
@@ -71,8 +72,11 @@ describe('UpsertSavedItem Mutation', () => {
   afterAll(async () => {
     await db.destroy();
     clock.restore();
+    sinon.restore();
     nock.cleanAll();
   });
+
+  afterEach(() => eventSpy.resetHistory());
 
   beforeEach(async () => {
     await sqs.purgeQueue({ QueueUrl: config.aws.sqs.publisherQueue.url });
@@ -311,20 +315,15 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      let eventObj = null;
-      itemsEventEmitter.on(
-        EventType.ADD_ITEM,
-        (eventData: BasicItemEventPayload) => {
-          eventObj = eventData;
-        }
-      );
-
       const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
-      expect(eventObj.user.id).equals('1');
-      expect(parseInt((await eventObj.savedItem).id)).equals(3);
+
+      expect(eventSpy.calledOnce).to.be.true;
+      const eventData = eventSpy.getCall(0).args;
+      expect(eventData[0]).to.equal(EventType.ADD_ITEM);
+      expect(eventData[1].url).to.equal(variables.url);
       expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
     });
 
@@ -341,21 +340,14 @@ describe('UpsertSavedItem Mutation', () => {
           }
         }
       `;
-      // Duplicate the insert
-      // register event before mutation, otherwise event won't be captured
       await server.executeOperation({ query: ADD_AN_ITEM, variables });
-      let eventObj = null;
-      itemsEventEmitter.on(
-        EventType.ADD_ITEM,
-        (eventData: BasicItemEventPayload) => {
-          eventObj = eventData;
-        }
-      );
+      // Duplicate insert and reset event tracking
+      eventSpy.resetHistory();
       const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
-      expect(eventObj).is.null;
+      expect(eventSpy.callCount).to.equal(0);
       console.log(JSON.stringify(mutationResult));
       console.log(mutationResult.errors);
       expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
@@ -498,8 +490,6 @@ describe('UpsertSavedItem Mutation', () => {
         expect(data.id).to.equal('11');
       });
       it('should not emit an add item event', async () => {
-        const eventTracker = sinon.fake();
-        itemsEventEmitter.on(EventType.ADD_ITEM, eventTracker);
         const variables = {
           url: 'http://google.com',
           isFavorite: true,
@@ -509,11 +499,11 @@ describe('UpsertSavedItem Mutation', () => {
           query: ADD_AN_ITEM,
           variables,
         });
-        expect(eventTracker.callCount).to.equal(0);
+        expect(eventSpy.callCount).to.be.greaterThan(0);
+        const events = eventSpy.getCalls().map((call) => call.args[0]);
+        expect(events).not.to.contain(EventType.ADD_ITEM);
       });
       it('should emit favorite event if item is favorited', async () => {
-        const eventTracker = sinon.fake();
-        itemsEventEmitter.on(EventType.FAVORITE_ITEM, eventTracker);
         const variables = {
           url: 'http://google.com',
           isFavorite: true,
@@ -523,10 +513,9 @@ describe('UpsertSavedItem Mutation', () => {
           query: ADD_AN_ITEM,
           variables,
         });
-        expect(eventTracker.callCount).to.equal(1);
-        expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(
-          11
-        );
+        expect(eventSpy.callCount).to.be.greaterThan(0);
+        const events = eventSpy.getCalls().map((call) => call.args[0]);
+        expect(events).to.contain(EventType.FAVORITE_ITEM);
       });
       it('should not unfavorite a previously favorited item, and should not send favorite event', async () => {
         const faveVariables = {
@@ -545,8 +534,7 @@ describe('UpsertSavedItem Mutation', () => {
           variables: faveVariables,
         });
         // Start listening for events after initial insert
-        const eventTracker = sinon.fake();
-        itemsEventEmitter.on(EventType.FAVORITE_ITEM, eventTracker);
+        eventSpy.resetHistory();
         // re-add it
         const res = await server.executeOperation({
           query: ADD_AN_ITEM,
@@ -554,7 +542,7 @@ describe('UpsertSavedItem Mutation', () => {
         });
         expect(res.errors).to.be.undefined;
         expect(res.data.upsertSavedItem.isFavorite).to.be.true;
-        expect(eventTracker.callCount).to.equal(0);
+        expect(eventSpy.callCount).to.equal(0);
       });
       it('should send not favorite event if item was previously favorited', async () => {
         const faveVariables = {
@@ -573,8 +561,7 @@ describe('UpsertSavedItem Mutation', () => {
           variables: faveVariables,
         });
         // Start listening for events after initial insert
-        const eventTracker = sinon.fake();
-        itemsEventEmitter.on(EventType.FAVORITE_ITEM, eventTracker);
+        eventSpy.resetHistory();
         // re-add it
         const res = await server.executeOperation({
           query: ADD_AN_ITEM,
@@ -582,11 +569,9 @@ describe('UpsertSavedItem Mutation', () => {
         });
         expect(res.errors).to.be.undefined;
         expect(res.data.upsertSavedItem.isFavorite).to.be.true;
-        expect(eventTracker.callCount).to.equal(0);
+        expect(eventSpy.callCount).to.equal(0);
       });
       it('should emit unarchive event if item was previously archived', async () => {
-        const eventTracker = sinon.fake();
-        itemsEventEmitter.on(EventType.UNARCHIVE_ITEM, eventTracker);
         const variables = {
           url: 'http://google.com',
           isFavorite: true,
@@ -596,15 +581,11 @@ describe('UpsertSavedItem Mutation', () => {
           query: ADD_AN_ITEM,
           variables,
         });
-        expect(eventTracker.callCount).to.equal(1);
-        expect((await eventTracker.getCall(0).args[0].savedItem).id).to.equal(
-          11
-        );
+        const events = eventSpy.getCalls().map((call) => call.args[0]);
+        expect(events).to.contain(EventType.UNARCHIVE_ITEM);
       });
 
       it('should not emit unarchive event if item was not archived', async () => {
-        const eventTracker = sinon.fake();
-        itemsEventEmitter.on(EventType.UNARCHIVE_ITEM, eventTracker);
         await db('list')
           .update({ status: 0 })
           .where({ item_id: 11, user_id: 1 });
@@ -617,7 +598,8 @@ describe('UpsertSavedItem Mutation', () => {
           query: ADD_AN_ITEM,
           variables,
         });
-        expect(eventTracker.callCount).to.equal(0);
+        const events = eventSpy.getCalls().map((call) => call.args[0]);
+        expect(events).not.to.contain(EventType.UNARCHIVE_ITEM);
       });
 
       //this test passes.

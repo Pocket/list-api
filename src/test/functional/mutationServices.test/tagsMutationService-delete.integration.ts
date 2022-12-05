@@ -6,8 +6,9 @@ import { ItemsEventEmitter } from '../../../businessEvents';
 import sinon from 'sinon';
 import { UsersMetaService } from '../../../dataService';
 import chaiDateTime from 'chai-datetime';
-import { BasicItemEventPayload, EventType } from '../../../businessEvents';
+import { EventType } from '../../../businessEvents';
 import { getServer } from '../testServerUtil';
+import { ContextManager } from '../../../server/context';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
@@ -15,6 +16,7 @@ chai.use(chaiDateTime);
 describe('Mutation for Tag deletions: ', () => {
   const db = writeClient();
   const eventEmitter = new ItemsEventEmitter();
+  let eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const dbTagsQuery = db('item_tags').select('tag').pluck('tag');
   const listUpdatedQuery = db('list').select('time_updated');
   const listStateQuery = db('list').select();
@@ -27,10 +29,12 @@ describe('Mutation for Tag deletions: ', () => {
 
   afterAll(async () => {
     await db.destroy();
+    sinon.restore();
   });
 
   afterEach(() => {
     sinon.restore();
+    eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   });
 
   beforeEach(async () => {
@@ -141,28 +145,19 @@ describe('Mutation for Tag deletions: ', () => {
         ],
       };
 
-      //register event before mutation, otherwise event won't be captured
-      const eventObjs = [];
-      eventEmitter.on(
-        EventType.REMOVE_TAGS,
-        (eventData: BasicItemEventPayload) => {
-          eventObjs.push(eventData);
-        }
-      );
-
       const res = await server.executeOperation({
         query: deleteSavedItemTagsMutation,
         variables,
       });
       expect(res.errors).to.be.undefined;
-      expect(eventObjs[0].user.id).equals('1');
-      expect(parseInt((await eventObjs[0].savedItem).id)).equals(0);
-      expect(eventObjs[0].tagsUpdated).to.deep.equalInAnyOrder([
-        'colin',
-        'nadja',
-      ]);
-      expect(parseInt((await eventObjs[1].savedItem).id)).equals(1);
-      expect(eventObjs[1].tagsUpdated).to.deep.equalInAnyOrder(['deacon']);
+      expect(eventSpy.calledTwice).to.be.true;
+      const eventData = eventSpy.getCalls().map((_) => _.args);
+      expect(eventData[0][0]).to.equal(EventType.REMOVE_TAGS);
+      expect(eventData[0][1].id).equals(0);
+      expect(eventData[0][2]).to.deep.equalInAnyOrder(['colin', 'nadja']);
+      expect(eventData[1][0]).to.equal(EventType.REMOVE_TAGS);
+      expect(eventData[1][1].id).equals(1);
+      expect(eventData[1][2]).to.deep.equalInAnyOrder(['deacon']);
     });
 
     it('should delete multiple tags from a savedItem', async () => {
@@ -267,9 +262,7 @@ describe('Mutation for Tag deletions: ', () => {
         variables,
       });
       expect(res.errors.length).to.equal(1);
-      expect(res.errors[0].message).contains(
-        'deleteSavedItemTags: server error while untagging a savedItem '
-      );
+      expect(res.errors[0].extensions.code).to.equal('INTERNAL_SERVER_ERROR');
       // Check that all the lists are still in the pre-operation state
       expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
       expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);

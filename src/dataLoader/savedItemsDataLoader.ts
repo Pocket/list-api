@@ -10,13 +10,19 @@ import { reorderResultByKey } from './utils';
  * @param urls
  */
 export async function batchGetSavedItemsByUrls(
-  context: IContext,
+  savedItemService: SavedItemDataService,
   urls: string[]
 ): Promise<SavedItem[]> {
-  const savedItems = await new SavedItemDataService(
-    context
-  ).batchGetSavedItemsByGivenUrls(urls);
+  let savedItems: SavedItem[] =
+    await savedItemService.batchGetSavedItemsByGivenUrls(urls);
 
+  savedItems = savedItems.filter((item) => {
+    return item.status != 'DELETED';
+  });
+
+  //deleted items or non-existent should be returned in this list
+  //as <url, undefined>
+  //if we skip deleted urls, then dataloader throws error at resolver
   return reorderResultByKey<SavedItem, 'url'>(
     { key: 'url', values: urls },
     savedItems
@@ -29,17 +35,19 @@ export async function batchGetSavedItemsByUrls(
  * @param ids list of savedItem ids.
  */
 export async function batchGetSavedItemsByIds(
-  context: IContext,
+  savedItemService: SavedItemDataService,
   ids: string[]
 ): Promise<SavedItem[]> {
-  let savedItems: SavedItem[] = await new SavedItemDataService(
-    context
-  ).batchGetSavedItemsByGivenIds(ids);
+  let savedItems: SavedItem[] =
+    await savedItemService.batchGetSavedItemsByGivenIds(ids);
 
   savedItems = savedItems.filter((item) => {
     return item.status != 'DELETED';
   });
 
+  //deleted items or non-existent should be returned in this list
+  //as <id, undefined>
+  //if we skip deletedIds, then dataloader throws error at resolver
   return reorderResultByKey<SavedItem, 'id'>(
     { key: 'id', values: ids },
     savedItems
@@ -62,13 +70,27 @@ export function createSavedItemDataLoaders(
   context: IContext
 ): Pick<IContext['dataLoaders'], 'savedItemsById' | 'savedItemsByUrl'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
-    const items = await batchGetSavedItemsByIds(context, ids);
-    items.forEach((item) => byUrlLoader.prime(item.url, item));
+    const items = await batchGetSavedItemsByIds(
+      new SavedItemDataService(context),
+      ids
+    );
+    items.forEach((item) => {
+      if (item) {
+        byUrlLoader.prime(item.url, item);
+      }
+    });
     return items;
   });
   const byUrlLoader = new DataLoader(async (urls: string[]) => {
-    const items = await batchGetSavedItemsByUrls(context, urls);
-    items.forEach((item) => byIdLoader.prime(item.id, item));
+    const items = await batchGetSavedItemsByUrls(
+      new SavedItemDataService(context),
+      urls
+    );
+    items.forEach((item) => {
+      if (item) {
+        byIdLoader.prime(item.id, item);
+      }
+    });
     return items;
   });
   return { savedItemsById: byIdLoader, savedItemsByUrl: byUrlLoader };

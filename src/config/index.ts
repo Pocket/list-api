@@ -18,6 +18,11 @@ export default {
     source: 'list-api', // TODO - ok to change from 'backend-php'?
     version: '0.0.2', // TODO - version currently in documentation
   },
+  data: {
+    // A suffix that ensures the tag ID is never an empty string,
+    // because there are empty tag strings in the DB
+    tagIdSuffix: '__xpktxtagx__',
+  },
   snowplow: {
     endpoint: process.env.SNOWPLOW_ENDPOINT || 'localhost:9090',
     httpProtocol: snowplowHttpProtocol,
@@ -102,6 +107,7 @@ export default {
   },
   parserDomain: process.env.PARSER_DOMAIN || 'https://parse-sir.local',
   parserVersion: process.env.PARSER_VERSION || 'v3beta',
+  parserRetries: 3,
   pagination: {
     defaultPageSize: 30,
     maxPageSize: 100,

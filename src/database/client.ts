@@ -41,6 +41,7 @@ export function createConnection(dbConfig: {
 
   return knex({
     client: 'mysql',
+    acquireConnectionTimeout: 6000, // ms
     connection: {
       host: host,
       port: parseInt(port),
@@ -51,7 +52,7 @@ export function createConnection(dbConfig: {
     },
     pool: {
       min: 0, //knex docs state to set to 0 so that idle connections are released. Default was 2 for legacy knex reasons (according to docs)
-      max: 10, //knex default
+      max: 1000, // current RDS max connections is 5k (SHOW GLOBAL VARIABLES LIKE 'max_connections)
       /**
        * Explicitly set the session timezone. We don't want to take any chances with this
        */

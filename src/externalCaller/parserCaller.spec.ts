@@ -35,8 +35,8 @@ describe('ParserCallerTest', function () {
   it('should throw error when there is no item in the response', async () => {
     mockParserGetItemRequest(urlToParse, {});
 
-    const res = ParserCaller.getOrCreateItem(urlToParse);
-    expect(res).to.be.rejectedWith(
+    const res = ParserCaller.getOrCreateItem(urlToParse, 1);
+    await expect(res).to.be.rejectedWith(
       `Unable to parse and generate item for ${urlToParse}`
     );
   });
@@ -49,8 +49,8 @@ describe('ParserCallerTest', function () {
       },
     });
 
-    const res = ParserCaller.getOrCreateItem(urlToParse);
-    expect(res).to.be.rejectedWith(
+    const res = ParserCaller.getOrCreateItem(urlToParse, 1);
+    await expect(res).to.be.rejectedWith(
       `Unable to parse and generate item for ${urlToParse}`
     );
   });
@@ -63,9 +63,34 @@ describe('ParserCallerTest', function () {
       },
     });
 
-    const res = ParserCaller.getOrCreateItem(urlToParse);
-    expect(res).to.be.rejectedWith(
+    const res = ParserCaller.getOrCreateItem(urlToParse, 1);
+    await expect(res).to.be.rejectedWith(
       `Unable to parse and generate item for ${urlToParse}`
     );
+  });
+
+  it('should retry parser request 3 times when fails', async () => {
+    nock(config.parserDomain)
+      .get(`/${config.parserVersion}/getItemListApi`)
+      .query({ url: urlToParse, getItem: '1' })
+      .reply(200, {})
+      .get(`/${config.parserVersion}/getItemListApi`)
+      .query({ url: urlToParse, getItem: '1' })
+      .reply(503, {})
+      .get(`/${config.parserVersion}/getItemListApi`)
+      .query({ url: urlToParse, getItem: '1' })
+      .reply(200, {
+        item: {
+          given_url: urlToParse,
+          item_id: 8,
+          resolved_id: 9,
+          title: 'The Not Evil Search Engine',
+        },
+      });
+
+    const res = await ParserCaller.getOrCreateItem(urlToParse);
+    expect(res.itemId).equals(8);
+    expect(res.title).equals('The Not Evil Search Engine');
+    expect(res.resolvedId).equals(9);
   });
 });

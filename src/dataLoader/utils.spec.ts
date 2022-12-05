@@ -25,6 +25,24 @@ describe('reorder by key', () => {
     const actual = reorderResultByKey<MyObject, 'name'>(orderMapping, results);
     expect(actual).toEqual(expected);
   });
+  it('undefined returned when key is not found', () => {
+    const results: MyObject[] = [
+      {
+        id: 1,
+        name: '1',
+        next: { id: 1, name: '2', next: null },
+      },
+      {
+        id: 2,
+        name: '2',
+        next: null,
+      },
+    ];
+    const expected = [undefined, results[0]];
+    const orderMapping = { key: 'name' as const, values: ['3', '1'] };
+    const actual = reorderResultByKey<MyObject, 'name'>(orderMapping, results);
+    expect(actual).toEqual(expected);
+  });
   it('works with singleton mapping array', () => {
     const results: MyObject[] = [
       {

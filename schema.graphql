@@ -574,10 +574,6 @@ type Mutation {
   deleted SavedItem
   """
   deleteSavedItem(id: ID!): ID!
-  """
-  Creates user tags that a user can use to classify SavedItems
-  """
-  createTags(input: [TagCreateInput!]!): [Tag!]!
 
   """
   Updates a Tag (renames the tag), and returns the updated Tag.

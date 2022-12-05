@@ -7,10 +7,11 @@ import {
 import { IncomingHttpHeaders } from 'http';
 import { Knex } from 'knex';
 import { SavedItem, Tag } from '../types';
-import { SavedItemDataService, TagDataService } from '../dataService';
 import DataLoader from 'dataloader';
 import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
+import { TagModel } from '../models';
+import * as Sentry from '@sentry/node';
 
 export interface IContext {
   userId: string;
@@ -19,6 +20,10 @@ export interface IContext {
   userIsPremium: boolean;
   dbClient: Knex;
   eventEmitter: ItemsEventEmitter;
+  models: {
+    tag: TagModel;
+  };
+  withDbClientOverride(dbClient: Knex): IContext;
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
     savedItemsByUrl: DataLoader<string, SavedItem>;
@@ -28,14 +33,14 @@ export interface IContext {
 
   emitItemEvent(
     event: EventType,
-    savedItem: SavedItem | Promise<SavedItem>,
+    savedItem: SavedItem,
     tags?: string[]
-  ): void;
+  ): Promise<void>;
 }
 
 export class ContextManager implements IContext {
   public readonly dataLoaders: IContext['dataLoaders'];
-  public dbClient: Knex;
+  public readonly dbClient: Knex;
 
   constructor(
     private config: {
@@ -44,11 +49,23 @@ export class ContextManager implements IContext {
       eventEmitter: ItemsEventEmitter;
     }
   ) {
+    this.dbClient = config.dbClient;
     this.dataLoaders = {
       ...createTagDataLoaders(this),
       ...createSavedItemDataLoaders(this),
     };
-    this.dbClient = config.dbClient;
+    this.models = {
+      tag: new TagModel(this),
+    };
+  }
+  models: { tag: TagModel };
+
+  withDbClientOverride(dbClient: Knex): ContextManager {
+    const config = {
+      ...this.config,
+      dbClient,
+    };
+    return new ContextManager(config);
   }
 
   get headers(): { [key: string]: any } {
@@ -89,15 +106,28 @@ export class ContextManager implements IContext {
    * @param savedItem
    * @param tagsUpdated tags updated during mutation
    */
-  emitItemEvent(
+  async emitItemEvent(
     event: EventType,
-    savedItem: SavedItem | Promise<SavedItem>,
+    savedItem: SavedItem,
     tagsUpdated?: string[]
-  ): void {
-    this.eventEmitter.emitItemEvent(
-      event,
-      this.generateEventPayload(savedItem, tagsUpdated)
-    );
+  ): Promise<void> {
+    if (savedItem == null) {
+      Sentry.captureEvent({
+        message: 'Save was null or undefined when generating event payload',
+        level: 'warning',
+      });
+      return;
+    }
+    try {
+      const tags = (await this.models.tag.getBySaveId(savedItem.id)).map(
+        (_) => _.name
+      );
+
+      const payload = this.generateEventPayload(savedItem, tags, tagsUpdated);
+      this.eventEmitter.emitItemEvent(event, payload);
+    } catch (error) {
+      Sentry.captureException(error, { level: 'warning' });
+    }
   }
 
   /**
@@ -107,21 +137,14 @@ export class ContextManager implements IContext {
    * @private
    */
   private generateEventPayload(
-    savedItem: SavedItem | Promise<SavedItem>,
+    save: SavedItem,
+    tags: string[],
     tagsUpdated: string[]
   ): BasicItemEventPayloadWithContext {
-    const tagsFn = async () => {
-      return (
-        await new TagDataService(
-          this,
-          new SavedItemDataService(this)
-        ).getTagsByUserItem((await savedItem).id)
-      ).map((tag) => tag.name);
-    };
     return {
-      savedItem: Promise.resolve(savedItem),
-      tags: Promise.resolve(tagsFn()),
-      tagsUpdated: tagsUpdated,
+      savedItem: save,
+      tags,
+      tagsUpdated,
       user: {
         id: this.userId,
         hashedId: this.headers.encodedid,
