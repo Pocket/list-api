@@ -33,12 +33,12 @@ describe('batchDeleteHandler', () => {
     const eventSpy = sinon.spy(emitter, 'emit');
     sinon.stub(BatchDeleteHandler.prototype, 'pollQueue').resolves();
     new BatchDeleteHandler(emitter);
-    expect(eventSpy.calledOnceWithExactly('pollBatchDelete')).toBe(false);
+    expect(eventSpy.calledOnceWithExactly('pollBatchDelete')).toBe(true);
   });
   it('invokes listener when pollBatchDelete event is emitted', async () => {
     const listenerStub = sinon.stub(batchDeleteHandler, 'pollQueue').resolves();
     emitter.emit('pollBatchDelete');
-    expect(listenerStub.callCount).toEqual(0);
+    expect(listenerStub.callCount).toEqual(1);
   });
   it('schedules a poll event after some time if no messages returned', async () => {
     sinon.stub(SQSClient.prototype, 'send').resolves({ Messages: [] });
@@ -78,7 +78,7 @@ describe('batchDeleteHandler', () => {
         sinon.stub(batchDeleteHandler, 'handleMessage').resolves(true);
         sinon.stub(batchDeleteHandler, 'deleteMessage').resolves();
         await batchDeleteHandler.pollQueue();
-        expect(scheduleStub.calledOnceWithExactly(30000)).toBe(true);
+        expect(scheduleStub.calledOnceWithExactly(1000)).toBe(true);
       });
       it('sends a delete if message was successfully processed', async () => {
         sinon.stub(batchDeleteHandler, 'handleMessage').resolves(true);
