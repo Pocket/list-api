@@ -28,6 +28,7 @@ describe('getSavedItemByItemId', () => {
             favoritedAt
             archivedAt
             status
+            createdAt
             _createdAt
             _updatedAt
             _deletedAt
@@ -107,6 +108,9 @@ describe('getSavedItemByItemId', () => {
     expect(res.data?._entities[0].savedItemById.favoritedAt).to.equal(unixDate);
     expect(res.data?._entities[0].savedItemById.isFavorite).to.equal(true);
     expect(res.data?._entities[0].savedItemById.status).to.equal('UNREAD');
+    expect(res.data?._entities[0].savedItemById.createdAt).to.equal(
+      '2020-10-03 10:20:30Z'
+    );
     expect(res.data?._entities[0].savedItemById._createdAt).to.equal(unixDate);
     expect(res.data?._entities[0].savedItemById._updatedAt).to.equal(unixDate1);
     expect(res.data?._entities[0].savedItemById._deletedAt).to.be.null;

@@ -25,8 +25,10 @@ import { Item, SavedItem, Tag } from '../types';
 import { IContext } from '../server/context';
 import { writeClient } from '../database/client';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
+import { DateTimeResolver } from 'graphql-scalars';
 
 const resolvers = {
+  ISOString: DateTimeResolver,
   ItemResult: {
     __resolveType(savedItem: SavedItem) {
       return parseInt(savedItem.resolvedId) ? 'Item' : 'PendingItem';
@@ -57,6 +59,9 @@ const resolvers = {
     },
   },
   SavedItem: {
+    createdAt: (parent: SavedItem, args, context: IContext) => {
+      return parent._createdAt * 1000;
+    },
     tags: savedItemTags,
     suggestedTags: savedItemSuggestedTags,
     item,

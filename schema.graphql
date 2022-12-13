@@ -1,5 +1,7 @@
 scalar Url
 
+scalar ISOString
+
 """
 Interface that all state based entities must implement
 """
@@ -131,6 +133,7 @@ type SavedItem implements RemoteEntity @key(fields: "id") @key(fields: "url") {
   Unix timestamp of when the entity was created
   """
   _createdAt: Int!
+  createdAt: ISOString!
   """
   Unix timestamp of when the entity was last updated, if any property on the entity is modified this timestamp is set to the modified time
   """
@@ -204,6 +207,7 @@ input SavedItemUpsertInput {
   Optional, time that request was submitted by client epoch/unix time
   """
   timestamp: Int
+  isoTimestamp: ISOString
 }
 """
 A SavedItem can be one of these content types
