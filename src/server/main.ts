@@ -3,16 +3,22 @@
 import { nodeSDKBuilder } from './tracing';
 
 nodeSDKBuilder().then(async () => {
-  const app = await _startServer();
-  app.listen({ port: 4005 }, () => {
-    console.log(`🚀 Public server ready at http://localhost:4005`);
-  });
+  await _startServer();
 });
 
 import * as Sentry from '@sentry/node';
-import config from '../config';
 import express from 'express';
-import { getContext, startServer } from './apolloServer';
+import http from 'http';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServer } from '@apollo/server';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import { buildSubgraphSchema } from '@apollo/subgraph';
+import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
+import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/disabled';
+import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
+import config from '../config';
+import { ContextManager } from './context';
+import { readClient } from '../database/client';
 import {
   initItemEventHandlers,
   itemsEventEmitter,
@@ -24,18 +30,20 @@ import queueDeleteRouter from './routes/queueDelete';
 import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
 import { EventEmitter } from 'events';
 import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
+import { typeDefs } from './typeDefs';
+import { resolvers } from '../resolvers';
 
-export function _startServer() {
+export async function _startServer() {
   Sentry.init({
     ...config.sentry,
     debug: config.sentry.environment == 'development',
   });
 
   const app = express();
-
-  // JSON parser to enable POST body with JSON
-  app.use(express.json());
-
+  // Our httpServer handles incoming requests to our Express app.
+  // Below, we tell Apollo Server to "drain" this httpServer,
+  // enabling our servers to shut down gracefully.
+  const httpServer = http.createServer(app);
   // Initialize routes
   app.use('/queueDelete', queueDeleteRouter);
 
@@ -50,13 +58,39 @@ export function _startServer() {
     initAccountDeletionCompleteEvents,
   ]);
 
-  // Inject initialized event emittters to create context factory function
+  // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
-    return getContext(req, itemsEventEmitter);
+    return new ContextManager({
+      request: req,
+      dbClient: readClient(),
+      eventEmitter: itemsEventEmitter,
+    });
   };
 
-  const server = startServer(contextFactory);
-  server.then((server) => server.applyMiddleware({ app, path: '/' }));
+  const server = new ApolloServer<ContextManager>({
+    schema: buildSubgraphSchema({ typeDefs, resolvers }),
+    plugins: [
+      sentryPlugin,
+      process.env.NODE_ENV === 'production'
+        ? ApolloServerPluginLandingPageDisabled()
+        : ApolloServerPluginLandingPageGraphQLPlayground(),
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+    ],
+    formatError: errorHandler,
+    introspection: process.env.NODE_ENV !== 'production',
+  });
 
-  return app;
+  app.use(
+    '/',
+    // JSON parser to enable POST body with JSON
+    express.json(),
+    expressMiddleware(server, {
+      context: async ({ req }) => contextFactory(req),
+    })
+  );
+
+  await new Promise<void>((resolve) =>
+    httpServer.listen({ port: 4005 }, resolve)
+  );
+  console.log(`🚀 Public server ready at http://localhost:4005`);
 }

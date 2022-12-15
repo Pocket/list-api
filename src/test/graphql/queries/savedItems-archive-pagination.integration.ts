@@ -1,5 +1,5 @@
 import { readClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
+import gql from 'graphql-tag';
 import { expect } from 'chai';
 import { seeds } from '@pocket-tools/backend-benchmarking';
 

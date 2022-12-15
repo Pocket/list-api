@@ -1,4 +1,4 @@
-import { AuthenticationError } from 'apollo-server-express';
+import { AuthenticationError } from '@pocket-tools/apollo-utils';
 import {
   BasicItemEventPayloadWithContext,
   EventType,

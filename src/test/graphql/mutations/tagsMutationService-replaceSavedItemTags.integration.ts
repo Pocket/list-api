@@ -1,5 +1,5 @@
 import { writeClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
+import gql from 'graphql-tag';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
 import { EventType, ItemsEventEmitter } from '../../../businessEvents';

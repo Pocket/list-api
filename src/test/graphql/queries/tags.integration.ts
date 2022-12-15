@@ -1,5 +1,5 @@
 import { readClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
+import gql from 'graphql-tag';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';

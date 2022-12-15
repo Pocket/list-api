@@ -1,6 +1,5 @@
 import { Knex } from 'knex';
 import { ItemsEventEmitter } from '../../businessEvents';
-import { ApolloServer } from 'apollo-server-express';
 import {
   ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginUsageReportingDisabled,

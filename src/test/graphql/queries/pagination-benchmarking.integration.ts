@@ -1,6 +1,6 @@
 import { timeIt, seeds } from '@pocket-tools/backend-benchmarking';
 import { readClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
+import gql from 'graphql-tag';
 import { getServer } from '../testServerUtil';
 
 const GET_SAVED_ITEMS = gql`

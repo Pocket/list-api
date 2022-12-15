@@ -1,7 +1,6 @@
 import { getServer } from '../testServerUtil';
 import { readClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
-
+import gql from 'graphql-tag';
 describe('item', () => {
   const itemFragment = gql`
     fragment ItemFields on Item {

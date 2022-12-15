@@ -2,7 +2,7 @@ import { writeClient } from '../../../database/client';
 import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getServer } from '../testServerUtil';
 import sinon from 'sinon';
-import { gql } from 'apollo-server-express';
+import gql from 'graphql-tag';
 import { getUnixTimestamp } from '../../../utils';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
