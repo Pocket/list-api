@@ -47,8 +47,10 @@ export async function _startServer() {
   // Initialize routes
   app.use('/queueDelete', queueDeleteRouter);
 
-  // Start BatchDelete queue polling
-  new BatchDeleteHandler(new EventEmitter());
+  // Start BatchDelete queue polling if not test env
+  if (process.env.NODE_ENV != 'test') {
+    new BatchDeleteHandler(new EventEmitter());
+  }
 
   // Initialize event handlers
   initItemEventHandlers(itemsEventEmitter, [
@@ -95,4 +97,5 @@ export async function _startServer() {
     httpServer.listen({ port: 4005 }, resolve)
   );
   console.log(`🚀 Public server ready at http://localhost:4005`);
+  return app;
 }
