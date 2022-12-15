@@ -1,22 +1,26 @@
 import { readClient } from '../../../database/client';
-import gql from 'graphql-tag';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from '../testServerUtil';
-
+import { ContextManager } from '../../../server/context';
+import { startServer } from '../../../server/apollo';
+import { Express } from 'express';
+import { ApolloServer } from '@apollo/server';
+import request from 'supertest';
 chai.use(chaiDateTime);
 
 describe('getSavedItemByItemId', () => {
   const db = readClient();
-  const server = getServer('1', db, null);
-
+  const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date); // unix timestamp
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const unixDate1 = getUnixTimestamp(date1); // unix timestamp
+  let app: Express;
+  let server: ApolloServer<ContextManager>;
+  let url: string;
 
-  const GET_SAVED_ITEM = gql`
+  const GET_SAVED_ITEM = `
     query getSavedItem($userId: ID!, $itemId: ID!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
@@ -39,9 +43,11 @@ describe('getSavedItemByItemId', () => {
 
   afterAll(async () => {
     await db.destroy();
+    await server.stop();
   });
 
   beforeAll(async () => {
+    ({ app, server, url } = await startServer(0));
     await db('list').truncate();
     await db('list').insert([
       {
@@ -98,18 +104,26 @@ describe('getSavedItemByItemId', () => {
       itemId: '1',
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM,
       variables,
     });
-    expect(res.data?._entities[0].savedItemById.url).to.equal('http://abc');
-    expect(res.data?._entities[0].savedItemById.id).to.equal('1');
-    expect(res.data?._entities[0].savedItemById.favoritedAt).to.equal(unixDate);
-    expect(res.data?._entities[0].savedItemById.isFavorite).to.equal(true);
-    expect(res.data?._entities[0].savedItemById.status).to.equal('UNREAD');
-    expect(res.data?._entities[0].savedItemById._createdAt).to.equal(unixDate);
-    expect(res.data?._entities[0].savedItemById._updatedAt).to.equal(unixDate1);
-    expect(res.data?._entities[0].savedItemById._deletedAt).to.be.null;
+    expect(res.body.data?._entities[0].savedItemById.url).to.equal(
+      'http://abc'
+    );
+    expect(res.body.data?._entities[0].savedItemById.id).to.equal('1');
+    expect(res.body.data?._entities[0].savedItemById.favoritedAt).to.equal(
+      unixDate
+    );
+    expect(res.body.data?._entities[0].savedItemById.isFavorite).to.equal(true);
+    expect(res.body.data?._entities[0].savedItemById.status).to.equal('UNREAD');
+    expect(res.body.data?._entities[0].savedItemById._createdAt).to.equal(
+      unixDate
+    );
+    expect(res.body.data?._entities[0].savedItemById._updatedAt).to.equal(
+      unixDate1
+    );
+    expect(res.body.data?._entities[0].savedItemById._deletedAt).to.be.null;
   });
 
   it('should return null if no item is found for the user', async () => {
@@ -117,18 +131,18 @@ describe('getSavedItemByItemId', () => {
       userId: '1',
       itemId: '10',
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM,
       variables,
     });
-    expect(res.data?._entities[0].savedItemById).to.be.null;
+    expect(res.body.data?._entities[0].savedItemById).to.be.null;
   });
   it('should resolve item url', async () => {
     const variables = {
       userId: '1',
       itemId: '1',
     };
-    const GET_SAVED_ITEM_ITEM = gql`
+    const GET_SAVED_ITEM_ITEM = `
       query getSavedItem($userId: ID!, $itemId: ID!) {
         _entities(representations: { id: $userId, __typename: "User" }) {
           ... on User {
@@ -147,11 +161,11 @@ describe('getSavedItemByItemId', () => {
         }
       }
     `;
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM_ITEM,
       variables,
     });
-    expect(res.data?._entities[0].savedItemById.item.givenUrl).to.equal(
+    expect(res.body.data?._entities[0].savedItemById.item.givenUrl).to.equal(
       'http://abc'
     );
   });
@@ -161,11 +175,13 @@ describe('getSavedItemByItemId', () => {
       userId: '1',
       itemId: '2',
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM,
       variables,
     });
-    expect(res.data?._entities[0].savedItemById._deletedAt).to.equal(unixDate1);
+    expect(res.body.data?._entities[0].savedItemById._deletedAt).to.equal(
+      unixDate1
+    );
   });
 
   it('should resolve isArchived properly', async () => {
@@ -177,24 +193,24 @@ describe('getSavedItemByItemId', () => {
       userId: '1',
       itemId: '2',
     };
-    const archivedRes = await server.executeOperation({
+    const archivedRes = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM,
       variables: archivedVars,
     });
-    const nonArchivedRes = await server.executeOperation({
+    const nonArchivedRes = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM,
       variables: nonArchivedVars,
     });
-    expect(archivedRes.data?._entities[0].savedItemById.isArchived).to.equal(
-      true
-    );
-    expect(archivedRes.data?._entities[0].savedItemById.archivedAt).to.equal(
-      getUnixTimestamp(date)
-    );
-    expect(nonArchivedRes.data?._entities[0].savedItemById.isArchived).to.equal(
-      false
-    );
-    expect(nonArchivedRes.data?._entities[0].savedItemById.archivedAt).to.be
-      .null;
+    expect(
+      archivedRes.body.data?._entities[0].savedItemById.isArchived
+    ).to.equal(true);
+    expect(
+      archivedRes.body.data?._entities[0].savedItemById.archivedAt
+    ).to.equal(getUnixTimestamp(date));
+    expect(
+      nonArchivedRes.body.data?._entities[0].savedItemById.isArchived
+    ).to.equal(false);
+    expect(nonArchivedRes.body.data?._entities[0].savedItemById.archivedAt).to
+      .be.null;
   });
 });

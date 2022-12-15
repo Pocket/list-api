@@ -70,7 +70,7 @@ export async function startServer(port: number) {
         : ApolloServerPluginLandingPageGraphQLPlayground(),
       ApolloServerPluginDrainHttpServer({ httpServer }),
     ],
-    formatError: errorHandler,
+    formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
     introspection: process.env.NODE_ENV !== 'production',
   });
 

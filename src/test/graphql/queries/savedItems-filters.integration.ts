@@ -1,26 +1,31 @@
 import { readClient } from '../../../database/client';
-import gql from 'graphql-tag';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from '../testServerUtil';
+import { ContextManager } from '../../../server/context';
+import { startServer } from '../../../server/apollo';
+import { Express } from 'express';
+import { ApolloServer } from '@apollo/server';
+import request from 'supertest';
 
 chai.use(chaiDateTime);
 chai.use(deepEqualInAnyOrder);
 
 describe('getSavedItems filter', () => {
   const db = readClient();
-  const server = getServer('1', db, null);
-
+  const headers = { userid: '1' };
   // TODO: What date is the server running in? Web repo does central...
   // should this do UTC, this changes pagination cursors.
   const date1 = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date2 = new Date('2020-10-03 10:22:30'); // Consistent date for seeding
   const date2Unix = getUnixTimestamp(date2); // Consistent date for seeding
   const date3 = new Date('2020-10-03 10:25:30'); // Consistent date for seeding
+  let app: Express;
+  let server: ApolloServer<ContextManager>;
+  let url: string;
 
-  const GET_SAVED_ITEMS = gql`
+  const GET_SAVED_ITEMS = `
     query getSavedItem($id: ID!, $filter: SavedItemsFilter) {
       _entities(representations: { id: $id, __typename: "User" }) {
         ... on User {
@@ -57,9 +62,12 @@ describe('getSavedItems filter', () => {
 
   afterAll(async () => {
     await db.destroy();
+    await server.stop();
   });
 
   beforeAll(async () => {
+    ({ app, server, url } = await startServer(0));
+
     await db('list').truncate();
     await db('list').insert([
       {
@@ -247,17 +255,18 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { tagNames: ['_untagged_'] },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data._entities[0].savedItems.edges.length).to.equal(4);
-    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data._entities[0].savedItems.edges.length).to.equal(4);
+    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://ijk'
     );
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags.length
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
+        .length
     ).to.equal(0);
   });
 
@@ -267,20 +276,21 @@ describe('getSavedItems filter', () => {
       filter: { tagNames: ['tofu'] },
     };
     const tags = [{ name: 'tofu' }, { name: 'recipe' }];
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data._entities[0].savedItems.edges.length).to.equal(1);
-    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://abc'
     );
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags.length
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
+        .length
     ).to.equal(2);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
     ).to.deep.equalInAnyOrder(tags);
   });
 
@@ -289,13 +299,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { tagNames: ['recipe', 'tofu'] },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data._entities[0].savedItems.edges.length).to.equal(2);
-    const actualTags = res.data._entities[0].savedItems.edges.map(
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data._entities[0].savedItems.edges.length).to.equal(2);
+    const actualTags = res.body.data._entities[0].savedItems.edges.map(
       (edge) => edge.node.item.savedItem.tags
     );
     expect(actualTags).to.deep.equalInAnyOrder([
@@ -309,14 +319,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { isArchived: true },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data._entities[0].savedItems.edges[0].node.item.savedItem.status
+      res.body.data._entities[0].savedItems.edges[0].node.item.savedItem.status
     ).to.equal('ARCHIVED');
   });
   it('should return non-archived items', async () => {
@@ -324,13 +334,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { isArchived: false },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
-    res.data?._entities[0].savedItems.edges.forEach((edge) => {
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(5);
+    res.body.data?._entities[0].savedItems.edges.forEach((edge) => {
       expect(edge.node.item.savedItem.status).to.not.equal('ARCHIVED');
     });
   });
@@ -340,13 +350,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { updatedSince: date2Unix },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
-    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://ijk'
     );
   });
@@ -356,13 +366,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { isFavorite: true },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
-    res.data?._entities[0].savedItems.edges.forEach((edge) => {
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(2);
+    res.body.data?._entities[0].savedItems.edges.forEach((edge) => {
       expect(edge.node.item.savedItem.isFavorite).to.equal(true);
     });
   });
@@ -372,14 +382,15 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { isFavorite: false },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(4);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(4);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.isFavorite
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem
+        .isFavorite
     ).to.equal(false);
   });
 
@@ -393,14 +404,14 @@ describe('getSavedItems filter', () => {
         status: 'ARCHIVED',
       },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges).to.deep.equal([]);
-    expect(res.data?._entities[0].savedItems.totalCount).to.equal(0);
-    expect(res.data?._entities[0].savedItems.pageInfo).to.deep.equal({
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges).to.deep.equal([]);
+    expect(res.body.data?._entities[0].savedItems.totalCount).to.equal(0);
+    expect(res.body.data?._entities[0].savedItems.pageInfo).to.deep.equal({
       startCursor: null,
       endCursor: null,
       hasNextPage: false,
@@ -413,13 +424,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { isHighlighted: true },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
-    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://abc'
     );
   });
@@ -429,13 +440,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { isHighlighted: false },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
-    res.data?._entities[0].savedItems.edges.forEach((edge) => {
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(5);
+    res.body.data?._entities[0].savedItems.edges.forEach((edge) => {
       expect(edge.node.url).to.be.oneOf([
         'http://ijk',
         'http://def',
@@ -451,12 +462,12 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'ARTICLE' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    const edges = res.data?._entities[0].savedItems.edges;
+    expect(res.body.errors).to.be.undefined;
+    const edges = res.body.data?._entities[0].savedItems.edges;
     expect(edges.length).to.equal(2);
     const actualIds = edges.map((edge) => edge.node.item.savedItem.id);
     expect(actualIds).to.deep.equalInAnyOrder(['2', '3']);
@@ -466,12 +477,12 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'IS_READABLE' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    const edges = res.data?._entities[0].savedItems.edges;
+    expect(res.body.errors).to.be.undefined;
+    const edges = res.body.data?._entities[0].savedItems.edges;
     expect(edges.length).to.equal(2);
     const actualIds = edges.map((edge) => edge.node.item.savedItem.id);
     expect(actualIds).to.deep.equalInAnyOrder(['2', '3']);
@@ -481,14 +492,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'VIDEO' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('1');
   });
   it('should return articles with videos', async () => {
@@ -496,14 +507,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'HAS_VIDEO' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('1');
   });
   it('should return videos', async () => {
@@ -511,14 +522,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'IS_VIDEO' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('5');
   });
   it('should return images', async () => {
@@ -526,14 +537,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'IS_IMAGE' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('6');
   });
   it('should return articles that are un-parsable and will be opened externally', async () => {
@@ -541,13 +552,13 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { contentType: 'IS_EXTERNAL' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
-    res.data?._entities[0].savedItems.edges.forEach((edge) => {
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(2);
+    res.body.data?._entities[0].savedItems.edges.forEach((edge) => {
       expect(edge.node.url).to.be.oneOf(['http://abc', 'http://lmn']);
     });
   });
@@ -557,14 +568,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { status: 'ARCHIVED' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
     ).to.equal('2');
   });
   it('should use statuses to return multiple statuses', async () => {
@@ -572,14 +583,14 @@ describe('getSavedItems filter', () => {
       id: '1',
       filter: { statuses: ['UNREAD', 'ARCHIVED'] },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(5);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(5);
     expect(
-      res.data?._entities[0].savedItems.edges.map(
+      res.body.data?._entities[0].savedItems.edges.map(
         (edge) => edge.node.item.savedItem.id
       )
     ).to.deep.equalInAnyOrder(['1', '2', '4', '5', '6']); // Don't care about sort for this test
@@ -596,19 +607,20 @@ describe('getSavedItems filter', () => {
         tagNames: ['recipe', '_untagged_'],
       },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.isFavorite
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem
+        .isFavorite
     ).to.equal(true);
     expect(
-      res.data?._entities[0].savedItems.edges[0].node.item.savedItem.status
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.status
     ).to.not.equal('ARCHIVED');
-    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://abc'
     );
   });

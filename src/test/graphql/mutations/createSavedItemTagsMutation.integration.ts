@@ -1,12 +1,12 @@
 import { writeClient } from '../../../database/client';
 import { EventType } from '../../../businessEvents';
-import { startServer } from '../../../server/apollo';
 import sinon from 'sinon';
 import { getUnixTimestamp } from '../../../utils';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
 import { ContextManager } from '../../../server/context';
+import { startServer } from '../../../server/apollo';
 import { Express } from 'express';
 import { ApolloServer } from '@apollo/server';
 import request from 'supertest';
@@ -17,9 +17,7 @@ chai.use(chaiDateTime);
 describe('createSavedItemTags mutation', function () {
   const db = writeClient();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
-  const headers = {
-    userid: '1',
-  };
+  const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert

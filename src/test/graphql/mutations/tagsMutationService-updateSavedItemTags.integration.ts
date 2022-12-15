@@ -1,8 +1,6 @@
 import { writeClient } from '../../../database/client';
-import gql from 'graphql-tag';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
-import { ItemsEventEmitter } from '../../../businessEvents';
 import { UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
@@ -10,28 +8,32 @@ import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
 import { EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from '../testServerUtil';
 import { ContextManager } from '../../../server/context';
-
+import { startServer } from '../../../server/apollo';
+import { Express } from 'express';
+import { ApolloServer } from '@apollo/server';
+import request from 'supertest';
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('tags mutation update: ', () => {
   const db = writeClient();
-  const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
-
-  const server = getServer('1', db, eventEmitter);
-
+  const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
   let logTagSpy;
+  let app: Express;
+  let server: ApolloServer<ContextManager>;
+  let url: string;
 
-  beforeAll(() => {
-    // Mock Date.now() to get a consistent date for inserting data
+  beforeAll(async () => {
+    ({ app, server, url } = await startServer(0));
+
+    // Mock Date.now() to get a consistent date for inserting body.data
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
@@ -42,6 +44,7 @@ describe('tags mutation update: ', () => {
     await db.destroy();
     sinon.restore();
     clock.restore();
+    await server.stop();
   });
 
   afterEach(() => sinon.resetHistory());
@@ -113,7 +116,7 @@ describe('tags mutation update: ', () => {
     await db('list').insert(inputData);
   });
 
-  const updateSavedItemTags = gql`
+  const updateSavedItemTags = `
     mutation updateSavedItemTags($input: SavedItemTagUpdateInput!) {
       updateSavedItemTags(input: $input) {
         url
@@ -129,7 +132,7 @@ describe('tags mutation update: ', () => {
     }
   `;
 
-  const updateSavedItemRemoveTags = gql`
+  const updateSavedItemRemoveTags = `
     mutation updateSavedItemRemoveTags($savedItemId: ID!) {
       updateSavedItemRemoveTags(savedItemId: $savedItemId) {
         id
@@ -153,7 +156,7 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '1', tagIds: happyPathTagIds },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemTags,
       variables,
     });
@@ -180,12 +183,12 @@ describe('tags mutation update: ', () => {
     ];
 
     expect(res).is.not.undefined;
-    expect(res.data.updateSavedItemTags.url).equals('http://1');
-    expect(res.data.updateSavedItemTags._createdAt).equals(unixDate);
-    expect(res.data.updateSavedItemTags._updatedAt).equals(
+    expect(res.body.data.updateSavedItemTags.url).equals('http://1');
+    expect(res.body.data.updateSavedItemTags._createdAt).equals(unixDate);
+    expect(res.body.data.updateSavedItemTags._updatedAt).equals(
       getUnixTimestamp(updateDate)
     );
-    expect(res.data.updateSavedItemTags.tags).to.deep.equalInAnyOrder(
+    expect(res.body.data.updateSavedItemTags.tags).to.deep.equalInAnyOrder(
       expectedTags
     );
   });
@@ -197,11 +200,11 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '1', tagIds: [tofino, victoria] },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemTags,
       variables,
     });
-    expect(res.errors).to.be.undefined;
+    expect(res.body.errors).to.be.undefined;
 
     expect(eventSpy.callCount).to.equal(1);
     const eventData = eventSpy.getCall(0).args;
@@ -215,16 +218,16 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '13', tagIds: ['TagB'] },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemTags,
       variables,
     });
 
     expect(res).is.not.undefined;
-    expect(res.errors[0].message).contains(
+    expect(res.body.errors[0].message).contains(
       `SavedItem ID ${variables.input.savedItemId} does not exist`
     );
-    expect(res.errors[0].extensions.code).equals('NOT_FOUND');
+    expect(res.body.errors[0].extensions.code).equals('NOT_FOUND');
   });
 
   it('updateSavedItemTags should throw error when tagIds are empty', async () => {
@@ -232,16 +235,16 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '1', tagIds: [] },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemTags,
       variables,
     });
 
     expect(res).is.not.undefined;
-    expect(res.errors[0].message).contains(
+    expect(res.body.errors[0].message).contains(
       'Must provide 1 or more values for tag mutations'
     );
-    expect(res.errors[0].extensions.code).equals('BAD_USER_INPUT');
+    expect(res.body.errors[0].extensions.code).equals('BAD_USER_INPUT');
   });
 
   it('updateSavedItemTags : should log the tag mutation', async () => {
@@ -249,7 +252,7 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '1', tagIds: ['helloWorld'] },
     };
 
-    await server.executeOperation({
+    await request(app).post(url).set(headers).send({
       query: updateSavedItemTags,
       variables,
     });
@@ -279,13 +282,13 @@ describe('tags mutation update: ', () => {
       input: { savedItemId: '1', tagIds: ['helloWorld'] },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemTags,
       variables,
     });
 
-    expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].message).contains(`Internal server error`);
+    expect(res.body.errors.length).to.equal(1);
+    expect(res.body.errors[0].extensions.code).equals(`INTERNAL_SERVER_ERROR`);
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);
@@ -297,18 +300,18 @@ describe('tags mutation update: ', () => {
       savedItemId: '1',
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemRemoveTags,
       variables,
     });
 
     expect(res).is.not.undefined;
-    expect(res.data.updateSavedItemRemoveTags.url).equals('http://1');
-    expect(res.data.updateSavedItemRemoveTags._createdAt).equals(unixDate);
-    expect(res.data.updateSavedItemRemoveTags._updatedAt).equals(
+    expect(res.body.data.updateSavedItemRemoveTags.url).equals('http://1');
+    expect(res.body.data.updateSavedItemRemoveTags._createdAt).equals(unixDate);
+    expect(res.body.data.updateSavedItemRemoveTags._updatedAt).equals(
       getUnixTimestamp(updateDate)
     );
-    expect(res.data.updateSavedItemRemoveTags.tags).is.empty;
+    expect(res.body.data.updateSavedItemRemoveTags.tags).is.empty;
   });
 
   it('updateSavedItemRemoveTags : should throw not found error if savedItemId doesnt exist', async () => {
@@ -316,16 +319,16 @@ describe('tags mutation update: ', () => {
       savedItemId: '13',
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemRemoveTags,
       variables,
     });
 
-    expect(res.errors).is.not.undefined;
-    expect(res.errors[0].message).contains(
+    expect(res.body.errors).is.not.undefined;
+    expect(res.body.errors[0].message).contains(
       `SavedItem Id ${variables.savedItemId} does not exist`
     );
-    expect(res.errors[0].extensions.code).equals('NOT_FOUND');
+    expect(res.body.errors[0].extensions.code).equals('NOT_FOUND');
   });
 
   it('updateSavedItemRemoveTags : should log the tag mutation', async () => {
@@ -333,7 +336,7 @@ describe('tags mutation update: ', () => {
       savedItemId: '1',
     };
 
-    await server.executeOperation({
+    await request(app).post(url).set(headers).send({
       query: updateSavedItemRemoveTags,
       variables,
     });
@@ -349,12 +352,12 @@ describe('tags mutation update: ', () => {
       savedItemId: '1',
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemRemoveTags,
       variables,
     });
 
-    expect(res.errors).to.be.undefined;
+    expect(res.body.errors).to.be.undefined;
 
     expect(eventSpy.callCount).to.equal(1);
     const eventData = eventSpy.getCall(0).args;
@@ -385,13 +388,13 @@ describe('tags mutation update: ', () => {
       savedItemId: '1',
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateSavedItemRemoveTags,
       variables,
     });
 
-    expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].message).contains(`Internal server error`);
+    expect(res.body.errors.length).to.equal(1);
+    expect(res.body.errors[0].extensions.code).equals('INTERNAL_SERVER_ERROR');
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);

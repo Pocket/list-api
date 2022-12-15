@@ -40,7 +40,7 @@ export interface IContext {
 
 export class ContextManager implements IContext {
   public readonly dataLoaders: IContext['dataLoaders'];
-  public readonly dbClient: Knex;
+  private _dbClient: Knex;
 
   constructor(
     private config: {
@@ -49,7 +49,7 @@ export class ContextManager implements IContext {
       eventEmitter: ItemsEventEmitter;
     }
   ) {
-    this.dbClient = config.dbClient;
+    this._dbClient = config.dbClient;
     this.dataLoaders = {
       ...createTagDataLoaders(this),
       ...createSavedItemDataLoaders(this),
@@ -98,6 +98,10 @@ export class ContextManager implements IContext {
 
   get eventEmitter(): ItemsEventEmitter {
     return this.config.eventEmitter;
+  }
+
+  get dbClient(): Knex {
+    return this._dbClient;
   }
 
   /**

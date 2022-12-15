@@ -1,21 +1,26 @@
 import { readClient } from '../../../database/client';
-import gql from 'graphql-tag';
 import { expect } from 'chai';
 import { seeds } from '@pocket-tools/backend-benchmarking';
-
-import { getServer } from '../testServerUtil';
 import { ListPaginationService } from '../../../dataService/listPaginationService';
+import { ContextManager } from '../../../server/context';
+import { startServer } from '../../../server/apollo';
+import { Express } from 'express';
+import { ApolloServer } from '@apollo/server';
+import request from 'supertest';
 
 // Note -- additional pagination-related tests are included in savedItems* test files
 describe('getSavedItems pagination', () => {
   const db = readClient();
-  const server = getServer('1', db, null);
+  const headers = { userid: '1' };
 
   const baseVariables = {
     id: '1',
   };
+  let app: Express;
+  let server: ApolloServer<ContextManager>;
+  let url: string;
 
-  const PAGINATE = gql`
+  const PAGINATE = `
     query getSavedItem(
       $id: ID!
       $filter: SavedItemsFilter
@@ -43,9 +48,11 @@ describe('getSavedItems pagination', () => {
       }
     }
   `;
+  beforeAll(async () => ({ app, server, url } = await startServer(0)));
 
   afterAll(async () => {
     await db.destroy();
+    await server.stop();
   });
 
   describe('cursor generation without nulls', () => {
@@ -92,11 +99,11 @@ describe('getSavedItems pagination', () => {
         },
         ...baseVariables,
       };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: PAGINATE,
         variables,
       });
-      const edges = res.data._entities[0].savedItems.edges;
+      const edges = res.body.data._entities[0].savedItems.edges;
       edges.forEach((edge) => {
         const [actualId, actualTimestamp] = ListPaginationService.decodeCursor(
           edge.cursor
@@ -136,11 +143,11 @@ describe('getSavedItems pagination', () => {
         },
         ...baseVariables,
       };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: PAGINATE,
         variables,
       });
-      const edges = res.data._entities[0].savedItems.edges;
+      const edges = res.body.data._entities[0].savedItems.edges;
       edges.forEach((edge) => {
         const [actualId, actualTimestamp] = ListPaginationService.decodeCursor(
           edge.cursor
