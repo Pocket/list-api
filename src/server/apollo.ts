@@ -6,7 +6,10 @@ import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { buildSubgraphSchema } from '@apollo/subgraph';
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
-import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/disabled';
+import {
+  ApolloServerPluginLandingPageDisabled,
+  ApolloServerPluginUsageReportingDisabled,
+} from '@apollo/server/plugin/disabled';
 import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
 import config from '../config';
 import { ContextManager } from './context';
@@ -68,6 +71,7 @@ export async function startServer(port: number) {
       process.env.NODE_ENV === 'production'
         ? ApolloServerPluginLandingPageDisabled()
         : ApolloServerPluginLandingPageGraphQLPlayground(),
+      ApolloServerPluginUsageReportingDisabled(),
       ApolloServerPluginDrainHttpServer({ httpServer }),
     ],
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
