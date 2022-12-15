@@ -193,16 +193,16 @@ describe('UpsertSavedItem Mutation', () => {
     });
 
     it('should add an item to the list even if the parser has not yet resolved or cannot resolve it', async () => {
-      const url = 'https://unresolved.url';
-      mockParserGetItemRequest(url, {
+      const givenUrl = 'https://unresolved.url';
+      mockParserGetItemRequest(givenUrl, {
         item: {
-          given_url: url,
+          given_url: givenUrl,
           item_id: 1,
           resolved_id: '0',
         },
       });
 
-      const variables = { url };
+      const variables = { url: givenUrl };
 
       const ADD_AN_ITEM = `
         mutation addAnItem($url: String!) {
@@ -228,7 +228,7 @@ describe('UpsertSavedItem Mutation', () => {
       const data = mutationResult.body.data?.upsertSavedItem;
       expect(data.id).to.equal('1');
       expect(data.item.givenUrl).is.undefined;
-      expect(data.item.url).to.equal(url);
+      expect(data.item.url).to.equal(givenUrl);
     });
 
     it('should updated time favourite and time updated if provided in input', async () => {
