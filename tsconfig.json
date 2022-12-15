@@ -4,6 +4,6 @@
     "outDir": "dist",
     "rootDirs": ["src", "lambda"]
   },
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "src/test"],
   "include": ["src/**/*.ts", "src/config"]
 }

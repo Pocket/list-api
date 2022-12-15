@@ -80,6 +80,8 @@ export async function _startServer() {
     introspection: process.env.NODE_ENV !== 'production',
   });
 
+  await server.start();
+
   app.use(
     '/',
     // JSON parser to enable POST body with JSON
