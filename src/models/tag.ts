@@ -12,9 +12,7 @@ import {
 import config from '../config';
 import { IContext } from '../server/context';
 import { SavedItemDataService, TagDataService } from '../dataService';
-import { UserInputError } from 'apollo-server-express';
-import { ApolloError } from 'apollo-server-errors';
-import { NotFoundError } from '@pocket-tools/apollo-utils';
+import { NotFoundError, UserInputError } from '@pocket-tools/apollo-utils';
 import { addslashes } from 'locutus/php/strings';
 import * as Sentry from '@sentry/node';
 
@@ -300,7 +298,7 @@ const validateTag = (tag: any): true => {
 
   if (err) {
     Sentry.captureException(err);
-    throw new ApolloError(err);
+    throw new Error(err);
   }
   return true;
 };
