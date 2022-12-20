@@ -1,6 +1,6 @@
-scalar ISOString
+scalar ISOString @tag(name: "public")
 
-interface BaseError {
+interface BaseError @tag(name: "public") {
   path: String!
   message: String! 
 }
@@ -8,7 +8,7 @@ interface BaseError {
 """
 A Save can be one of these content types
 """
-enum SaveContentType {
+enum SaveContentType @tag(name: "public") {
   """
   Item is an image
   """
@@ -34,14 +34,14 @@ enum SaveContentType {
 """
 Enum to specify the sort order of Saves fetched
 """
-enum SavesSortOrder {
+enum SavesSortOrder @tag(name: "public") {
   ASC
   DESC
 }
 """
 Enum to specify the sort by field for Saves fetched
 """
-enum SavesSortBy {
+enum SavesSortBy @tag(name: "public") {
   CREATED_AT
   UPDATED_AT
   FAVORITED_AT
@@ -61,7 +61,7 @@ enum SaveStatus {
 """
 Input for renaming a Tag
 """
-input TagRenameInput {
+input TagRenameInput @tag(name: "public") {
   """
   Tag ID
   """
@@ -76,7 +76,7 @@ input TagRenameInput {
 Input for batch updating Tag associations on a Save
 (deletes and adds).
 """
-input SaveBatchUpdateTagsInput {
+input SaveBatchUpdateTagsInput @tag(name: "public") {
   saveId: [ID!]!
   """
   Tags to remove, by ID. If array is empty, no tags will be removed.
@@ -95,7 +95,7 @@ input SaveBatchUpdateTagsInput {
 Input for associating Tags to a Save.
 The tagNames array must not be empty.
 """
-input SaveTagInput {
+input SaveTagInput @tag(name: "public") {
   saveId: ID!
   tagNames: [String!]!
 }
@@ -103,7 +103,7 @@ input SaveTagInput {
 """
 Input for removing Tags associated to a Save.
 """
-input SaveUnTagInput {
+input SaveUnTagInput @tag(name: "public") {
   saveId: ID!
   tagIds: [ID!]!
 }
@@ -112,7 +112,7 @@ input SaveUnTagInput {
 Error if the update would cause a conflict with the
 server state that needs to be resolved by the client.
 """
-type SyncConflict implements BaseError {
+type SyncConflict implements BaseError @tag(name: "public") {
   path: String!
   message: String!
 }
@@ -120,24 +120,24 @@ type SyncConflict implements BaseError {
 """
 Error if the entity requested is not found.
 """
-type NotFound implements BaseError {
+type NotFound implements BaseError @tag(name: "public") {
   path: String!
   message: String!
 }
 
 """All types in this union should implement BaseError, for client fallback"""
-union SaveMutationError = NotFound | SyncConflict # hypothetically others in the future
+union SaveMutationError @tag(name: "public") = NotFound | SyncConflict  # hypothetically others in the future
 
 """All types in this union should implement BaseError, for client fallback"""
-union TagMutationError = NotFound | SyncConflict # hypothetically others in the future...
+union TagMutationError @tag(name: "public") = NotFound | SyncConflict # hypothetically others in the future...
 
 """ Result type for saveById array response """
-union SaveByIdResult = PocketSave | NotFound
+union SaveByIdResult @tag(name: "internal") = PocketSave | NotFound 
 
 """
 Input field for filtering a user's list
 """
-input SavesFilter {
+input SavesFilter @tag(name: "public") {
   """
   Optional, filter to get Saves updated since a unix timestamp.
   Typically used for offline/mobile sync.
@@ -173,7 +173,7 @@ input SavesFilter {
 """
 Input to sort fetched Saves. If unspecified, defaults to CREATED_AT, ASC.
 """
-input SavesSort {
+input SavesSort @tag(name: "public") {
   """
   The field by which to sort Saves
   """
@@ -188,7 +188,7 @@ input SavesSort {
 """
 Input field for upserting a SavedItem
 """
-input SaveUpsertInput {
+input SaveUpsertInput @tag(name: "public") {
   """
   The url to create/update the SavedItem with. (the url to save to the list)
   """
@@ -201,7 +201,7 @@ input SaveUpsertInput {
 
 
 extend type User @key(fields: "id") {
-  saveById(id: [ID!]!): [SaveByIdResult!]!
+  saveById(id: [ID!]!): [SaveByIdResult!]! @tag(name: "internal")
   """
   Get a general paginated listing of all Saves for the user
   """
@@ -209,7 +209,7 @@ extend type User @key(fields: "id") {
     filter: SavesFilter
     sort: SavesSort
     pagination: PaginationInput
-  ): SaveConnection
+  ): SaveConnection @tag(name: "public")
 }
 
 type PocketSave @tag(name: "public") @key(fields: "id") @key(fields: "givenUrl") {
@@ -248,7 +248,7 @@ type PocketSave @tag(name: "public") @key(fields: "id") @key(fields: "givenUrl")
   """
   Surrogate primary key. 
   """
-  id: ID! @tag(name: "internal")
+  id: ID!
   """
   Unix timestamp of when the PocketSave was created
   """
@@ -278,7 +278,7 @@ type PocketSave @tag(name: "public") @key(fields: "id") @key(fields: "givenUrl")
 """
 The connection type for Save.
 """
-type SaveConnection {
+type SaveConnection @tag(name: "public") {
   """
   A list of edges.
   """
@@ -296,7 +296,7 @@ type SaveConnection {
 """
 An edge in a connection.
 """
-type SaveEdge {
+type SaveEdge @tag(name: "public") {
   """
   A cursor for use in pagination.
   """
@@ -322,13 +322,13 @@ extend type Tag {
     filter: SavesFilter
     sort: SavesSort
     pagination: PaginationInput
-  ): SaveConnection
+  ): SaveConnection @tag(name: "internal")
 }
 
 """
 Payload for mutations that create or update Saves
 """
-type SaveWriteMutationPayload {
+type SaveWriteMutationPayload @tag(name: "public") {
   """
   The mutated Save objects; empty if the mutation did not succeed.
   """
@@ -342,7 +342,7 @@ type SaveWriteMutationPayload {
 """
 Payload for mutations that create or update Tags
 """
-type TagWriteMutationPayload {
+type TagWriteMutationPayload @tag(name: "public") {
   """
   The mutated Tag objects; empty if the mutation did not succeed.
   """
@@ -356,7 +356,7 @@ type TagWriteMutationPayload {
 """
 Payload for mutations that delete Tags
 """
-type TagDeleteMutationPayload {
+type TagDeleteMutationPayload @tag(name: "public") {
   success: Boolean!
   """
   Any errors associated with the mutation. Empty if the mutation was succesful.
@@ -367,7 +367,7 @@ type TagDeleteMutationPayload {
 """
 Payload for mutations that delete Saves
 """
-type SaveDeleteMutationPayload {
+type SaveDeleteMutationPayload @tag(name: "public") {
   success: Boolean!
   """
   Any errors associated with the mutation. Empty if the mutation was succesful.
@@ -379,12 +379,12 @@ extend type Mutation {
   """
   Archives a Save
   """
-  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "public")
 
   """
   Unarchives a Save
   """
-  saveUnArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+  saveUnArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "public")
 
   """
   Undo the delete operation for a Save
@@ -394,54 +394,58 @@ extend type Mutation {
   """
   Favorites a Save
   """
-  saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+  saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "public")
 
   """
   Unfavorites a Save
   """
-  saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+  saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "public")
 
   """
   Deletes a Save from the users list. Returns ID of the
   deleted Save
   """
-  saveDelete(id: [ID!]!, timestamp: ISOString!): SaveDeleteMutationPayload
+  saveDelete(id: [ID!]!, timestamp: ISOString!): SaveDeleteMutationPayload @tag(name: "public")
 
   """
   Creates a new Save; if the Save already exists (either in List or Archive), "re-add" it.
   "Re-adding" unarchives and undeletes the Save as applicable, and refreshes the "createdAt"
   timestamp.
   """
-  saveUpsert(input: [SaveUpsertInput!]!, timestamp: ISOString!): SaveWriteMutationPayload!
+  saveUpsert(input: [SaveUpsertInput!]!, timestamp: ISOString!): SaveWriteMutationPayload! @tag(name: "public")
 
   """
   Batch update the Tags associated with a Save
   by adding new tags and deleting existing tags.
   """
-  saveBatchUpdateTags(input: [SaveBatchUpdateTagsInput!]!, timestamp: ISOString!): SaveWriteMutationPayload
+  saveBatchUpdateTags(input: [SaveBatchUpdateTagsInput!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "public")
 
   """
   Remove association between a Tag and a Save.
   Note that if this operation results in a Tag having no associations
   to a Save, the Tag object will be deleted.
   """
-  saveUnTag(input: [SaveUnTagInput!]!, timestamp: ISOString!): SaveWriteMutationPayload!
+  saveUnTag(input: [SaveUnTagInput!]!, timestamp: ISOString!): SaveWriteMutationPayload! @tag(name: "public")
 
   """
   Associate Tag(s) with a Save
   """
-  saveTag(input: [SaveTagInput!]!, timestamp: ISOString!): SaveWriteMutationPayload!
+  saveTag(input: [SaveTagInput!]!, timestamp: ISOString!): SaveWriteMutationPayload! @tag(name: "public")
 
   """
   Deletes a Tag object. This is deletes the Tag and all Save associations
   (removes the Tag from all Saves). Returns ID of the deleted Tag.
   """
-  tagDelete(id: [ID!]!, timestamp: ISOString!): TagDeleteMutationPayload
+  tagDelete(id: [ID!]!, timestamp: ISOString!): TagDeleteMutationPayload @tag(name: "public")
   
   """
   Rename a Tag. If a Tag with the new name already exists
   for a given User, will merge the Tag objects (and all
   relevant tag-save associations)
   """
-  tagRename(input: [TagRenameInput!]!, timestamp: ISOString!): TagWriteMutationPayload
+  tagRename(input: [TagRenameInput!]!, timestamp: ISOString!): TagWriteMutationPayload @tag(name: "public")
+}
+
+extend type Query {
+  _placeholder: Boolean @tag(name: "public")
 }
