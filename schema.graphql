@@ -1,3 +1,7 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.0",
+        import: ["@key", "@tag", "@external", "@shareable"])
+
 scalar Url
 
 """
@@ -31,7 +35,7 @@ interface RemoteEntity {
 """
 Information about pagination in a connection.
 """
-type PageInfo {
+type PageInfo @shareable {
   """
   When paginating forwards, the cursor to continue.
   """
@@ -475,7 +479,7 @@ extend type User @key(fields: "id") {
     filter: SavedItemsFilter
     sort: SavedItemsSort
     pagination: PaginationInput
-  ): SavedItemConnection
+  ): SavedItemConnection @deprecated (reason: "use saves")
 
   """
   Get a paginated listing of all a user's Tags
@@ -485,7 +489,7 @@ extend type User @key(fields: "id") {
   """
   Get a SavedItem by its id
   """
-  savedItemById(id: ID!): SavedItem
+  savedItemById(id: ID!): SavedItem @deprecated (reason: "use saveById")
 }
 
 """
@@ -516,7 +520,7 @@ extend type Item @key(fields: "givenUrl") {
   """
   Helper property to identify if the given item is in the user's list
   """
-  savedItem: SavedItem
+  savedItem: SavedItem @deprecated(reason: "use save")
 }
 
 """
@@ -527,39 +531,39 @@ type Mutation {
   Updates a SavedItem, undeletes and unarchives it, bringing it to the top of the user's list, if it exists
   and creates it if it doesn't.
   """
-  upsertSavedItem(input: SavedItemUpsertInput!): SavedItem!
+  upsertSavedItem(input: SavedItemUpsertInput!): SavedItem! @deprecated(reason: "use saveUpsert")
 
   """
   Archives a SavedItem
   """
-  updateSavedItemArchive(id: ID!): SavedItem!
+  updateSavedItemArchive(id: ID!): SavedItem! @deprecated(reason: "use saveArchive")
 
   """
   Unarchives a SavedItem
   """
-  updateSavedItemUnArchive(id: ID!): SavedItem!
+  updateSavedItemUnArchive(id: ID!): SavedItem! @deprecated(reason: "use saveUnArchive")
 
   """
   Undo the delete operation for a SavedItem
   """
-  updateSavedItemUnDelete(id: ID!): SavedItem!
+  updateSavedItemUnDelete(id: ID!): SavedItem! @deprecated(reason: "use saveUnDelete")
 
   """
   Favorites a SavedItem
   """
-  updateSavedItemFavorite(id: ID!): SavedItem!
+  updateSavedItemFavorite(id: ID!): SavedItem! @deprecated(reason: "use saveFavorite")
 
   """
   Unfavorites a SavedItem
   """
-  updateSavedItemUnFavorite(id: ID!): SavedItem!
+  updateSavedItemUnFavorite(id: ID!): SavedItem! @deprecated(reason: "use saveUnFavorite")
 
   """
   Set the Tags that are associated with a SavedItem.
   Will replace any existing Tag associations on the SavedItem.
   To remove all Tags from a SavedItem, use `updateSavedItemRemoveTags`.
   """
-  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem!
+  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem! @deprecated(reason: "use saveBatchUpdateTags")
 
   """
   Removes all Tag associations from a SavedItem. Returns the
@@ -567,13 +571,13 @@ type Mutation {
   Note that if this operation results in a Tag having no associations
   to a SavedItem, the Tag object will be deleted.
   """
-  updateSavedItemRemoveTags(savedItemId: ID): SavedItem!
+  updateSavedItemRemoveTags(savedItemId: ID): SavedItem! @deprecated(reason: "use saveBatchUpdateTags")
 
   """
   Deletes a SavedItem from the users list. Returns ID of the
   deleted SavedItem
   """
-  deleteSavedItem(id: ID!): ID!
+  deleteSavedItem(id: ID!): ID! @deprecated(reason: "use saveDelete")
 
   """
   Updates a Tag (renames the tag), and returns the updated Tag.
@@ -581,12 +585,12 @@ type Mutation {
   associate that Tag to all relevant SavedItems rather than creating
   a duplicate Tag object.
   """
-  updateTag(input: TagUpdateInput!): Tag!
+  updateTag(input: TagUpdateInput!): Tag! @deprecated(reason: "use tagRename")
   """
   Deletes a Tag object. This is deletes the Tag and all SavedItem associations
   (removes the Tag from all SavedItems). Returns ID of the deleted Tag.
   """
-  deleteTag(id: ID!): ID!
+  deleteTag(id: ID!): ID! @deprecated(reason: "use tagDelete")
   """
   Delete one or more tags from one or more SavedItems.
   Note that if this operation results in a Tag having no associations
@@ -594,14 +598,14 @@ type Mutation {
   """
   deleteSavedItemTags(
     input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItem!]!
+  ): [SavedItem!]! @deprecated(reason: "use saveUnTag or saveBatchUpdateTags")
 
   """
   Add tags to the savedItems
   Inputs a list of SavedItemTagsInput(ie. savedItemId and the list of tagName)
   Returns the list of `SavedItem` for which the tags were added
   """
-  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+  createSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]! @deprecated(reason: "use saveTag or saveBatchUpdateTags")
 
   """
   Replaces the old tags associated with the savedItem to the new tag list
@@ -611,5 +615,5 @@ type Mutation {
   Inputs a list of SavedItemTagsInput(ie. savedItemId and list of tag names)
   Returns the SavedItem for which the tags have been modified.
   """
-  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]! @deprecated(reason: "use saveBatchUpdateTags")
 }

@@ -1,7 +1,3 @@
-extend schema
-  @link(url: "https://specs.apollo.dev/federation/v2.0",
-        import: ["@key", "@tag", "@external"])
-
 scalar ISOString
 
 interface BaseError {
@@ -216,7 +212,7 @@ extend type User @key(fields: "id") {
   ): SaveConnection
 }
 
-type PocketSave @tag(name: "public") {
+type PocketSave @tag(name: "public") @key(fields: "id") @key(fields: "givenUrl") {
   """
   The url the user gave (as opposed to normalized URLs)
   """
