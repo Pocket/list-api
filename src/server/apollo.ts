@@ -66,7 +66,6 @@ export async function startServer(port: number) {
 
   const server = new ApolloServer<ContextManager>({
     schema: buildSubgraphSchema({ typeDefs, resolvers }),
-    mocks: true,
     plugins: [
       sentryPlugin,
       process.env.NODE_ENV === 'production'
