@@ -1,0 +1,451 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.0",
+        import: ["@key", "@tag", "@external"])
+
+scalar ISOString
+
+interface BaseError {
+  path: String!
+  message: String! 
+}
+
+"""
+A Save can be one of these content types
+"""
+enum SaveContentType {
+  """
+  Item is an image
+  """
+  IS_IMAGE
+  """
+  Item is a video
+  """
+  IS_VIDEO
+  """
+  Item is a parsed article that contains videos
+  """
+  HAS_VIDEO
+  """
+  Item is a parsed page can be opened in reader view
+  """
+  IS_READABLE
+  """
+  Item is an un-parsable page and will be opened externally
+  """
+  IS_EXTERNAL
+}
+
+"""
+Enum to specify the sort order of Saves fetched
+"""
+enum SavesSortOrder {
+  ASC
+  DESC
+}
+"""
+Enum to specify the sort by field for Saves fetched
+"""
+enum SavesSortBy {
+  CREATED_AT
+  UPDATED_AT
+  FAVORITED_AT
+  ARCHIVED_AT
+}
+
+"""
+Possible statuses of a Save
+"""
+enum SaveStatus {
+  ARCHIVED
+  DELETED
+  HIDDEN
+  UNREAD
+}
+
+"""
+Input for renaming a Tag
+"""
+input TagRenameInput {
+  """
+  Tag ID
+  """
+  id: [ID!]!
+  """
+  The updated tag string
+  """
+  name: String!
+}
+
+"""
+Input for batch updating Tag associations on a Save
+(deletes and adds).
+"""
+input SaveBatchUpdateTagsInput {
+  saveId: [ID!]!
+  """
+  Tags to remove, by ID. If array is empty, no tags will be removed.
+  """
+  removeTagIds: [ID!]!
+  """
+  Tags to add, by name text; if a Tag
+  with the given name does not exist,
+  one will be created.
+  If array is empty, no tags will be added.
+  """
+  addTagNames: [String!]!
+}
+
+"""
+Input for associating Tags to a Save.
+The tagNames array must not be empty.
+"""
+input SaveTagInput {
+  saveId: ID!
+  tagNames: [String!]!
+}
+
+"""
+Input for removing Tags associated to a Save.
+"""
+input SaveUnTagInput {
+  saveId: ID!
+  tagIds: [ID!]!
+}
+
+"""
+Error if the update would cause a conflict with the
+server state that needs to be resolved by the client.
+"""
+type SyncConflict implements BaseError {
+  path: String!
+  message: String!
+}
+
+"""
+Error if the entity requested is not found.
+"""
+type NotFound implements BaseError {
+  path: String!
+  message: String!
+}
+
+"""All types in this union should implement BaseError, for client fallback"""
+union SaveMutationError = NotFound | SyncConflict # hypothetically others in the future
+
+"""All types in this union should implement BaseError, for client fallback"""
+union TagMutationError = NotFound | SyncConflict # hypothetically others in the future...
+
+""" Result type for saveById array response """
+union SaveByIdResult = PocketSave | NotFound
+
+"""
+Input field for filtering a user's list
+"""
+input SavesFilter {
+  """
+  Optional, filter to get Saves updated since a unix timestamp.
+  Typically used for offline/mobile sync.
+  """
+  updatedSince: Int
+  """
+  Optional, filter to get Saves that have been favorited
+  """
+  isFavorite: Boolean
+  """
+  Optional, filter to get Saves that have been archived.
+  """
+  isArchived: Boolean
+  """
+  Optional, filter to get Saves associated to the specified Tag.
+  """
+  tagIds: [ID!]
+  """
+  Optional, filter to get Saves associated to the specified Tag name.
+  To get untagged items, include the string '_untagged_'.
+  """
+  tagNames: [String!] # _untagged_
+  """
+  Optional, filter to get Saves with highlights
+  """
+  isHighlighted: Boolean
+  """
+  Optional, filter to get Saves based on content type
+  """
+  contentType: SaveContentType
+}
+
+"""
+Input to sort fetched Saves. If unspecified, defaults to CREATED_AT, ASC.
+"""
+input SavesSort {
+  """
+  The field by which to sort Saves
+  """
+  sortBy: SavesSortBy!
+
+  """
+  The order in which to sort Saves
+  """
+  sortOrder: SavesSortOrder!
+}
+
+"""
+Input field for upserting a SavedItem
+"""
+input SaveUpsertInput {
+  """
+  The url to create/update the SavedItem with. (the url to save to the list)
+  """
+  url: String!
+  """
+  Optional, create/update the SavedItem as a favorited item
+  """
+  isFavorite: Boolean
+}
+
+
+extend type User @key(fields: "id") {
+  saveById(id: [ID!]!): [SaveByIdResult!]!
+  """
+  Get a general paginated listing of all Saves for the user
+  """
+  saves(
+    filter: SavesFilter
+    sort: SavesSort
+    pagination: PaginationInput
+  ): SaveConnection
+}
+
+type PocketSave @tag(name: "public") {
+  """
+  The url the user gave (as opposed to normalized URLs)
+  """
+  givenUrl: String!
+  """
+  Indicates if the PocketSave is favorited
+  """
+  favorite: Boolean!
+  """
+  Timestamp that the PocketSave became favorited, null if not favorited
+  """
+  favoritedAt: ISOString
+  """
+  Indicates if the PocketSave is archived
+  """
+  archived: Boolean!
+  """
+  Timestamp that the PocketSave became archived, null if not archived
+  """
+  archivedAt: ISOString
+  """
+  The Tags associated with this PocketSave
+  """
+  tags: [Tag!]
+  """
+  The Suggested Tags associated with this PocketSave, if the user is not premium or there are none, this will be empty.
+  """
+  suggestedTags: [Tag!] @tag(name: "internal")
+  """
+  The status of this PocketSave; Marked for review for possible removal.
+  """
+  status: SaveStatus @tag(name: "internal")
+  """
+  Surrogate primary key. 
+  """
+  id: ID! @tag(name: "internal")
+  """
+  Unix timestamp of when the PocketSave was created
+  """
+  createdAt: ISOString!
+  """
+  Unix timestamp of when the PocketSave was last updated, if any property on the PocketSave is modified this timestamp is set to the modified time
+  """
+  updatedAt: ISOString
+  """
+  Unix timestamp of when the entity was deleted
+  """
+  deletedAt: ISOString
+  """
+  The title of the PocketSave; defaults to the URL
+  """
+  title: String!
+  """
+  The web site publisher; defaults to the domain of the PocketSave URL
+  """
+  source: String!
+  """
+  Link to the underlying Pocket Item for the URL
+  """
+  item: ItemResult! @tag(name: "internal")
+}
+
+"""
+The connection type for Save.
+"""
+type SaveConnection {
+  """
+  A list of edges.
+  """
+  edges: [SaveEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of Save in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a connection.
+"""
+type SaveEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+  """
+  The Save at the end of the edge.
+  """
+  node: PocketSave
+}
+
+extend type Item @key(fields: "givenUrl") {
+  """
+  The Save associated with this Item, if it exists
+  """
+  save: PocketSave @tag(name: "internal")
+}
+
+extend type Tag {
+  """
+  Paginated connection of all Saves associated with this Tag
+  """
+  saves(
+    filter: SavesFilter
+    sort: SavesSort
+    pagination: PaginationInput
+  ): SaveConnection
+}
+
+"""
+Payload for mutations that create or update Saves
+"""
+type SaveWriteMutationPayload {
+  """
+  The mutated Save objects; empty if the mutation did not succeed.
+  """
+  save: [PocketSave!]!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [SaveMutationError!]!
+}
+
+"""
+Payload for mutations that create or update Tags
+"""
+type TagWriteMutationPayload {
+  """
+  The mutated Tag objects; empty if the mutation did not succeed.
+  """
+  tag: [Tag!]!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [TagMutationError!]!
+}
+
+"""
+Payload for mutations that delete Tags
+"""
+type TagDeleteMutationPayload {
+  success: Boolean!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [TagMutationError!]!
+}
+
+"""
+Payload for mutations that delete Saves
+"""
+type SaveDeleteMutationPayload {
+  success: Boolean!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [SaveMutationError!]!
+}
+
+extend type Mutation {
+  """
+  Archives a Save
+  """
+  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+
+  """
+  Unarchives a Save
+  """
+  saveUnArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+
+  """
+  Undo the delete operation for a Save
+  """
+  saveUnDelete(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+
+  """
+  Favorites a Save
+  """
+  saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+
+  """
+  Unfavorites a Save
+  """
+  saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+
+  """
+  Deletes a Save from the users list. Returns ID of the
+  deleted Save
+  """
+  saveDelete(id: [ID!]!, timestamp: ISOString!): SaveDeleteMutationPayload
+
+  """
+  Creates a new Save; if the Save already exists (either in List or Archive), "re-add" it.
+  "Re-adding" unarchives and undeletes the Save as applicable, and refreshes the "createdAt"
+  timestamp.
+  """
+  saveUpsert(input: [SaveUpsertInput!]!, timestamp: ISOString!): SaveWriteMutationPayload!
+
+  """
+  Batch update the Tags associated with a Save
+  by adding new tags and deleting existing tags.
+  """
+  saveBatchUpdateTags(input: [SaveBatchUpdateTagsInput!]!, timestamp: ISOString!): SaveWriteMutationPayload
+
+  """
+  Remove association between a Tag and a Save.
+  Note that if this operation results in a Tag having no associations
+  to a Save, the Tag object will be deleted.
+  """
+  saveUnTag(input: [SaveUnTagInput!]!, timestamp: ISOString!): SaveWriteMutationPayload!
+
+  """
+  Associate Tag(s) with a Save
+  """
+  saveTag(input: [SaveTagInput!]!, timestamp: ISOString!): SaveWriteMutationPayload!
+
+  """
+  Deletes a Tag object. This is deletes the Tag and all Save associations
+  (removes the Tag from all Saves). Returns ID of the deleted Tag.
+  """
+  tagDelete(id: [ID!]!, timestamp: ISOString!): TagDeleteMutationPayload
+  
+  """
+  Rename a Tag. If a Tag with the new name already exists
+  for a given User, will merge the Tag objects (and all
+  relevant tag-save associations)
+  """
+  tagRename(input: [TagRenameInput!]!, timestamp: ISOString!): TagWriteMutationPayload
+}

@@ -2,10 +2,12 @@ import path from 'path';
 import fs from 'fs';
 import { gql } from 'graphql-tag';
 
-export const getSchemaFile = () => {
-  return fs
-    .readFileSync(path.join(__dirname, '..', '..', 'schema.graphql'))
-    .toString();
+export const getSchemaFiles = () => {
+  return ['schema.graphql', 'saves.schema.graphql'].map((filename: string) => {
+    return gql(
+      fs.readFileSync(path.join(__dirname, '..', '..', filename)).toString()
+    );
+  });
 };
 
-export const typeDefs = gql(getSchemaFile());
+export const typeDefs = getSchemaFiles();
