@@ -37,14 +37,14 @@ jobs:
       # Checkout the code base #
       ##########################
       - name: Checkout Code
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
 
       ##########################
       # Github Super Linter needs
       # the latest definitions installed
       ##########################
       - name: Use Node.js 16.x
-        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # tag=v3
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
         with:
           node-version: 16.x
       # Install our eslint packages.
@@ -57,7 +57,7 @@ jobs:
       - name: Lint Code Base
 
         # We use the Github super linter, it can be cranky at times, so in that moment here are the docs https://github.com/github/super-linter
-        uses: docker://ghcr.io/github/super-linter:slim-v4@sha256:900277f36d47d5ddc460d901ea9dfcb1d348f7390066f800a0895cd88866b31f
+        uses: docker://ghcr.io/github/super-linter:slim-v4@sha256:1d86cb6bb4730483175ac4c8a641751554c320db73ae6075f3f822618c3e5ea5
 
         # All Environment variables are defined here https://github.com/github/super-linter#environment-variables
         env:
