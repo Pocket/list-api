@@ -4,11 +4,11 @@ import {
   EventType,
   ItemsEventEmitter,
   SnowplowHandler,
-} from '../../../businessEvents';
-import { tracker } from '../../../snowplow/tracker';
-import config from '../../../config';
-import { ListItemUpdate } from '../../../snowplow/schema';
-import { SavedItem } from '../../../types';
+} from '../../businessEvents';
+import { tracker } from '../../snowplow/tracker';
+import config from '../../config';
+import { ListItemUpdate } from '../../snowplow/schema';
+import { SavedItem } from '../../types';
 
 async function snowplowRequest(path: string, post = false): Promise<any> {
   const response = await fetch(`http://${config.snowplow.endpoint}${path}`, {

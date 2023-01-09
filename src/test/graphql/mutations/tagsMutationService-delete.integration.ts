@@ -1,40 +1,49 @@
 import { writeClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
-import { ItemsEventEmitter } from '../../../businessEvents';
 import sinon from 'sinon';
 import { UsersMetaService } from '../../../dataService';
 import chaiDateTime from 'chai-datetime';
 import { EventType } from '../../../businessEvents';
-import { getServer } from '../testServerUtil';
 import { ContextManager } from '../../../server/context';
+import { startServer } from '../../../server/apollo';
+import { Express } from 'express';
+import { ApolloServer } from '@apollo/server';
+import request from 'supertest';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('Mutation for Tag deletions: ', () => {
   const db = writeClient();
-  const eventEmitter = new ItemsEventEmitter();
   let eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const dbTagsQuery = db('item_tags').select('tag').pluck('tag');
   const listUpdatedQuery = db('list').select('time_updated');
   const listStateQuery = db('list').select();
   const tagStateQuery = db('item_tags').select();
   const metaStateQuery = db('users_meta').select();
-  const server = getServer('1', db, eventEmitter);
 
+  const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
+
+  let app: Express;
+  let server: ApolloServer<ContextManager>;
+  let url: string;
 
   afterAll(async () => {
     await db.destroy();
     sinon.restore();
+    await server.stop();
   });
 
   afterEach(() => {
     sinon.restore();
     eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
+  });
+
+  beforeAll(async () => {
+    ({ app, server, url } = await startServer(0));
   });
 
   beforeEach(async () => {
@@ -62,7 +71,7 @@ describe('Mutation for Tag deletions: ', () => {
   });
 
   describe('deleteSavedItemTags: ', () => {
-    const deleteSavedItemTagsMutation = gql`
+    const deleteSavedItemTagsMutation = `
       mutation deleteSavedItemTags($input: [DeleteSavedItemTagsInput!]!) {
         deleteSavedItemTags(input: $input) {
           id
@@ -105,7 +114,7 @@ describe('Mutation for Tag deletions: ', () => {
       const variables = {
         input: [{ savedItemId: 0, tagIds: [colin] }],
       };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: deleteSavedItemTagsMutation,
         variables,
       });
@@ -114,15 +123,17 @@ describe('Mutation for Tag deletions: ', () => {
         .clone()
         .where('item_id', 0)
         .first();
-      expect(res.errors).to.be.undefined;
-      expect(res.data.deleteSavedItemTags.length).to.equal(1);
-      expect(res.data.deleteSavedItemTags[0].id).to.equal('0');
-      expect(res.data.deleteSavedItemTags[0].tags).to.deep.equalInAnyOrder([
-        { name: 'nandor' },
-        { name: 'nadja' },
-        { name: 'guillermo' },
-        { name: 'laszlo' },
-      ]);
+      expect(res.body.errors).to.be.undefined;
+      expect(res.body.data.deleteSavedItemTags.length).to.equal(1);
+      expect(res.body.data.deleteSavedItemTags[0].id).to.equal('0');
+      expect(res.body.data.deleteSavedItemTags[0].tags).to.deep.equalInAnyOrder(
+        [
+          { name: 'nandor' },
+          { name: 'nadja' },
+          { name: 'guillermo' },
+          { name: 'laszlo' },
+        ]
+      );
       expect(dbTags).to.deep.equalInAnyOrder([
         'nandor',
         'nadja',
@@ -145,11 +156,11 @@ describe('Mutation for Tag deletions: ', () => {
         ],
       };
 
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: deleteSavedItemTagsMutation,
         variables,
       });
-      expect(res.errors).to.be.undefined;
+      expect(res.body.errors).to.be.undefined;
       expect(eventSpy.calledTwice).to.be.true;
       const eventData = eventSpy.getCalls().map((_) => _.args);
       expect(eventData[0][0]).to.equal(EventType.REMOVE_TAGS);
@@ -169,7 +180,7 @@ describe('Mutation for Tag deletions: ', () => {
       const variables = {
         input: [{ savedItemId: '0', tagIds: vampires }],
       };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: deleteSavedItemTagsMutation,
         variables,
       });
@@ -178,9 +189,9 @@ describe('Mutation for Tag deletions: ', () => {
         .clone()
         .where('item_id', 0)
         .first();
-      expect(res.errors).to.be.undefined;
-      expect(res.data.deleteSavedItemTags[0].id).to.equal('0');
-      expect(res.data.deleteSavedItemTags[0].tags).to.deep.equal([
+      expect(res.body.errors).to.be.undefined;
+      expect(res.body.data.deleteSavedItemTags[0].id).to.equal('0');
+      expect(res.body.data.deleteSavedItemTags[0].tags).to.deep.equal([
         { name: 'guillermo' },
       ]);
       expect(dbTags.length).to.equal(1);
@@ -203,7 +214,7 @@ describe('Mutation for Tag deletions: ', () => {
           { savedItemId: '1', tagIds: oldVampires },
         ],
       };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: deleteSavedItemTagsMutation,
         variables,
       });
@@ -216,8 +227,8 @@ describe('Mutation for Tag deletions: ', () => {
         .where('item_id', 0)
         .orWhere('item_id', 1)
         .pluck('time_updated');
-      expect(res.errors).to.be.undefined;
-      expect(res.data.deleteSavedItemTags.length).to.equal(2);
+      expect(res.body.errors).to.be.undefined;
+      expect(res.body.data.deleteSavedItemTags.length).to.equal(2);
       const expectedSavedItems = [
         {
           id: '0',
@@ -232,7 +243,7 @@ describe('Mutation for Tag deletions: ', () => {
           tags: [],
         },
       ];
-      expect(res.data.deleteSavedItemTags).to.deep.equalInAnyOrder(
+      expect(res.body.data.deleteSavedItemTags).to.deep.equalInAnyOrder(
         expectedSavedItems
       );
       updates.forEach((update) => {
@@ -257,12 +268,14 @@ describe('Mutation for Tag deletions: ', () => {
           { savedItemId: 0, tagIds: [Buffer.from('colin').toString('base64')] },
         ],
       };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: deleteSavedItemTagsMutation,
         variables,
       });
-      expect(res.errors.length).to.equal(1);
-      expect(res.errors[0].extensions.code).to.equal('INTERNAL_SERVER_ERROR');
+      expect(res.body.errors.length).to.equal(1);
+      expect(res.body.errors[0].extensions.code).to.equal(
+        'INTERNAL_SERVER_ERROR'
+      );
       // Check that all the lists are still in the pre-operation state
       expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
       expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
@@ -270,7 +283,7 @@ describe('Mutation for Tag deletions: ', () => {
     });
   });
   describe('deleteTag: ', () => {
-    const deleteTagMutation = gql`
+    const deleteTagMutation = `
       mutation deleteTag($id: ID!) {
         deleteTag(id: $id)
       }
@@ -308,14 +321,14 @@ describe('Mutation for Tag deletions: ', () => {
     });
     it('should completely remove an existing tag from all associated items', async () => {
       const variables = { id: viago };
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: deleteTagMutation,
         variables,
       });
       const viagoCount = await tagQueryStub.where('tag', 'viago').first();
-      expect(res.errors).to.be.undefined;
+      expect(res.body.errors).to.be.undefined;
       expect(tagLogSpy.callCount).to.equal(1);
-      expect(res.data.deleteTag).to.equal(viago);
+      expect(res.body.data.deleteTag).to.equal(viago);
       expect(viagoCount['count(*)']).to.equal(0);
     });
     it('should do nothing if the tag does not exist, and not return an error', async () => {
@@ -324,12 +337,12 @@ describe('Mutation for Tag deletions: ', () => {
       const metaState = await metaStateQuery;
 
       const variables = { id: nick };
-      const res = await server.executeOperation({
+      const res = await await request(app).post(url).set(headers).send({
         query: deleteTagMutation,
         variables,
       });
-      expect(res.errors).to.be.undefined;
-      expect(res.data.deleteTag).to.equal(nick);
+      expect(res.body.errors).to.be.undefined;
+      expect(res.body.data.deleteTag).to.equal(nick);
       expect(tagLogSpy.callCount).to.equal(0);
       // Ensure no db changes occurred
       expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
