@@ -1,17 +1,15 @@
 import { writeClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
 import { Knex } from 'knex';
-import { EventType } from '../../../businessEvents';
+import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 import { SavedItemDataService } from '../../../dataService';
 import config from '../../../config';
 import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import request from 'supertest';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
 
 chai.use(chaiDateTime);
 
@@ -108,31 +106,24 @@ async function setUpSavedItem(db: Knex, date: Date) {
 describe('Delete/Undelete SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
+  const eventEmitter = new ItemsEventEmitter();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const userId = '1';
-  const headers = {
-    userid: userId,
-  };
+  const server = getServer(userId, db, eventEmitter);
 
   const date = new Date('2020-10-03 10:20:30');
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
   let batchDeleteDelay;
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
 
   afterAll(async () => {
     await writeClient().destroy();
     clock.restore();
     sinon.restore();
     config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;
-    await server.stop();
   });
 
-  beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
-
+  beforeAll(() => {
     batchDeleteDelay = config.batchDelete.deleteDelayInMilliSec;
     config.batchDelete.deleteDelayInMilliSec = 1;
     // Mock Date.now() to get a consistent date for inserting data
@@ -184,16 +175,16 @@ describe('Delete/Undelete SavedItem: ', () => {
       itemId: itemId,
     };
 
-    const deleteSavedItemMutation = `
+    const deleteSavedItemMutation = gql`
       mutation deleteSavedItem($itemId: ID!) {
         deleteSavedItem(id: $itemId)
       }
     `;
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: deleteSavedItemMutation,
       variables,
     });
-    const querySavedItem = `
+    const querySavedItem = gql`
       query getSavedItem($userId: ID!, $itemId: ID!) {
         _entities(representations: { id: $userId, __typename: "User" }) {
           ... on User {
@@ -209,17 +200,17 @@ describe('Delete/Undelete SavedItem: ', () => {
       userId: userId,
       itemId: itemId,
     };
-    const roundtrip = await request(app).post(url).set(headers).send({
+    const roundtrip = await server.executeOperation({
       query: querySavedItem,
       variables: queryVars,
     });
-    const itemRes = roundtrip.body.data?._entities[0].savedItemById;
+    const itemRes = roundtrip.data?._entities[0].savedItemById;
 
     const query = async (tableName) =>
       await db(tableName).select().where({ user_id: 1, item_id: 1 }).first();
 
-    expect(res.body.errors).to.be.undefined;
-    expect(res.body.data?.deleteSavedItem).to.equal('1');
+    expect(res.errors).to.be.undefined;
+    expect(res.data?.deleteSavedItem).to.equal('1');
     expect(itemRes.status).to.equal('DELETED');
     expect(itemRes._deletedAt).to.equal(getUnixTimestamp(updateDate));
     expect(await query('item_tags')).to.be.undefined;
@@ -236,7 +227,7 @@ describe('Delete/Undelete SavedItem: ', () => {
     await upsertSavedItem(db, 2, date);
 
     const variables = { itemId: '1' };
-    const updateSavedItemUnDelete = `
+    const updateSavedItemUnDelete = gql`
       mutation updateSavedItemUnDelete($itemId: ID!) {
         updateSavedItemUnDelete(id: $itemId) {
           status
@@ -244,13 +235,13 @@ describe('Delete/Undelete SavedItem: ', () => {
         }
       }
     `;
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: updateSavedItemUnDelete,
       variables,
     });
 
-    expect(res.body.errors).to.be.undefined;
-    const itemRes = res.body.data?.updateSavedItemUnDelete;
+    expect(res.errors).to.be.undefined;
+    const itemRes = res.data?.updateSavedItemUnDelete;
     expect(itemRes.status).to.equal('UNREAD');
     expect(itemRes._updatedAt).to.equal(getUnixTimestamp(updateDate));
   });
@@ -259,7 +250,7 @@ describe('Delete/Undelete SavedItem: ', () => {
     await upsertSavedItem(db, 2, date, true);
 
     const variables = { itemId: '1' };
-    const updateSavedItemUnDelete = `
+    const updateSavedItemUnDelete = gql`
       mutation updateSavedItemUnDelete($itemId: ID!) {
         updateSavedItemUnDelete(id: $itemId) {
           status
@@ -267,13 +258,13 @@ describe('Delete/Undelete SavedItem: ', () => {
         }
       }
     `;
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: updateSavedItemUnDelete,
       variables,
     });
 
-    expect(res.body.errors).to.be.undefined;
-    const itemRes = res.body.data?.updateSavedItemUnDelete;
+    expect(res.errors).to.be.undefined;
+    const itemRes = res.data?.updateSavedItemUnDelete;
     expect(itemRes.status).to.equal('ARCHIVED');
     expect(itemRes._updatedAt).to.equal(getUnixTimestamp(updateDate));
   });

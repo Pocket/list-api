@@ -1,4 +1,5 @@
 import { writeClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import nock from 'nock';
@@ -16,12 +17,9 @@ import {
 import { sqs } from '../../../aws/sqs';
 import sinon from 'sinon';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 import { transformers } from '../../../businessEvents/sqs/transformers';
 import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
 
 chai.use(chaiDateTime);
 
@@ -58,18 +56,13 @@ describe('UpsertSavedItem Mutation', () => {
   const itemsEventEmitter = new ItemsEventEmitter();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   new SqsListener(itemsEventEmitter, transformers);
+  const server = getServer('1', db, itemsEventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);
   const dateNow = new Date('2021-10-06 03:22:00');
-  const headers = { userid: '1' };
   let clock;
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
 
-  beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
-
+  beforeAll(() => {
     clock = sinon.useFakeTimers({
       now: dateNow,
       shouldAdvanceTime: false,
@@ -81,7 +74,6 @@ describe('UpsertSavedItem Mutation', () => {
     clock.restore();
     sinon.restore();
     nock.cleanAll();
-    await server.stop();
   });
 
   afterEach(() => eventSpy.resetHistory());
@@ -149,7 +141,7 @@ describe('UpsertSavedItem Mutation', () => {
         url: 'http://getpocket.com',
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -174,37 +166,38 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
       expect(mutationResult).is.not.null;
-      const data = mutationResult.body.data?.upsertSavedItem;
-      expect(data.id).to.equal('8');
-      expect(data.url).to.equal(variables.url);
-      expect(data.isFavorite).is.false;
-      expect(data.isArchived).is.false;
-      expect(data._deletedAt).is.null;
-      expect(data._version).is.null;
-      expect(data.item.givenUrl).equals(variables.url);
-      expect(data.tags[0].name).equals('zebra');
-      expect(data.archivedAt).is.null;
-      expect(data.favoritedAt).is.null;
+      expect(mutationResult.data?.upsertSavedItem.id).to.equal('8');
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
+      expect(mutationResult.data?.upsertSavedItem.isFavorite).is.false;
+      expect(mutationResult.data?.upsertSavedItem.isArchived).is.false;
+      expect(mutationResult.data?.upsertSavedItem._deletedAt).is.null;
+      expect(mutationResult.data?.upsertSavedItem._version).is.null;
+      expect(mutationResult.data?.upsertSavedItem.item.givenUrl).equals(
+        variables.url
+      );
+      expect(mutationResult.data?.upsertSavedItem.tags[0].name).equals('zebra');
+      expect(mutationResult.data?.upsertSavedItem.archivedAt).is.null;
+      expect(mutationResult.data?.upsertSavedItem.favoritedAt).is.null;
     });
 
     it('should add an item to the list even if the parser has not yet resolved or cannot resolve it', async () => {
-      const givenUrl = 'https://unresolved.url';
-      mockParserGetItemRequest(givenUrl, {
+      const url = 'https://unresolved.url';
+      mockParserGetItemRequest(url, {
         item: {
-          given_url: givenUrl,
+          given_url: url,
           item_id: 1,
           resolved_id: '0',
         },
       });
 
-      const variables = { url: givenUrl };
+      const variables = { url };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -220,15 +213,14 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
       expect(mutationResult).is.not.null;
-      const data = mutationResult.body.data?.upsertSavedItem;
-      expect(data.id).to.equal('1');
-      expect(data.item.givenUrl).is.undefined;
-      expect(data.item.url).to.equal(givenUrl);
+      expect(mutationResult.data?.upsertSavedItem.id).to.equal('1');
+      expect(mutationResult.data?.upsertSavedItem.item.givenUrl).is.undefined;
+      expect(mutationResult.data?.upsertSavedItem.item.url).to.equal(url);
     });
 
     it('should updated time favourite and time updated if provided in input', async () => {
@@ -238,7 +230,7 @@ describe('UpsertSavedItem Mutation', () => {
         timestamp: unixDate,
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem(
           $url: String!
           $isFavorite: Boolean
@@ -261,20 +253,22 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
       expect(mutationResult).is.not.null;
-      const data = mutationResult.body.data?.upsertSavedItem;
-
-      expect(data.id).to.equal('11');
-      expect(data.url).to.equal(variables.url);
-      expect(data.isFavorite).is.true;
-      expect(data.isArchived).is.false;
-      expect(data.archivedAt).is.null;
-      expect(data._createdAt).to.equal(unixDate);
-      expect(data.favoritedAt).to.equal(unixDate);
+      expect(mutationResult.data?.upsertSavedItem.id).to.equal('11');
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
+      expect(mutationResult.data?.upsertSavedItem.isFavorite).is.true;
+      expect(mutationResult.data?.upsertSavedItem.isArchived).is.false;
+      expect(mutationResult.data?.upsertSavedItem.archivedAt).is.null;
+      expect(mutationResult.data?.upsertSavedItem._createdAt).to.equal(
+        unixDate
+      );
+      expect(mutationResult.data?.upsertSavedItem.favoritedAt).to.equal(
+        unixDate
+      );
     });
 
     it('should set time favorite to current time if isFav is set', async () => {
@@ -283,7 +277,7 @@ describe('UpsertSavedItem Mutation', () => {
         isFavorite: true,
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!, $isFavorite: Boolean) {
           upsertSavedItem(input: { url: $url, isFavorite: $isFavorite }) {
             id
@@ -294,15 +288,15 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
-      const data = mutationResult.body.data?.upsertSavedItem;
-
-      expect(data.url).equals('http://favorite.com');
-      expect(data.isFavorite).is.true;
-      expect(data.favoritedAt).to.not.equal(
+      expect(mutationResult.data?.upsertSavedItem.url).equals(
+        'http://favorite.com'
+      );
+      expect(mutationResult.data?.upsertSavedItem.isFavorite).is.true;
+      expect(mutationResult.data?.upsertSavedItem.favoritedAt).to.not.equal(
         getUnixTimestamp(new Date('0000-00-00 00:00:00'))
       );
     });
@@ -312,7 +306,7 @@ describe('UpsertSavedItem Mutation', () => {
         url: 'http://eventemitter.com',
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -321,7 +315,7 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
@@ -330,9 +324,7 @@ describe('UpsertSavedItem Mutation', () => {
       const eventData = eventSpy.getCall(0).args;
       expect(eventData[0]).to.equal(EventType.ADD_ITEM);
       expect(eventData[1].url).to.equal(variables.url);
-      expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
-      );
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
     });
 
     it('should not emit event for duplicate add', async () => {
@@ -340,7 +332,7 @@ describe('UpsertSavedItem Mutation', () => {
         url: 'http://eventemitter.com',
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -348,20 +340,17 @@ describe('UpsertSavedItem Mutation', () => {
           }
         }
       `;
-      await request(app)
-        .post(url)
-        .set(headers)
-        .send({ query: ADD_AN_ITEM, variables });
+      await server.executeOperation({ query: ADD_AN_ITEM, variables });
       // Duplicate insert and reset event tracking
       eventSpy.resetHistory();
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
       expect(eventSpy.callCount).to.equal(0);
-      expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
-      );
+      console.log(JSON.stringify(mutationResult));
+      console.log(mutationResult.errors);
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
     });
 
     it('should push addItem event to publisher data queue when an item is added', async () => {
@@ -369,7 +358,7 @@ describe('UpsertSavedItem Mutation', () => {
         url: 'http://addingtoqueue.com',
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -378,13 +367,11 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
-      expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
-      );
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
 
       const publisherQueueMessages = await getSqsMessages(
         config.aws.sqs.publisherQueue.url
@@ -410,7 +397,7 @@ describe('UpsertSavedItem Mutation', () => {
         url: 'http://addingtoqueue.com',
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -419,16 +406,12 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app)
-        .post(url)
-        .set({ ...headers, premium: 'true' })
-        .send({
-          query: ADD_AN_ITEM,
-          variables,
-        });
-      expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
-      );
+      const server = getServer('1', db, itemsEventEmitter, { premium: 'true' });
+      const mutationResult = await server.executeOperation({
+        query: ADD_AN_ITEM,
+        variables,
+      });
+      expect(mutationResult.data?.upsertSavedItem.url).to.equal(variables.url);
 
       const permLibQueueData = await getSqsMessages(
         config.aws.sqs.permLibItemMainQueue.url
@@ -442,7 +425,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(permLibQueueBody.resolvedId).equals(25);
     });
     describe(' - on existing savedItem: ', () => {
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem(
           $url: String!
           $isFavorite: Boolean
@@ -489,12 +472,12 @@ describe('UpsertSavedItem Mutation', () => {
           isFavorite: true,
           timestamp: getUnixTimestamp(dateNow),
         };
-        const mutationResult = await request(app).post(url).set(headers).send({
+        const mutationResult = await server.executeOperation({
           query: ADD_AN_ITEM,
           variables,
         });
-        expect(mutationResult.body.errors).to.be.undefined;
-        const data = mutationResult.body.data.upsertSavedItem;
+        expect(mutationResult.errors).to.be.undefined;
+        const data = mutationResult.data.upsertSavedItem;
         expect(data._createdAt)
           .to.equal(getUnixTimestamp(dateNow))
           .and.to.equal(data._updatedAt)
@@ -512,7 +495,7 @@ describe('UpsertSavedItem Mutation', () => {
           isFavorite: true,
           timestamp: getUnixTimestamp(dateNow),
         };
-        await request(app).post(url).set(headers).send({
+        await server.executeOperation({
           query: ADD_AN_ITEM,
           variables,
         });
@@ -526,7 +509,7 @@ describe('UpsertSavedItem Mutation', () => {
           isFavorite: true,
           timestamp: getUnixTimestamp(dateNow),
         };
-        await request(app).post(url).set(headers).send({
+        await server.executeOperation({
           query: ADD_AN_ITEM,
           variables,
         });
@@ -546,19 +529,19 @@ describe('UpsertSavedItem Mutation', () => {
           timestamp: getUnixTimestamp(dateNow),
         };
         // Put in a favorite item
-        await request(app).post(url).set(headers).send({
+        await server.executeOperation({
           query: ADD_AN_ITEM,
           variables: faveVariables,
         });
         // Start listening for events after initial insert
         eventSpy.resetHistory();
         // re-add it
-        const res = await request(app).post(url).set(headers).send({
+        const res = await server.executeOperation({
           query: ADD_AN_ITEM,
           variables: unFaveVariables,
         });
-        expect(res.body.errors).to.be.undefined;
-        expect(res.body.data.upsertSavedItem.isFavorite).to.be.true;
+        expect(res.errors).to.be.undefined;
+        expect(res.data.upsertSavedItem.isFavorite).to.be.true;
         expect(eventSpy.callCount).to.equal(0);
       });
       it('should send not favorite event if item was previously favorited', async () => {
@@ -573,19 +556,19 @@ describe('UpsertSavedItem Mutation', () => {
           timestamp: getUnixTimestamp(dateNow),
         };
         // Put in a favorite item
-        await request(app).post(url).set(headers).send({
+        await server.executeOperation({
           query: ADD_AN_ITEM,
           variables: faveVariables,
         });
         // Start listening for events after initial insert
         eventSpy.resetHistory();
         // re-add it
-        const res = await request(app).post(url).set(headers).send({
+        const res = await server.executeOperation({
           query: ADD_AN_ITEM,
           variables: reFaveVariables,
         });
-        expect(res.body.errors).to.be.undefined;
-        expect(res.body.data.upsertSavedItem.isFavorite).to.be.true;
+        expect(res.errors).to.be.undefined;
+        expect(res.data.upsertSavedItem.isFavorite).to.be.true;
         expect(eventSpy.callCount).to.equal(0);
       });
       it('should emit unarchive event if item was previously archived', async () => {
@@ -594,7 +577,7 @@ describe('UpsertSavedItem Mutation', () => {
           isFavorite: true,
           timestamp: getUnixTimestamp(dateNow),
         };
-        await request(app).post(url).set(headers).send({
+        await server.executeOperation({
           query: ADD_AN_ITEM,
           variables,
         });
@@ -611,13 +594,48 @@ describe('UpsertSavedItem Mutation', () => {
           isFavorite: true,
           timestamp: getUnixTimestamp(dateNow),
         };
-        await request(app).post(url).set(headers).send({
+        await server.executeOperation({
           query: ADD_AN_ITEM,
           variables,
         });
         const events = eventSpy.getCalls().map((call) => call.args[0]);
         expect(events).not.to.contain(EventType.UNARCHIVE_ITEM);
       });
+
+      //this test passes.
+      // note, for some reason - if we have a test with null readClient,
+      // then the following test/test suite fails to run
+      //this somehow sets the db to null for the following test suite - so commenting this out
+      /*it('should use write database client for all mutation call', async () => {
+        //passing read client as null
+        const writeServer = getServer(
+          '1',
+          null,
+          writeClient(),
+          itemsEventEmitter
+        );
+        const variables = {
+          url: 'http://write-client.com',
+        };
+        const ADD_AN_ITEM = gql`
+          mutation addAnItem($url: String!) {
+            upsertSavedItem(input: { url: $url }) {
+              id
+              url
+              _createdAt
+              _updatedAt
+            }
+          }
+        `;
+        const mutationResult = await writeServer.executeOperation({
+          query: ADD_AN_ITEM,
+          variables,
+        });
+
+        expect(mutationResult.data?.upsertSavedItem.url).to.equal(
+          variables.url
+        );
+      }); */
     });
   });
   describe('sad path', function () {
@@ -633,7 +651,7 @@ describe('UpsertSavedItem Mutation', () => {
         url: 'abcde1234',
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!) {
           upsertSavedItem(input: { url: $url }) {
             id
@@ -644,11 +662,11 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await server.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
-      expect(mutationResult.body.errors[0].message).equals(
+      expect(mutationResult.errors[0].message).equals(
         `unable to add item with url: ${variables.url}`
       );
     });
@@ -660,16 +678,14 @@ describe('UpsertSavedItem Mutation', () => {
         },
       });
 
-      const contextStub = sinon
-        .stub(ContextManager.prototype, 'dbClient')
-        .returns(undefined);
+      const badServer = getServer('1', db, null, itemsEventEmitter);
 
       const variables = {
         url: 'http://databasetest.com',
         isFavorite: true,
       };
 
-      const ADD_AN_ITEM = `
+      const ADD_AN_ITEM = gql`
         mutation addAnItem($url: String!, $isFavorite: Boolean) {
           upsertSavedItem(input: { url: $url, isFavorite: $isFavorite }) {
             id
@@ -680,12 +696,11 @@ describe('UpsertSavedItem Mutation', () => {
         }
       `;
 
-      const mutationResult = await request(app).post(url).set(headers).send({
+      const mutationResult = await badServer.executeOperation({
         query: ADD_AN_ITEM,
         variables,
       });
-      contextStub.restore();
-      expect(mutationResult.body.errors[0].message).equals(
+      expect(mutationResult.errors[0].message).equals(
         `unable to add item with url: ${variables.url}`
       );
     });

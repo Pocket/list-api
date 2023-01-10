@@ -1,32 +1,27 @@
 import { readClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 import config from '../../../config';
-import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
 
 chai.use(chaiDateTime);
 
 describe('tags query tests - happy path', () => {
   const db = readClient();
-  const headers = { userid: '1', premium: 'true' };
+  const server = (userId: string) =>
+    getServer(userId, db, null, { premium: 'true' });
   const date = new Date('2020-10-03T10:20:30.000Z');
   const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');
   const unixDate1 = getUnixTimestamp(date1);
   const date2 = new Date('2022-10-03T10:20:30.000Z');
   const date3 = new Date('2023-10-03T10:20:30.000Z');
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
 
-  const GET_TAG_CONNECTION = `
+  const GET_TAG_CONNECTION = gql`
     query getTags($id: ID!, $pagination: PaginationInput) {
       _entities(representations: { id: $id, __typename: "User" }) {
         ... on User {
@@ -57,12 +52,9 @@ describe('tags query tests - happy path', () => {
 
   afterAll(async () => {
     await db.destroy();
-    await server.stop();
   });
 
   beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
-
     await db('list').truncate();
     await db('item_tags').truncate();
     await db('readitla_b.item_grouping').truncate();
@@ -291,7 +283,7 @@ describe('tags query tests - happy path', () => {
     ]);
   });
 
-  const GET_TAGS_FOR_SAVED_ITEM = `
+  const GET_TAGS_FOR_SAVED_ITEM = gql`
     query getSavedItem($userId: ID!, $itemId: ID!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
@@ -333,7 +325,7 @@ describe('tags query tests - happy path', () => {
     }
   `;
 
-  const GET_TAGS_SAVED_ITEMS = `
+  const GET_TAGS_SAVED_ITEMS = gql`
     query getTags(
       $id: ID!
       $pagination: PaginationInput
@@ -394,61 +386,53 @@ describe('tags query tests - happy path', () => {
       itemId: '1',
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAGS_FOR_SAVED_ITEM,
       variables,
     });
-    expect(res.body.data?._entities[0].savedItemById.url).to.equal(
-      'http://abc'
-    );
-    expect(res.body.data?._entities[0].savedItemById.tags[0].name).to.equal(
+    expect(res.data?._entities[0].savedItemById.url).to.equal('http://abc');
+    expect(res.data?._entities[0].savedItemById.tags[0].name).to.equal(
       'travel'
     );
-    expect(res.body.data?._entities[0].savedItemById.tags[0].id).to.equal(
+    expect(res.data?._entities[0].savedItemById.tags[0].id).to.equal(
       'dHJhdmVsX194cGt0eHRhZ3hfXw=='
     );
-    expect(res.body.data?._entities[0].savedItemById.tags[0]._version).is.null;
-    expect(res.body.data?._entities[0].savedItemById.tags[0]._deletedAt).is
-      .null;
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0]._createdAt
-    ).to.equal(unixDate);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0]._updatedAt
-    ).to.equal(unixDate1);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[1]._createdAt
-    ).to.equal(unixDate1);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[1]._updatedAt
-    ).to.equal(unixDate1);
-    expect(res.body.data?._entities[0].savedItemById.tags[1].name).to.equal(
-      'zebra'
+    expect(res.data?._entities[0].savedItemById.tags[0]._version).is.null;
+    expect(res.data?._entities[0].savedItemById.tags[0]._deletedAt).is.null;
+    expect(res.data?._entities[0].savedItemById.tags[0]._createdAt).to.equal(
+      unixDate
     );
-    expect(res.body.data?._entities[0].savedItemById.tags[1].id).to.equal(
+    expect(res.data?._entities[0].savedItemById.tags[0]._updatedAt).to.equal(
+      unixDate1
+    );
+    expect(res.data?._entities[0].savedItemById.tags[1]._createdAt).to.equal(
+      unixDate1
+    );
+    expect(res.data?._entities[0].savedItemById.tags[1]._updatedAt).to.equal(
+      unixDate1
+    );
+    expect(res.data?._entities[0].savedItemById.tags[1].name).to.equal('zebra');
+    expect(res.data?._entities[0].savedItemById.tags[1].id).to.equal(
       'emVicmFfX3hwa3R4dGFneF9f'
     );
-    expect(res.body.data?._entities[0].savedItemById.tags[1]._deletedAt).is
-      .null;
-    expect(res.body.data?._entities[0].savedItemById.tags[1]._deletedAt).is
-      .null;
+    expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
+    expect(res.data?._entities[0].savedItemById.tags[1]._deletedAt).is.null;
     expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.edges.length
+      res.data?._entities[0].savedItemById.tags[0].savedItems.edges.length
     ).equals(4);
     // Default to itemId, asc on sort field collision
     expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.edges[0].node
-        .url
+      res.data?._entities[0].savedItemById.tags[0].savedItems.edges[0].node.url
     ).equals('http://abc');
     expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.totalCount
+      res.data?._entities[0].savedItemById.tags[0].savedItems.totalCount
     ).equals(4);
     expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
+      res.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
         .hasNextPage
     ).is.false;
     expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
+      res.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
         .hasPreviousPage
     ).is.false;
   });
@@ -461,7 +445,7 @@ describe('tags query tests - happy path', () => {
         pagination: { before: 'emVicmFfKl8iemVicmEi', last: 10 },
       };
 
-      const GET_PAGINATED_ITEMS = `
+      const GET_PAGINATED_ITEMS = gql`
         query getSavedItem(
           $userId: ID!
           $itemId: ID!
@@ -483,12 +467,12 @@ describe('tags query tests - happy path', () => {
         }
       `;
 
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server('1').executeOperation({
         query: GET_PAGINATED_ITEMS,
         variables,
       });
-      expect(res.body.errors.length).to.be.above(0);
-      expect(res.body.errors[0].message).to.equal(
+      expect(res.errors.length).to.be.above(0);
+      expect(res.errors[0].message).to.equal(
         'Cannot specify a cursor on a nested paginated field.'
       );
     });
@@ -499,12 +483,12 @@ describe('tags query tests - happy path', () => {
         sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
         itemPagination: { first: 2, after: 'somecursor' },
       };
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server('1').executeOperation({
         query: GET_TAGS_SAVED_ITEMS,
         variables,
       });
-      expect(res.body.errors.length).to.be.above(0);
-      expect(res.body.errors[0].message).to.equal(
+      expect(res.errors.length).to.be.above(0);
+      expect(res.errors[0].message).to.equal(
         'Cannot specify a cursor on a nested paginated field.'
       );
     });
@@ -518,12 +502,12 @@ describe('tags query tests - happy path', () => {
       itemPagination: { first: 2 },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAGS_SAVED_ITEMS,
       variables,
     });
 
-    const tags = res.body.data?._entities[0].tags;
+    const tags = res.data?._entities[0].tags;
     // Returns 2 tags, but there are 3 total active
     expect(tags.edges.length).to.equal(2);
     expect(tags.pageInfo.hasNextPage).to.be.true;
@@ -559,15 +543,15 @@ describe('tags query tests - happy path', () => {
       filter: { isArchived: true },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAGS_SAVED_ITEMS,
       variables,
     });
     // tags are sorted alphabetically, ascending
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
       'adventure'
     );
-    const tag = res.body.data?._entities[0].tags.edges[0].node;
+    const tag = res.data?._entities[0].tags.edges[0].node;
     // There are two archived SavedItems under adventure Tag
     expect(tag.savedItems.edges.length).to.equal(2);
     // sorted by createdAt, ascending (collision defaults to itemId)
@@ -586,24 +570,22 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2 },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.true;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.false;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
+    expect(res.data?._entities[0].tags.totalCount).to.equal(3);
+    expect(res.data?._entities[0].tags.pageInfo.hasNextPage).is.true;
+    expect(res.data?._entities[0].tags.pageInfo.hasPreviousPage).is.false;
+    expect(res.data?._entities[0].tags.edges.length).to.equal(2);
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal(
       'adventure'
     );
-    expect(res.body.data?._entities[0].tags.edges[0].node.id).to.equal(
+    expect(res.data?._entities[0].tags.edges[0].node.id).to.equal(
       'YWR2ZW50dXJlX194cGt0eHRhZ3hfXw=='
     );
-    expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
-      'travel'
-    );
+    expect(res.data?._entities[0].tags.edges[1].node.name).to.equal('travel');
   });
 
   it('should return list of Tags for User for last n values', async () => {
@@ -612,18 +594,16 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2 },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'travel'
-    );
+    expect(res.data?._entities[0].tags.totalCount).to.equal(3);
+    expect(res.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
+    expect(res.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
+    expect(res.data?._entities[0].tags.edges.length).to.equal(2);
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal('travel');
   });
 
   it('should return list of Tags for User for first n values after the given cursor', async () => {
@@ -632,18 +612,16 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2, after: 'YWR2ZW50dXJlXypfImFkdmVudHVyZSI=' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'travel'
-    );
+    expect(res.data?._entities[0].tags.totalCount).to.equal(3);
+    expect(res.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
+    expect(res.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
+    expect(res.data?._entities[0].tags.edges.length).to.equal(2);
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal('travel');
   });
 
   it('should return list of Tags for User for last n values before the given cursor', async () => {
@@ -652,18 +630,16 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2, before: 'emVicmFfKl8iemVicmEi' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.true;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.false;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
-      'travel'
-    );
+    expect(res.data?._entities[0].tags.totalCount).to.equal(3);
+    expect(res.data?._entities[0].tags.pageInfo.hasNextPage).is.true;
+    expect(res.data?._entities[0].tags.pageInfo.hasPreviousPage).is.false;
+    expect(res.data?._entities[0].tags.edges.length).to.equal(2);
+    expect(res.data?._entities[0].tags.edges[1].node.name).to.equal('travel');
   });
 
   it('should always return the oldest date for _createdAt and latest date for _updatdAt for tags', async () => {
@@ -672,17 +648,15 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2, before: 'emVicmFfKl8iemVicmEi' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
-    expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
-      'travel'
-    );
-    expect(res.body.data?._entities[0].tags.edges[1].node._createdAt).to.equal(
+    expect(res.data?._entities[0].tags.edges[1].node.name).to.equal('travel');
+    expect(res.data?._entities[0].tags.edges[1].node._createdAt).to.equal(
       unixDate
     );
-    expect(res.body.data?._entities[0].tags.edges[1].node._updatedAt).to.equal(
+    expect(res.data?._entities[0].tags.edges[1].node._updatedAt).to.equal(
       unixDate1
     );
   });
@@ -693,18 +667,16 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2, after: 'dHJhdmVsXypfInRyYXZlbCI=' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(1);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'zebra'
-    );
+    expect(res.data?._entities[0].tags.totalCount).to.equal(3);
+    expect(res.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
+    expect(res.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
+    expect(res.data?._entities[0].tags.edges.length).to.equal(1);
+    expect(res.data?._entities[0].tags.edges[0].node.name).to.equal('zebra');
   });
   it('should resolve tag fields from the parent if provided', async () => {
     const dataLoaderSpy = sinon.spy(tagsDataLoader, 'batchGetTagsByNames');
@@ -713,7 +685,7 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2 },
     };
 
-    await request(app).post(url).set(headers).send({
+    await server('1').executeOperation({
       query: GET_TAG_CONNECTION,
       variables,
     });
@@ -726,20 +698,17 @@ describe('tags query tests - happy path', () => {
       itemId: '99',
     };
 
-    const res = await request(app)
-      .post(url)
-      .set({ ...headers, userid: '2' })
-      .send({
-        query: GET_TAGS_FOR_SAVED_ITEM,
-        variables,
-      });
-    const save = res.body.data?._entities[0].savedItemById;
+    const res = await server('2').executeOperation({
+      query: GET_TAGS_FOR_SAVED_ITEM,
+      variables,
+    });
+    const save = res.data?._entities[0].savedItemById;
     expect(save.url).to.equal('http://fall.sports');
     expect(save.tags.length).to.equal(1);
     expect(save.tags[0].name).to.equal('');
     expect(save.tags[0].id).to.equal(
       Buffer.from(config.data.tagIdSuffix).toString('base64')
     );
-    expect(res.body.errors).to.be.undefined;
+    expect(res.errors).to.be.undefined;
   });
 });

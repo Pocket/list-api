@@ -1,31 +1,21 @@
 import { readClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
-import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 
 describe('tags query tests - happy path', () => {
   const db = readClient();
-  const headers = { userid: '1', premium: 'true' };
+  const server = getServer('1', db, null, { premium: 'true' });
   const date = new Date('2020-10-03T10:20:30.000Z');
   const date1 = new Date('2021-10-03T10:20:30.000Z');
   const date2 = new Date('2022-10-03T10:20:30.000Z');
   const date3 = new Date('2023-10-03T10:20:30.000Z');
 
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
-
-  beforeAll(async () => ({ app, server, url } = await startServer(0)));
-
   afterAll(async () => {
     await db.destroy();
-    await server.stop();
   });
 
   beforeEach(async () => {
@@ -102,7 +92,7 @@ describe('tags query tests - happy path', () => {
       itemId: '1',
     };
 
-    const GET_SUGGESTED_TAGS = `
+    const GET_SUGGESTED_TAGS = gql`
       query getSavedItem($userId: ID!, $itemId: ID!) {
         _entities(representations: { id: $userId, __typename: "User" }) {
           ... on User {
@@ -120,11 +110,11 @@ describe('tags query tests - happy path', () => {
       }
     `;
     it('should return the 3 most recently used tags', async () => {
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
       });
-      const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
       expect(tags[0].name).to.equal('adventure');
       expect(tags[1].name).to.equal('thriller');
@@ -142,11 +132,11 @@ describe('tags query tests - happy path', () => {
         api_id_updated: 'updated_api_id',
       });
 
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
       });
-      const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
       expect(tags[0].name).to.equal('adventure');
       expect(tags[1].name).to.equal('thriller');
@@ -154,11 +144,11 @@ describe('tags query tests - happy path', () => {
     });
     it('returns empty array if no tags', async () => {
       await db('item_tags').truncate();
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
       });
-      const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(0);
     });
 
@@ -176,11 +166,11 @@ describe('tags query tests - happy path', () => {
           api_id_updated: 'updated_api_id',
         },
       ]);
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
       });
-      const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(1);
       expect(tags[0].name).to.equal('romance');
     });
@@ -195,11 +185,11 @@ describe('tags query tests - happy path', () => {
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       });
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
       });
-      const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
       expect(tags[0].name).to.equal('thriller');
       expect(tags[1].name).to.equal('romance');
@@ -270,12 +260,12 @@ describe('tags query tests - happy path', () => {
         },
       ]);
 
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SUGGESTED_TAGS,
         variables,
       });
 
-      const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
+      const tags = res.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
       //tagC is not in top 3 as it has the lowest time_updated
       //null date tag will get its time_updated from list table.
