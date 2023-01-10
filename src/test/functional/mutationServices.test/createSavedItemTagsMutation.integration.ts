@@ -1,34 +1,30 @@
 import { writeClient } from '../../../database/client';
-import { EventType } from '../../../businessEvents';
+import { EventType, ItemsEventEmitter } from '../../../businessEvents';
+import { getServer } from '../testServerUtil';
 import sinon from 'sinon';
+import { gql } from 'apollo-server-express';
 import { getUnixTimestamp } from '../../../utils';
 import chai, { expect } from 'chai';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
 import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('createSavedItemTags mutation', function () {
   const db = writeClient();
+  const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
-  const headers = { userid: '1' };
+
+  const server = getServer('1', db, eventEmitter);
+
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
 
-  beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
-
+  beforeAll(() => {
     // Mock Date.now() to get a consistent date for inserting data
     clock = sinon.useFakeTimers({
       now: updateDate,
@@ -40,7 +36,6 @@ describe('createSavedItemTags mutation', function () {
     await db.destroy();
     clock.restore();
     sinon.restore();
-    await server.stop();
   });
 
   afterEach(() => sinon.resetHistory());
@@ -102,7 +97,7 @@ describe('createSavedItemTags mutation', function () {
     await db('list').insert(inputData);
   });
 
-  const createSavedItemTags = `
+  const createSavedItemTags = gql`
     mutation createSavedItemTags($input: [SavedItemTagsInput!]!) {
       createSavedItemTags(input: $input) {
         url
@@ -131,10 +126,10 @@ describe('createSavedItemTags mutation', function () {
         ],
       };
 
-      const res = await request(app)
-        .post(url)
-        .set(headers)
-        .send({ query: createSavedItemTags, variables });
+      const res = await server.executeOperation({
+        query: createSavedItemTags,
+        variables,
+      });
 
       const addedResult = [
         {
@@ -184,18 +179,23 @@ describe('createSavedItemTags mutation', function () {
       ];
 
       expect(res).is.not.undefined;
-      const data = res.body.data.createSavedItemTags;
-      expect(data[0].url).equals('http://0');
-      expect(data[0]._updatedAt).equals(getUnixTimestamp(updateDate));
-      expect(data[0].tags.length).to.equal(4);
-      expect(data[0].tags).to.deep.equalInAnyOrder(
+      expect(res.data.createSavedItemTags[0].url).equals('http://0');
+      expect(res.data.createSavedItemTags[0]._updatedAt).equals(
+        getUnixTimestamp(updateDate)
+      );
+      expect(res.data.createSavedItemTags[0].tags.length).to.equal(4);
+      expect(res.data.createSavedItemTags[0].tags).to.deep.equalInAnyOrder(
         expectedTagsForSavedItemZero
       );
 
-      expect(data[1].url).equals('http://1');
-      expect(data[1]._updatedAt).equals(getUnixTimestamp(updateDate));
-      expect(data[1].tags.length).to.equal(4);
-      expect(data[1].tags).to.deep.equalInAnyOrder(expectedTagsForSavedItemOne);
+      expect(res.data.createSavedItemTags[1].url).equals('http://1');
+      expect(res.data.createSavedItemTags[1]._updatedAt).equals(
+        getUnixTimestamp(updateDate)
+      );
+      expect(res.data.createSavedItemTags[1].tags.length).to.equal(4);
+      expect(res.data.createSavedItemTags[1].tags).to.deep.equalInAnyOrder(
+        expectedTagsForSavedItemOne
+      );
     }
   );
 
@@ -204,12 +204,12 @@ describe('createSavedItemTags mutation', function () {
       input: [{ savedItemId: '1', tags: ['tofino', 'victoria'] }],
     };
 
-    const res = await request(app)
-      .post(url)
-      .set(headers)
-      .send({ query: createSavedItemTags, variables });
+    const res = await server.executeOperation({
+      query: createSavedItemTags,
+      variables,
+    });
 
-    expect(res.body.errors).to.be.undefined;
+    expect(res.errors).to.be.undefined;
     expect(eventSpy.callCount).to.equal(1);
     const eventData = eventSpy.getCall(0).args;
     expect(eventData[0]).to.equal(EventType.ADD_TAGS);

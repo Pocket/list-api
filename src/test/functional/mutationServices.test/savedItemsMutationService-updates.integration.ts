@@ -1,41 +1,34 @@
 import { writeClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
 import { EventType } from '../../../businessEvents';
+import { ItemsEventEmitter } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
 
 chai.use(chaiDateTime);
 
 describe('Update Mutation for SavedItem: ', () => {
   //using write client as mutation will use write client to read as well.
   const db = writeClient();
+  const eventEmitter = new ItemsEventEmitter();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
+  const server = getServer('1', db, eventEmitter);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
-  const headers = {
-    userid: '1',
-  };
 
   afterAll(async () => {
     await db.destroy();
     clock.restore();
     sinon.restore();
-    await server.stop();
   });
 
   beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
     // Mock Date.now() to get a consistent date for inserting data
     clock = sinon.useFakeTimers({
       now: updateDate,
@@ -70,7 +63,7 @@ describe('Update Mutation for SavedItem: ', () => {
       itemId: '0',
     };
 
-    const archiveItemMutation = `
+    const archiveItemMutation = gql`
       mutation updateSavedItemArchive($itemId: ID!) {
         updateSavedItemArchive(id: $itemId) {
           archivedAt
@@ -80,19 +73,19 @@ describe('Update Mutation for SavedItem: ', () => {
         }
       }
     `;
-    let res: request.Response;
+    let res;
 
     beforeAll(async () => {
       eventSpy.resetHistory();
-      res = await request(app).post(url).set(headers).send({
+      res = await server.executeOperation({
         query: archiveItemMutation,
         variables,
       });
     });
 
     it('should archive an item', async () => {
-      expect(res.body.errors).to.be.undefined;
-      const itemRes = res.body.data?.updateSavedItemArchive;
+      expect(res.errors).to.be.undefined;
+      const itemRes = res.data?.updateSavedItemArchive;
       expect(itemRes.status).to.equal('ARCHIVED');
       expect(itemRes.isArchived).to.equal(true);
       expect(itemRes._updatedAt)
@@ -111,7 +104,7 @@ describe('Update Mutation for SavedItem: ', () => {
       itemId: '1',
     };
 
-    const unArchiveItemMutation = `
+    const unArchiveItemMutation = gql`
       mutation updateSavedItemUnArchive($itemId: ID!) {
         updateSavedItemUnArchive(id: $itemId) {
           archivedAt
@@ -121,19 +114,19 @@ describe('Update Mutation for SavedItem: ', () => {
         }
       }
     `;
-    let res: request.Response;
+    let res;
 
     beforeAll(async () => {
       eventSpy.resetHistory();
-      res = await request(app).post(url).set(headers).send({
+      res = await server.executeOperation({
         query: unArchiveItemMutation,
         variables,
       });
     });
 
     it('should unarchive an item', async () => {
-      expect(res.body.errors).to.be.undefined;
-      const itemRes = res.body.data?.updateSavedItemUnArchive;
+      expect(res.errors).to.be.undefined;
+      const itemRes = res.data?.updateSavedItemUnArchive;
       expect(itemRes.status).to.equal('UNREAD');
       expect(itemRes.isArchived).to.equal(false);
       expect(itemRes._updatedAt).to.equal(getUnixTimestamp(updateDate));
@@ -147,12 +140,12 @@ describe('Update Mutation for SavedItem: ', () => {
     });
   });
   describe('updatedSavedItemFavorite', () => {
-    let res: request.Response;
+    let res;
     const variables = {
       itemId: '3',
     };
 
-    const savedItemFavoriteMutation = `
+    const savedItemFavoriteMutation = gql`
       mutation updateSavedItemFavorite($itemId: ID!) {
         updateSavedItemFavorite(id: $itemId) {
           favoritedAt
@@ -164,15 +157,15 @@ describe('Update Mutation for SavedItem: ', () => {
 
     beforeAll(async () => {
       eventSpy.resetHistory();
-      res = await request(app).post(url).set(headers).send({
+      res = await server.executeOperation({
         query: savedItemFavoriteMutation,
         variables,
       });
     });
 
     it('should favorite an item', async () => {
-      expect(res.body.errors).to.be.undefined;
-      const itemRes = res.body.data?.updateSavedItemFavorite;
+      expect(res.errors).to.be.undefined;
+      const itemRes = res.data?.updateSavedItemFavorite;
       expect(itemRes.isFavorite).to.equal(true);
       expect(itemRes._updatedAt)
         .to.equal(itemRes.favoritedAt)
@@ -186,12 +179,12 @@ describe('Update Mutation for SavedItem: ', () => {
     });
   });
   describe('updatedSavedItemUnFavorite', () => {
-    let res: request.Response;
+    let res;
     const variables = {
       itemId: '2',
     };
 
-    const savedItemUnFavoriteMutation = `
+    const savedItemUnFavoriteMutation = gql`
       mutation updateSavedItemUnFavorite($itemId: ID!) {
         updateSavedItemUnFavorite(id: $itemId) {
           favoritedAt
@@ -203,14 +196,14 @@ describe('Update Mutation for SavedItem: ', () => {
 
     beforeAll(async () => {
       eventSpy.resetHistory();
-      res = await request(app).post(url).set(headers).send({
+      res = await server.executeOperation({
         query: savedItemUnFavoriteMutation,
         variables,
       });
     });
     it('should unfavorite an item', async () => {
-      expect(res.body.errors).to.be.undefined;
-      const itemRes = res.body.data?.updateSavedItemUnFavorite;
+      expect(res.errors).to.be.undefined;
+      const itemRes = res.data?.updateSavedItemUnFavorite;
       expect(itemRes.isFavorite).to.equal(false);
       expect(itemRes._updatedAt).to.equal(getUnixTimestamp(updateDate));
       expect(itemRes.favoritedAt).to.be.null;

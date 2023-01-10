@@ -1,4 +1,4 @@
-import { AuthenticationError } from '@pocket-tools/apollo-utils';
+import { AuthenticationError } from 'apollo-server-express';
 import {
   BasicItemEventPayloadWithContext,
   EventType,
@@ -40,7 +40,7 @@ export interface IContext {
 
 export class ContextManager implements IContext {
   public readonly dataLoaders: IContext['dataLoaders'];
-  private _dbClient: Knex;
+  public readonly dbClient: Knex;
 
   constructor(
     private config: {
@@ -49,7 +49,7 @@ export class ContextManager implements IContext {
       eventEmitter: ItemsEventEmitter;
     }
   ) {
-    this._dbClient = config.dbClient;
+    this.dbClient = config.dbClient;
     this.dataLoaders = {
       ...createTagDataLoaders(this),
       ...createSavedItemDataLoaders(this),
@@ -98,10 +98,6 @@ export class ContextManager implements IContext {
 
   get eventEmitter(): ItemsEventEmitter {
     return this.config.eventEmitter;
-  }
-
-  get dbClient(): Knex {
-    return this._dbClient;
   }
 
   /**

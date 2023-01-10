@@ -1,19 +1,16 @@
 import { readClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
-import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
+import { getServer } from '../testServerUtil';
 
 chai.use(chaiDateTime);
 chai.use(deepEqualInAnyOrder);
 
 describe('getSavedItems', () => {
   const db = readClient();
-  const headers = { userid: '1' };
+  const server = getServer('1', db, null);
 
   // TODO: What date is the server running in? Web repo does central...
   // should this do UTC, this changes pagination cursors.
@@ -21,11 +18,8 @@ describe('getSavedItems', () => {
   const date2 = new Date('2020-10-03 10:22:30'); // Consistent date for seeding
   const date3 = new Date('2020-10-03 10:25:30'); // Consistent date for seeding
   const nullDate = new Date('0000-00-00 00:00:00');
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
 
-  const GET_SAVED_ITEMS = `
+  const GET_SAVED_ITEMS = gql`
     query getSavedItem(
       $id: ID!
       $pagination: PaginationInput
@@ -58,11 +52,8 @@ describe('getSavedItems', () => {
     }
   `;
 
-  beforeAll(async () => ({ app, server, url } = await startServer(0)));
-
   afterAll(async () => {
     await db.destroy();
-    await server.stop();
   });
 
   beforeEach(async () => {
@@ -117,7 +108,7 @@ describe('getSavedItems', () => {
   });
 
   it('should resolve status field', async () => {
-    const SAVED_ITEMS_FIELD = `
+    const SAVED_ITEMS_FIELD = gql`
       query getSavedItem(
         $id: ID!
         $pagination: PaginationInput
@@ -140,14 +131,14 @@ describe('getSavedItems', () => {
       id: '1',
       pagination: { first: 1 },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: SAVED_ITEMS_FIELD,
       variables,
     });
-    expect(res.body.errors).to.be.undefined;
-    expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.status
-    ).to.equal('UNREAD');
+    expect(res.errors).to.be.undefined;
+    expect(res.data?._entities[0].savedItems.edges[0].node.status).to.equal(
+      'UNREAD'
+    );
   });
 
   it('should return a paginated list of most recently added items, with more next pages and all expected properties', async () => {
@@ -155,28 +146,27 @@ describe('getSavedItems', () => {
       id: '1',
       pagination: { first: 2 },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.body.data?._entities[0].savedItems.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.data?._entities[0].savedItems.totalCount).to.equal(3);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://ijk'
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
+      res.data?._entities[0].savedItems.edges[0].node.item.givenUrl
     ).to.equal('http://ijk');
-    expect(res.body.data?._entities[0].savedItems.edges[1].node.url).to.equal(
+    expect(res.data?._entities[0].savedItems.edges[1].node.url).to.equal(
       'http://def'
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[1].node.item.givenUrl
+      res.data?._entities[0].savedItems.edges[1].node.item.givenUrl
     ).to.equal('http://def');
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
-      .true;
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
-      .be.false;
+    expect(res.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be.true;
+    expect(res.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to.be
+      .false;
   });
   it('should finish the forward pagination from previous cursor, without overfetching', async () => {
     const variables = {
@@ -186,24 +176,23 @@ describe('getSavedItems', () => {
         first: 2,
       },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
-    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://abc'
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
+      res.data?._entities[0].savedItems.edges[0].node.item.givenUrl
     ).to.equal('http://abc');
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
-      .false;
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
-      .be.true;
-    expect(res.body.data?._entities[0].savedItems.pageInfo.startCursor).to.be
-      .not.undefined;
-    expect(res.body.data?._entities[0].savedItems.pageInfo.endCursor).to.be.not
+    expect(res.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be.false;
+    expect(res.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to.be
+      .true;
+    expect(res.data?._entities[0].savedItems.pageInfo.startCursor).to.be.not
+      .undefined;
+    expect(res.data?._entities[0].savedItems.pageInfo.endCursor).to.be.not
       .undefined;
   });
 
@@ -216,19 +205,18 @@ describe('getSavedItems', () => {
         last: 2,
       },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
-      .false;
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
-      .be.true;
-    expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(2);
+    expect(res.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be.false;
+    expect(res.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to.be
+      .true;
+    expect(res.data?._entities[0].savedItems.edges[0].node.url).to.equal(
       'http://def'
     );
-    expect(res.body.data?._entities[0].savedItems.edges[1].node.url).to.equal(
+    expect(res.data?._entities[0].savedItems.edges[1].node.url).to.equal(
       'http://abc'
     );
   });
@@ -242,22 +230,21 @@ describe('getSavedItems', () => {
         last: 2,
       },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
+    expect(res.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
+      res.data?._entities[0].savedItems.edges[0].node.item.givenUrl
     ).to.equal('http://ijk');
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
-      .be.false;
-    expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
-      .true;
+    expect(res.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to.be
+      .false;
+    expect(res.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be.true;
   });
 
   it('can resolve a entity query for a SavedItem by Id', async () => {
-    const RESOLVE_REFERENCE_QUERY = `
+    const RESOLVE_REFERENCE_QUERY = gql`
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
           ... on SavedItem {
@@ -280,17 +267,17 @@ describe('getSavedItems', () => {
       ],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: RESOLVE_REFERENCE_QUERY,
       variables,
     });
 
-    expect(res.body.data._entities[0].id).to.equal('1');
-    expect(res.body.data._entities[1].id).to.equal('2');
+    expect(res.data._entities[0].id).to.equal('1');
+    expect(res.data._entities[1].id).to.equal('2');
   });
 
   it(`call succeeds with returning null value when Id is not found`, async () => {
-    const RESOLVE_REFERENCE_QUERY = `
+    const RESOLVE_REFERENCE_QUERY = gql`
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
           ... on SavedItem {
@@ -313,18 +300,18 @@ describe('getSavedItems', () => {
       ],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: RESOLVE_REFERENCE_QUERY,
       variables,
     });
 
-    expect(res.body.data._entities[0]).is.null;
-    expect(res.body.data._entities[1].id).to.equal('1');
-    expect(res.body.data._entities.length).to.equal(2);
+    expect(res.data._entities[0]).is.null;
+    expect(res.data._entities[1].id).to.equal('1');
+    expect(res.data._entities.length).to.equal(2);
   });
 
   it('call succeeds with returning null value when Url is not found', async () => {
-    const RESOLVE_REFERENCE_QUERY = `
+    const RESOLVE_REFERENCE_QUERY = gql`
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
           ... on SavedItem {
@@ -347,18 +334,18 @@ describe('getSavedItems', () => {
       ],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: RESOLVE_REFERENCE_QUERY,
       variables,
     });
 
-    expect(res.body.data._entities[0]).is.null;
-    expect(res.body.data._entities[1].url).to.equal('http://abc');
-    expect(res.body.data._entities.length).to.equal(2);
+    expect(res.data._entities[0]).is.null;
+    expect(res.data._entities[1].url).to.equal('http://abc');
+    expect(res.data._entities.length).to.equal(2);
   });
 
   it('can resolve a entity query for a SavedItem by Url', async () => {
-    const RESOLVE_REFERENCE_QUERY = `
+    const RESOLVE_REFERENCE_QUERY = gql`
       query ($_representations: [_Any!]!) {
         _entities(representations: $_representations) {
           ... on SavedItem {
@@ -381,17 +368,17 @@ describe('getSavedItems', () => {
       ],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: RESOLVE_REFERENCE_QUERY,
       variables,
     });
 
-    expect(res.body.data._entities[0].url).to.equal('http://abc');
-    expect(res.body.data._entities[1].url).to.equal('http://def');
+    expect(res.data._entities[0].url).to.equal('http://abc');
+    expect(res.data._entities[1].url).to.equal('http://def');
   });
 
   describe('sort', () => {
-    const GET_SAVED_ITEMS_SORT = `
+    const GET_SAVED_ITEMS_SORT = gql`
       query getSavedItem(
         $id: ID!
         $pagination: PaginationInput
@@ -432,34 +419,30 @@ describe('getSavedItems', () => {
         pagination: { last: 2 },
         sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
       };
-      const res = await request(app).post(url).set(headers).send({
+      const res = await server.executeOperation({
         query: GET_SAVED_ITEMS_SORT,
         variables,
       });
-      const compareRes = await request(app).post(url).set(headers).send({
+      const compareRes = await server.executeOperation({
         query: GET_SAVED_ITEMS_SORT,
         variables: compareVars,
       });
-      expect(res.body.errors).to.be.undefined;
-      expect(res.body.data).to.be.not.undefined;
-      expect(res.body.data?._entities[0].savedItems.edges.length)
+      expect(res.errors).to.be.undefined;
+      expect(res.data).to.be.not.undefined;
+      expect(res.data?._entities[0].savedItems.edges.length)
         .to.equal(2)
-        .and.to.equal(
-          compareRes.body.data?._entities[0].savedItems.edges.length
-        );
-      expect(res.body.data?._entities[0].savedItems.edges[0]).to.deep.equal(
-        compareRes.body.data?._entities[0].savedItems.edges[1]
+        .and.to.equal(compareRes.data?._entities[0].savedItems.edges.length);
+      expect(res.data?._entities[0].savedItems.edges[0]).to.deep.equal(
+        compareRes.data?._entities[0].savedItems.edges[1]
       );
-      expect(res.body.data?._entities[0].savedItems.edges[1]).to.deep.equal(
-        compareRes.body.data?._entities[0].savedItems.edges[0]
+      expect(res.data?._entities[0].savedItems.edges[1]).to.deep.equal(
+        compareRes.data?._entities[0].savedItems.edges[0]
       );
-      expect(
-        res.body.data._entities[0].savedItems.pageInfo.startCursor
-      ).to.equal(
-        compareRes.body.data._entities[0].savedItems.pageInfo.endCursor
+      expect(res.data._entities[0].savedItems.pageInfo.startCursor).to.equal(
+        compareRes.data._entities[0].savedItems.pageInfo.endCursor
       );
-      expect(res.body.data._entities[0].savedItems.pageInfo.endCursor).to.equal(
-        compareRes.body.data._entities[0].savedItems.pageInfo.startCursor
+      expect(res.data._entities[0].savedItems.pageInfo.endCursor).to.equal(
+        compareRes.data._entities[0].savedItems.pageInfo.startCursor
       );
     });
     test.each([
@@ -512,12 +495,12 @@ describe('getSavedItems', () => {
           pagination: { first: 2 },
           sort: { sortBy: sortBy, sortOrder: sortOrder },
         };
-        const res = await request(app).post(url).set(headers).send({
+        const res = await server.executeOperation({
           query: GET_SAVED_ITEMS_SORT,
           variables,
         });
-        expect(res.body.errors).to.be.undefined;
-        const urls = res.body.data?._entities[0].savedItems.edges.map(
+        expect(res.errors).to.be.undefined;
+        const urls = res.data?._entities[0].savedItems.edges.map(
           (edge) => edge.node.item.givenUrl
         );
         expect(expectedUrls).to.deep.equal(urls);
@@ -532,11 +515,11 @@ describe('getSavedItems', () => {
         last: 2,
       },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEMS,
       variables,
     });
-    expect(res.body.errors?.length).to.be.above(0);
-    expect(res.body.errors[0].message).to.equal('Cursor not found.');
+    expect(res.errors?.length).to.be.above(0);
+    expect(res.errors[0].message).to.equal('Cursor not found.');
   });
 });

@@ -1,37 +1,31 @@
 import { writeClient } from '../../../database/client';
+import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
-import { EventType } from '../../../businessEvents';
+import { EventType, ItemsEventEmitter } from '../../../businessEvents';
 import { UsersMetaService } from '../../../dataService';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import chaiDateTime from 'chai-datetime';
 import { getUnixTimestamp } from '../../../utils';
+import { getServer } from '../testServerUtil';
 import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('tags mutation: replace savedItem tags', () => {
   const db = writeClient();
+  const eventEmitter: ItemsEventEmitter = new ItemsEventEmitter();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
+  const server = getServer('1', db, eventEmitter);
 
-  const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
   let logTagSpy;
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
 
-  beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
-
+  beforeAll(() => {
     // Mock Date.now() to get a consistent date for inserting data
     clock = sinon.useFakeTimers({
       now: updateDate,
@@ -45,7 +39,6 @@ describe('tags mutation: replace savedItem tags', () => {
     await db.destroy();
     sinon.restore();
     clock.restore();
-    await server.stop();
   });
 
   beforeEach(async () => {
@@ -115,7 +108,7 @@ describe('tags mutation: replace savedItem tags', () => {
     await db('list').insert(inputData);
   });
 
-  const replaceSavedItemTags = `
+  const replaceSavedItemTags = gql`
     mutation replaceSavedItemTags($input: [SavedItemTagsInput!]!) {
       replaceSavedItemTags(input: $input) {
         url
@@ -137,7 +130,7 @@ describe('tags mutation: replace savedItem tags', () => {
       input: [{ savedItemId: '1', tags: tagNames }],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: replaceSavedItemTags,
       variables,
     });
@@ -158,11 +151,14 @@ describe('tags mutation: replace savedItem tags', () => {
     ];
 
     expect(res).is.not.undefined;
-    const data = res.body.data.replaceSavedItemTags;
-    expect(data[0].url).equals('http://1');
-    expect(data[0]._updatedAt).equals(getUnixTimestamp(updateDate));
-    expect(data[0].tags.length).to.equal(2);
-    expect(data[0].tags).to.deep.equalInAnyOrder(expectedTags);
+    expect(res.data.replaceSavedItemTags[0].url).equals('http://1');
+    expect(res.data.replaceSavedItemTags[0]._updatedAt).equals(
+      getUnixTimestamp(updateDate)
+    );
+    expect(res.data.replaceSavedItemTags[0].tags.length).to.equal(2);
+    expect(res.data.replaceSavedItemTags[0].tags).to.deep.equalInAnyOrder(
+      expectedTags
+    );
   });
 
   it('replacesSavedItemTags should replace tags for multiple savedItems', async () => {
@@ -175,7 +171,7 @@ describe('tags mutation: replace savedItem tags', () => {
       ],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: replaceSavedItemTags,
       variables,
     });
@@ -190,8 +186,8 @@ describe('tags mutation: replace savedItem tags', () => {
     ];
 
     expect(res).is.not.undefined;
-    expect(res.body.data.replaceSavedItemTags.length).to.equal(2);
-    expect(res.body.data.replaceSavedItemTags).to.deep.equalInAnyOrder([
+    expect(res.data.replaceSavedItemTags.length).to.equal(2);
+    expect(res.data.replaceSavedItemTags).to.deep.equalInAnyOrder([
       {
         url: 'http://1',
         _updatedAt: getUnixTimestamp(updateDate),
@@ -210,12 +206,12 @@ describe('tags mutation: replace savedItem tags', () => {
       input: [{ savedItemId: '1', tags: ['tofino', 'victoria'] }],
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: replaceSavedItemTags,
       variables,
     });
 
-    expect(res.body.errors).to.be.undefined;
+    expect(res.errors).to.be.undefined;
     expect(eventSpy.callCount).to.equal(1);
     const eventData = eventSpy.getCall(0).args;
     expect(eventData[0]).to.equal(EventType.REPLACE_TAGS);
@@ -241,13 +237,13 @@ describe('tags mutation: replace savedItem tags', () => {
       input: { savedItemId: '1', tags: ['helloWorld'] },
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: replaceSavedItemTags,
       variables,
     });
 
-    expect(res.body.errors.length).to.equal(1);
-    expect(res.body.errors[0].extensions.code).equals('INTERNAL_SERVER_ERROR');
+    expect(res.errors.length).to.equal(1);
+    expect(res.errors[0].extensions.code).equals('INTERNAL_SERVER_ERROR');
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);
@@ -257,14 +253,14 @@ describe('tags mutation: replace savedItem tags', () => {
     const variables = {
       input: { savedItemId: '1', tags: ['helloWorld', ''] },
     };
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: replaceSavedItemTags,
       variables,
     });
-    expect(res.body.errors.length).to.equal(1);
-    expect(res.body.errors[0].message).contains(
+    expect(res.errors.length).to.equal(1);
+    expect(res.errors[0].message).contains(
       'Tag name must have at least 1 non-whitespace character.'
     );
-    expect(res.body.errors[0].extensions?.code).to.equal('BAD_USER_INPUT');
+    expect(res.errors[0].extensions?.code).to.equal('BAD_USER_INPUT');
   });
 });

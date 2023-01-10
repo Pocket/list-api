@@ -1,10 +1,10 @@
-import { readClient, writeClient } from '../../database/client';
+import { readClient, writeClient } from '../../../database/client';
 import chai, { expect } from 'chai';
-import { UsersMetaService } from '../../dataService';
-import { ContextManager } from '../../server/context';
+import { UsersMetaService } from '../../../dataService';
+import { ContextManager } from '../../../server/context';
 import chaiDateTime from 'chai-datetime';
-import { mysqlTimeString } from '../../dataService/utils';
-import config from '../../config';
+import { mysqlTimeString } from '../../../dataService/utils';
+import config from '../../../config';
 
 chai.use(chaiDateTime);
 

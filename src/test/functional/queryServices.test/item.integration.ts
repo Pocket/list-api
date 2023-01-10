@@ -1,15 +1,9 @@
+import { getServer } from '../testServerUtil';
 import { readClient } from '../../../database/client';
-import { ContextManager } from '../../../server/context';
-import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
-describe('item', () => {
-  let app: Express;
-  let server: ApolloServer<ContextManager>;
-  let url: string;
+import { gql } from 'apollo-server-express';
 
-  const itemFragment = `
+describe('item', () => {
+  const itemFragment = gql`
     fragment ItemFields on Item {
       givenUrl
       savedItem {
@@ -20,7 +14,7 @@ describe('item', () => {
       }
     }
   `;
-  const GET_SAVED_ITEM = `
+  const GET_SAVED_ITEM = gql`
     ${itemFragment}
     query getSaveFromItem($givenUrl: String!) {
       _entities(representations: { givenUrl: $givenUrl, __typename: "Item" }) {
@@ -32,7 +26,7 @@ describe('item', () => {
   `;
   // It was more effort to format the entity string programmatically
   // than to just duplicate it
-  const GET_TWO_SAVED_ITEMS = `
+  const GET_TWO_SAVED_ITEMS = gql`
     ${itemFragment}
     query getSavesFromItems($givenUrl1: String!, $givenUrl2: String!) {
       _entities(
@@ -48,12 +42,11 @@ describe('item', () => {
     }
   `;
   const db = readClient();
-  const headers = { userid: '1' };
+  const server = getServer('1', db, null);
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
 
   beforeAll(async () => {
-    ({ app, server, url } = await startServer(0));
     await db('list').truncate();
     await db('list').insert([
       {
@@ -108,7 +101,6 @@ describe('item', () => {
   });
   afterAll(async () => {
     await db.destroy();
-    await server.stop();
   });
   it('resolves more than one savedItem from multiple entities', async () => {
     const expected = [
@@ -137,13 +129,13 @@ describe('item', () => {
       givenUrl2: 'https://www.youtube.com/watch?v=OZaL86RDGIU',
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_TWO_SAVED_ITEMS,
       variables,
     });
-    expect(res.body.errors).toBeUndefined;
-    expect(res.body.data).not.toBeUndefined;
-    const entities = res.body.data._entities;
+    expect(res.errors).toBeUndefined;
+    expect(res.data).not.toBeUndefined;
+    const entities = res.data._entities;
     expect(entities.length).toEqual(2);
     expect(entities).toEqual(expect.arrayContaining(expected));
   });
@@ -162,14 +154,14 @@ describe('item', () => {
       givenUrl: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEM,
       variables,
     });
 
-    expect(res.body.errors).toBeUndefined;
-    expect(res.body.data).not.toBeUndefined;
-    const entities = res.body.data._entities;
+    expect(res.errors).toBeUndefined;
+    expect(res.data).not.toBeUndefined;
+    const entities = res.data._entities;
     expect(entities.length).toEqual(1);
     expect(entities[0]).toEqual(expected);
   });
@@ -179,15 +171,15 @@ describe('item', () => {
       givenUrl: 'https://www.youtube.com/watch?v=Tpbo25iBvfU',
     };
 
-    const res = await request(app).post(url).set(headers).send({
+    const res = await server.executeOperation({
       query: GET_SAVED_ITEM,
       variables,
     });
-    expect(res.body.data).not.toBeUndefined;
-    expect(res.body.errors).not.toBeUndefined;
-    expect(res.body.errors.length).toEqual(1);
-    expect(res.body.errors[0].extensions.code).toEqual('NOT_FOUND');
-    const entities = res.body.data._entities;
+    expect(res.data).not.toBeUndefined;
+    expect(res.errors).not.toBeUndefined;
+    expect(res.errors.length).toEqual(1);
+    expect(res.errors[0].extensions.code).toEqual('NOT_FOUND');
+    const entities = res.data._entities;
     expect(entities.length).toEqual(1);
     expect(entities[0].givenUrl).toEqual(
       'https://www.youtube.com/watch?v=Tpbo25iBvfU'
