@@ -39,6 +39,11 @@ export function _startServer() {
   // Initialize routes
   app.use('/queueDelete', queueDeleteRouter);
 
+  // Expose health check url
+  app.get('/.well-known/apollo/server-health', (req, res) => {
+    res.status(200).send('ok');
+  });
+
   // Start BatchDelete queue polling
   new BatchDeleteHandler(new EventEmitter());
 
