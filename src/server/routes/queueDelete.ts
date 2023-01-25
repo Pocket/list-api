@@ -39,7 +39,6 @@ const queueDeleteSchema: Schema = {
   email: {
     in: ['body'],
     errorMessage: 'Must provide valid email',
-    isEmail: true,
   },
   isPremium: {
     in: ['body'],
