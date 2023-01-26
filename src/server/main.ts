@@ -24,6 +24,7 @@ import queueDeleteRouter from './routes/queueDelete';
 import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
 import { EventEmitter } from 'events';
 import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
+import v3Get from './routes/v3Get';
 
 export function _startServer() {
   Sentry.init({
@@ -38,6 +39,7 @@ export function _startServer() {
 
   // Initialize routes
   app.use('/queueDelete', queueDeleteRouter);
+  app.use('/v3/get', v3Get);
 
   // Expose health check url
   app.get('/.well-known/apollo/server-health', (req, res) => {
