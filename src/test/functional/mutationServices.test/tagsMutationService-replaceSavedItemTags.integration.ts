@@ -84,6 +84,16 @@ describe('tags mutation: replace savedItem tags', () => {
         api_id: 'apiid',
         api_id_updated: 'updated_api_id',
       },
+      {
+        user_id: 1,
+        item_id: 0,
+        tag: 'existing_tag_1',
+        status: 1,
+        time_added: date1,
+        time_updated: date1,
+        api_id: 'apiid',
+        api_id_updated: 'updated_api_id',
+      },
     ]);
 
     await db('list').truncate();
@@ -219,6 +229,32 @@ describe('tags mutation: replace savedItem tags', () => {
     expect(eventData[2]).to.deep.equalInAnyOrder(['tofino', 'victoria']);
   });
 
+  it('should be able to re-add tags along with new tags', async () => {
+    const variables = {
+      input: [
+        {
+          savedItemId: '0',
+          tags: ['existing_tag', 'existing_tag_1', 'new_tag'],
+        },
+      ],
+    };
+    const res = await server.executeOperation({
+      query: replaceSavedItemTags,
+      variables,
+    });
+    expect(res.errors).to.be.undefined;
+    expect(res.data.replaceSavedItemTags.length).to.equal(1);
+    expect(res.data.replaceSavedItemTags.length).to.equal(1);
+    const tagsAdded = [];
+    res.data.replaceSavedItemTags[0].tags.forEach((tag) =>
+      tagsAdded.push(tag.name)
+    );
+    expect(tagsAdded).to.deep.equalInAnyOrder([
+      'existing_tag',
+      'existing_tag_1',
+      'new_tag',
+    ]);
+  });
   it('replaceSavedItemTags should roll back if encounter an error during transaction', async () => {
     const listStateQuery = db('list').select();
     const tagStateQuery = db('item_tags').select();
