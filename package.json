@@ -36,7 +36,7 @@
     "apollo-server-core": "3.10.2",
     "apollo-server-errors": "3.3.1",
     "apollo-server-express": "3.10.2",
-    "apollo-server-plugin-base": "3.6.2",
+    "apollo-server-plugin-base": "3.7.1",
     "apollo-server-plugin-response-cache": "3.7.0",
     "aws-sdk": "2.1102.0",
     "dataloader": "2.0.0",
