@@ -13,7 +13,6 @@ import { SavedItemDataService } from '../dataService';
 import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { getSavedItemTagsMap } from './utils';
-import { ApolloError } from 'apollo-server-errors';
 import { TagModel } from '../models';
 
 /**
@@ -55,7 +54,7 @@ export async function upsertSavedItem(
 
     if (upsertedItem == undefined) {
       console.info(`savedUrl: ${savedItemUpsertInput.url}`);
-      throw new ApolloError(`unable to add an item`);
+      throw new Error(`unable to add an item`);
     }
 
     if (existingItem != null) {
@@ -74,9 +73,7 @@ export async function upsertSavedItem(
   } catch (e) {
     console.log(e.message);
     Sentry.captureException(e);
-    throw new ApolloError(
-      `unable to add item with url: ${savedItemUpsertInput.url}`
-    );
+    throw new Error(`unable to add item with url: ${savedItemUpsertInput.url}`);
   }
 }
 

@@ -12,8 +12,7 @@ import {
 import * as tag from '../models/tag';
 import { mysqlTimeString } from './utils';
 import config from '../config';
-import { PaginationInput } from '@pocket-tools/apollo-utils';
-import { UserInputError } from 'apollo-server-express';
+import { PaginationInput, UserInputError } from '@pocket-tools/apollo-utils';
 
 interface ListEntity {
   user_id?: number;
