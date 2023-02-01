@@ -137,7 +137,7 @@ export class TagModel {
     return tag;
   }
 
-  public getBySaveId(id: string): Promise<Tag[]> {
+  public async getBySaveId(id: string): Promise<Tag[]> {
     return this.tagService.getTagsByUserItem(id);
   }
 

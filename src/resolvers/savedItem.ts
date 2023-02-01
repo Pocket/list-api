@@ -13,7 +13,7 @@ export async function tags(
   args,
   context: IContext
 ): Promise<Tag[]> {
-  return context.models.tag.getBySaveId(parent.id);
+  return await context.models.tag.getBySaveId(parent.id);
 }
 
 /**
