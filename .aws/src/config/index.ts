@@ -1,7 +1,8 @@
 const name = 'ListAPI';
 const domainPrefix = 'list-api';
 const isDev = process.env.NODE_ENV === 'development';
-const environment = isDev ? 'Dev' : 'Prod';
+//todo: pls dont merge this to prod
+const environment = 'Dev';
 const prefix = `${name}-${environment}`;
 const domain = isDev
   ? `${domainPrefix}.getpocket.dev`
