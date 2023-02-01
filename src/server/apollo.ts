@@ -42,6 +42,11 @@ export async function startServer(port: number) {
   // Initialize routes
   app.use('/queueDelete', queueDeleteRouter);
 
+  // Expose health check url
+  app.get('/.well-known/apollo/server-health', (req, res) => {
+    res.status(200).send('ok');
+  });
+
   // Start BatchDelete queue polling if not test env
   if (process.env.NODE_ENV != 'test') {
     new BatchDeleteHandler(new EventEmitter());
