@@ -310,6 +310,8 @@ export async function replaceSavedItemTags(
   context: IContext
 ): Promise<SavedItem[]> {
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
+  const clientName = context.dbClient.client.config.searchPath;
+  console.log(`replaceSavedItemTags -> ` + clientName);
   const savedItems = await context.models.tag.replaceSaveTagConnections(
     args.input
   );

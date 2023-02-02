@@ -20,6 +20,8 @@ export class TagModel {
   private tagService: TagDataService;
   private saveService: SavedItemDataService;
   constructor(public readonly context: IContext) {
+    const clientName = context.dbClient.client.config.searchPath;
+    console.log(`TagModel constructor -> ` + clientName);
     this.saveService = new SavedItemDataService(this.context);
     this.tagService = new TagDataService(this.context, this.saveService);
   }

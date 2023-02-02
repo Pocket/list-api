@@ -13,6 +13,8 @@ export async function tags(
   args,
   context: IContext
 ): Promise<Tag[]> {
+  const clientName = context.dbClient.client.config.searchPath;
+  console.log(`tags -> ` + clientName);
   return await context.models.tag.getBySaveId(parent.id);
 }
 

@@ -36,19 +36,21 @@ export function createConnection(dbConfig: {
   port: string;
   user: string;
   password: string;
+  clientType: string;
 }): Knex {
-  const { host, port, user, password } = dbConfig;
+  const { host, port, user, password, clientType } = dbConfig;
 
   return knex({
     client: 'mysql',
+    searchPath: clientType,
     acquireConnectionTimeout: 6000, // ms
     connection: {
+      charset: 'utf8mb4',
+      database: config.database.dbName,
       host: host,
+      password: password,
       port: parseInt(port),
       user: user,
-      password: password,
-      database: config.database.dbName,
-      charset: 'utf8mb4',
     },
     pool: {
       min: 0, //knex docs state to set to 0 so that idle connections are released. Default was 2 for legacy knex reasons (according to docs)
