@@ -1,5 +1,3 @@
-extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@external"])
-
 scalar Url
 
 """
@@ -84,7 +82,7 @@ input PaginationInput {
   last: Int
 }
 
-type CorpusItem @key(fields: "url") {
+extend type CorpusItem @key(fields: "url") {
   url: Url! @external
 
   """
@@ -471,7 +469,7 @@ type SavedItemTagAssociation {
   tagId: ID!
 }
 
-type User @key(fields: "id") {
+extend type User @key(fields: "id") {
   #Note more properties exist here but are defined in another service.
 
   """
@@ -518,7 +516,7 @@ type PendingItem @key(fields: "url") {
   status: PendingItemStatus
 }
 
-type Item @key(fields: "givenUrl") {
+extend type Item @key(fields: "givenUrl") {
   "key field to identify the Item entity in the Parser service"
   givenUrl: Url! @external
 
@@ -603,9 +601,7 @@ type Mutation {
   Note that if this operation results in a Tag having no associations
   to a SavedItem, the Tag object will be deleted.
   """
-  deleteSavedItemTags(
-    input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItem!]!
+  deleteSavedItemTags(input: [DeleteSavedItemTagsInput!]!): [SavedItem!]!
 
   """
   Add tags to the savedItems
