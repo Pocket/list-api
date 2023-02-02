@@ -242,15 +242,16 @@ describe('tags mutation: replace savedItem tags', () => {
         },
       ],
     };
-    const res = await server.executeOperation({
+
+    const res = await request(app).post(url).set(headers).send({
       query: replaceSavedItemTags,
       variables,
     });
-    expect(res.errors).to.be.undefined;
-    expect(res.data.replaceSavedItemTags.length).to.equal(1);
-    expect(res.data.replaceSavedItemTags.length).to.equal(1);
+    expect(res).is.not.undefined;
+    expect(res.body.errors).to.be.undefined;
+    expect(res.body.data.replaceSavedItemTags.length).to.equal(1);
     const tagsAdded = [];
-    res.data.replaceSavedItemTags[0].tags.forEach((tag) =>
+    res.body.data.replaceSavedItemTags[0].tags.forEach((tag) =>
       tagsAdded.push(tag.name)
     );
     expect(tagsAdded).to.deep.equalInAnyOrder([
