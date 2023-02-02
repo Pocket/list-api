@@ -1,41 +1,45 @@
 import { writeClient } from '../../../database/client';
-import { gql } from 'apollo-server-express';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
-import { ItemsEventEmitter } from '../../../businessEvents';
 import { UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import chaiDateTime from 'chai-datetime';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
+import { ContextManager } from '../../../server/context';
 import { getUnixTimestamp } from '../../../utils';
-import { getServer } from '../testServerUtil';
-
+import { startServer } from '../../../server/apollo';
+import { Express } from 'express';
+import { ApolloServer } from '@apollo/server';
+import request from 'supertest';
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
 describe('updateTag Mutation: ', () => {
   const db = writeClient();
-  const eventEmitter = new ItemsEventEmitter();
-  const server = getServer('1', db, eventEmitter);
-
+  const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
   const unixDate = getUnixTimestamp(date);
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
+  let app: Express;
+  let server: ApolloServer<ContextManager>;
+  let url: string;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Mock Date.now() to get a consistent date for inserting data
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
     });
+    ({ app, server, url } = await startServer(0));
   });
 
   afterAll(async () => {
     await db.destroy();
     clock.restore();
+    await server.stop();
   });
 
   beforeEach(async () => {
@@ -105,7 +109,7 @@ describe('updateTag Mutation: ', () => {
     await db('list').insert(inputData);
   });
 
-  const updateTagsMutation = gql`
+  const updateTagsMutation = `
     mutation updateTag($input: TagUpdateInput!) {
       updateTag(input: $input) {
         name
@@ -153,17 +157,17 @@ describe('updateTag Mutation: ', () => {
         },
       ];
 
-      const res = await server.executeOperation({
+      const res = await request(app).post(url).set(headers).send({
         query: updateTagsMutation,
         variables,
       });
       expect(res).is.not.undefined;
-      expect(res.data.updateTag.name).equals(newTagName);
-      expect(res.data.updateTag._createdAt).equals(unixDate);
-      expect(res.data.updateTag._updatedAt).equals(
+      expect(res.body.data.updateTag.name).equals(newTagName);
+      expect(res.body.data.updateTag._createdAt).equals(unixDate);
+      expect(res.body.data.updateTag._updatedAt).equals(
         getUnixTimestamp(updateDate)
       );
-      expect(res.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
+      expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
         expectedSavedItems
       );
     }
@@ -174,14 +178,14 @@ describe('updateTag Mutation: ', () => {
       input: { name: 'changed_name', id: 'id_not_found' },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateTagsMutation,
       variables,
     });
 
     expect(res).is.not.undefined;
-    expect(res.data).is.null;
-    expect(res.errors[0].message).contains(
+    expect(res.body.data).is.null;
+    expect(res.body.errors[0].message).contains(
       `Tag Id ${variables.input.id} does not exist`
     );
   });
@@ -190,7 +194,7 @@ describe('updateTag Mutation: ', () => {
       input: { name: 'existing_tag', id: 'emVicmE=' },
     };
 
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateTagsMutation,
       variables,
     });
@@ -217,10 +221,12 @@ describe('updateTag Mutation: ', () => {
     const QueryOldTags = await db('item_tags').select().where({ tag: 'zebra' });
 
     expect(res).is.not.undefined;
-    expect(res.data.updateTag.name).equals('existing_tag');
-    expect(res.data.updateTag._createdAt).equals(unixDate);
-    expect(res.data.updateTag._updatedAt).equals(getUnixTimestamp(updateDate));
-    expect(res.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
+    expect(res.body.data.updateTag.name).equals('existing_tag');
+    expect(res.body.data.updateTag._createdAt).equals(unixDate);
+    expect(res.body.data.updateTag._updatedAt).equals(
+      getUnixTimestamp(updateDate)
+    );
+    expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
       expectedSavedItems
     );
     expect(QueryOldTags.length).equals(0);
@@ -229,7 +235,7 @@ describe('updateTag Mutation: ', () => {
     const variables = {
       input: { name: 'existing_tag', id: 'emVicmE=' },
     };
-    await server.executeOperation({
+    await request(app).post(url).set(headers).send({
       query: updateTagsMutation,
       variables,
     });
@@ -242,16 +248,16 @@ describe('updateTag Mutation: ', () => {
     const variables = {
       input: { name: '', id: 'emVicmE=' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateTagsMutation,
       variables,
     });
-    expect(res.errors).not.to.be.undefined;
-    expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].message).to.contain(
+    expect(res.body.errors).not.to.be.undefined;
+    expect(res.body.errors.length).to.equal(1);
+    expect(res.body.errors[0].message).to.contain(
       'Tag name must have at least 1 non-whitespace character.'
     );
-    expect(res.errors[0].extensions.code).to.equal('BAD_USER_INPUT');
+    expect(res.body.errors[0].extensions.code).to.equal('BAD_USER_INPUT');
   });
 
   it('should roll back if encounter an error during transaction', async () => {
@@ -270,12 +276,14 @@ describe('updateTag Mutation: ', () => {
     const variables = {
       input: { id: 'emVicmE=', name: 'existing_tag' },
     };
-    const res = await server.executeOperation({
+    const res = await request(app).post(url).set(headers).send({
       query: updateTagsMutation,
       variables,
     });
-    expect(res.errors.length).to.equal(1);
-    expect(res.errors[0].extensions.code).to.equal('INTERNAL_SERVER_ERROR');
+    expect(res.body.errors.length).to.equal(1);
+    expect(res.body.errors[0].extensions.code).to.equal(
+      'INTERNAL_SERVER_ERROR'
+    );
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);
     expect(await metaStateQuery).to.deep.equalInAnyOrder(metaState);

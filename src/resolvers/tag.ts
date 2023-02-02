@@ -1,10 +1,9 @@
 import { SavedItemConnection, SavedItemsFilter } from '../types';
 import { IContext } from '../server/context';
-import { validatePagination } from '@pocket-tools/apollo-utils';
+import { validatePagination, UserInputError } from '@pocket-tools/apollo-utils';
 import { ListPaginationService } from '../dataService';
 import { Tag } from '../types';
 import { GraphQLResolveInfo } from 'graphql';
-import { UserInputError } from 'apollo-server-express';
 
 /**
  * Get list of savedItems for a given Tag
