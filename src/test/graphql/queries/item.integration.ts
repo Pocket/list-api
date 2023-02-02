@@ -173,7 +173,7 @@ describe('item', () => {
     expect(entities.length).toEqual(1);
     expect(entities[0]).toEqual(expected);
   });
-  it('returns null with not found error if the save does not exist', async () => {
+  it('returns null if the save does not exist', async () => {
     const variables = {
       userId: '1',
       givenUrl: 'https://www.youtube.com/watch?v=Tpbo25iBvfU',
@@ -184,9 +184,7 @@ describe('item', () => {
       variables,
     });
     expect(res.body.data).not.toBeUndefined;
-    expect(res.body.errors).not.toBeUndefined;
-    expect(res.body.errors.length).toEqual(1);
-    expect(res.body.errors[0].extensions.code).toEqual('NOT_FOUND');
+    expect(res.body.errors).toBeUndefined;
     const entities = res.body.data._entities;
     expect(entities.length).toEqual(1);
     expect(entities[0].givenUrl).toEqual(

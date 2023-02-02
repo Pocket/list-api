@@ -1,3 +1,5 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@external"])
+
 scalar Url
 
 """
@@ -80,6 +82,15 @@ input PaginationInput {
   If `last` contains a value, `first` should be null/omitted in the input.
   """
   last: Int
+}
+
+type CorpusItem @key(fields: "url") {
+  url: Url! @external
+
+  """
+  The user's saved item, from the Corpus Item, if the corpus item was saved to the user's saves
+  """
+  savedItem: SavedItem
 }
 
 """
@@ -460,7 +471,7 @@ type SavedItemTagAssociation {
   tagId: ID!
 }
 
-extend type User @key(fields: "id") {
+type User @key(fields: "id") {
   #Note more properties exist here but are defined in another service.
 
   """
@@ -507,7 +518,7 @@ type PendingItem @key(fields: "url") {
   status: PendingItemStatus
 }
 
-extend type Item @key(fields: "givenUrl") {
+type Item @key(fields: "givenUrl") {
   "key field to identify the Item entity in the Parser service"
   givenUrl: Url! @external
 
