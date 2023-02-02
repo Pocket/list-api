@@ -82,6 +82,15 @@ input PaginationInput {
   last: Int
 }
 
+extend type CorpusItem @key(fields: "url") {
+  url: Url! @external
+
+  """
+  The user's saved item, from the Corpus Item, if the corpus item was saved to the user's saves
+  """
+  savedItem: SavedItem
+}
+
 """
 Represents a Pocket Item that a user has saved to their list.
 (Said otherways, indicates a saved url to a users list and associated user specific information.)
@@ -592,9 +601,7 @@ type Mutation {
   Note that if this operation results in a Tag having no associations
   to a SavedItem, the Tag object will be deleted.
   """
-  deleteSavedItemTags(
-    input: [DeleteSavedItemTagsInput!]!
-  ): [SavedItem!]!
+  deleteSavedItemTags(input: [DeleteSavedItemTagsInput!]!): [SavedItem!]!
 
   """
   Add tags to the savedItems
