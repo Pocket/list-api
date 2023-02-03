@@ -23,7 +23,6 @@ import {
 import { tagsSavedItems } from './tag';
 import { Item, SavedItem, Tag } from '../types';
 import { IContext } from '../server/context';
-import { writeClient } from '../database/client';
 
 const resolvers = {
   ItemResult: {
@@ -91,35 +90,5 @@ const resolvers = {
     replaceSavedItemTags,
   },
 };
-
-// Wrap mutations with executeMutation to update the db connection to write
-resolvers.Mutation = Object.keys(resolvers.Mutation).reduce(
-  (mutations: any, mutationName) => {
-    return {
-      ...mutations,
-      [mutationName]: executeMutation(resolvers.Mutation[mutationName]),
-    };
-  },
-  {}
-);
-
-/**
- * Wrapper function to change context database to writeDb connection
- * @param mutate gets the mutation callback functions
- * returns a function that changes the db to writeDb and calls the mutation callBack
- */
-export function executeMutation<Args, ReturnType>(
-  mutate: (parent, args: Args, context: IContext) => Promise<ReturnType>
-): (parent, args: Args, context: IContext) => Promise<ReturnType> {
-  return async function (
-    parent,
-    args: Args,
-    context: IContext
-  ): Promise<ReturnType> {
-    const dbClient = writeClient();
-    const writeContext = context.withDbClientOverride(dbClient);
-    return mutate(parent, args, writeContext);
-  };
-}
 
 export { resolvers };

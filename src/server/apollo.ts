@@ -13,7 +13,7 @@ import {
 import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
 import config from '../config';
 import { ContextManager } from './context';
-import { readClient } from '../database/client';
+import { readClient, writeClient } from '../database/client';
 import {
   initItemEventHandlers,
   itemsEventEmitter,
@@ -27,6 +27,27 @@ import { EventEmitter } from 'events';
 import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
 import { typeDefs } from './typeDefs';
 import { resolvers } from '../resolvers';
+import { Knex } from 'knex';
+
+/**
+ * Stopgap method to set global db connection in context,
+ * depending on whether the request is a query or mutation.
+ * It's not possible to run both a mutation and query at the
+ * same time according to the graphql spec.
+ * This is a fragile regex which depends on the `mutation` keyword
+ * being present or not at the beginning of the request
+ * (part of the graphql request spec).
+ * This method should just be used in the context factory function
+ * but is exported from this file for unit testing.
+ * @param query a graphql request body
+ * @returns either a read or write connection to the database,
+ * depending on if query or mutation.
+ */
+export const contextConnection = (query: string): Knex => {
+  const isMutationRegex = /^[\n\r\s]*(mutation)/;
+  const isMutation = isMutationRegex.test(query);
+  return isMutation ? writeClient() : readClient();
+};
 
 export async function startServer(port: number) {
   Sentry.init({
@@ -62,9 +83,10 @@ export async function startServer(port: number) {
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
+    const dbClient = contextConnection(req.body.query);
     return new ContextManager({
       request: req,
-      dbClient: readClient(),
+      dbClient,
       eventEmitter: itemsEventEmitter,
     });
   };
