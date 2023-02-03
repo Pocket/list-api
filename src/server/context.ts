@@ -23,7 +23,6 @@ export interface IContext {
   models: {
     tag: TagModel;
   };
-  withDbClientOverride(dbClient: Knex): IContext;
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
     savedItemsByUrl: DataLoader<string, SavedItem>;
@@ -59,15 +58,6 @@ export class ContextManager implements IContext {
     };
   }
   models: { tag: TagModel };
-
-  withDbClientOverride(dbClient: Knex): ContextManager {
-    const config = {
-      ...this.config,
-      dbClient,
-    };
-    return new ContextManager(config);
-  }
-
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
   }
