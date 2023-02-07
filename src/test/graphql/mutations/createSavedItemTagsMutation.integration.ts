@@ -10,6 +10,7 @@ import { startServer } from '../../../server/apollo';
 import { Express } from 'express';
 import { ApolloServer } from '@apollo/server';
 import request from 'supertest';
+import * as Client from '../../../database/client';
 
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
@@ -215,5 +216,22 @@ describe('createSavedItemTags mutation', function () {
     expect(eventData[0]).to.equal(EventType.ADD_TAGS);
     expect(eventData[1].id).equals(1);
     expect(eventData[2]).to.deep.equalInAnyOrder(['tofino', 'victoria']);
+  });
+
+  it('mutations resolver chains should call only writeClient()', async () => {
+    const variables = {
+      input: [{ savedItemId: '1', tags: ['tag', 'added'] }],
+    };
+
+    const readClientSpy = sinon.spy(Client, 'readClient');
+    const writeClientSpy = sinon.spy(Client, 'writeClient');
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({ query: createSavedItemTags, variables });
+
+    expect(res.body.errors).to.be.undefined;
+    expect(readClientSpy.callCount).to.equal(0);
+    expect(writeClientSpy.callCount).to.equal(1);
   });
 });
