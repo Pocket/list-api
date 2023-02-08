@@ -1,8 +1,10 @@
-import { readClient } from '../../../database/client';
+import { ApolloServer } from '@apollo/server';
 import { ContextManager } from '../../../server/context';
+import { readClient } from '../../../database/client';
 import { startServer } from '../../../server/apollo';
 import { Express } from 'express';
-import { ApolloServer } from '@apollo/server';
+import { gql } from 'graphql-tag';
+import { print } from 'graphql';
 import request from 'supertest';
 
 describe('getPocketSaveByItemId', () => {
@@ -17,7 +19,7 @@ describe('getPocketSaveByItemId', () => {
   let server: ApolloServer<ContextManager>;
   let url: string;
 
-  const GET_POCKET_SAVE = `
+  const GET_POCKET_SAVE = gql`
     query getPocketSave($userId: ID!, $itemId: ID!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
@@ -102,10 +104,13 @@ describe('getPocketSaveByItemId', () => {
       itemId: '55',
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_POCKET_SAVE,
-      variables,
-    });
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables,
+      });
     expect(res.body.data?._entities[0].pocketSaveById.archived).toBe(false);
     expect(res.body.data?._entities[0].pocketSaveById.archivedAt).toBe(null);
     expect(res.body.data?._entities[0].pocketSaveById.createdAt).toBe(
@@ -131,21 +136,31 @@ describe('getPocketSaveByItemId', () => {
       userId: '1',
       itemId: '10',
     };
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_POCKET_SAVE,
-      variables,
-    });
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables,
+      });
     expect(res.body.data?._entities[0].pocketSaveById).toBe(null);
+    expect(res.body.errors[0].message).toBe(
+      `Error - Not Found: Saved Item with ID=${variables.itemId} does not exist.`
+    );
+    expect(res.body.errors[0].extensions.code).toBe('NOT_FOUND');
   });
   it('should have deletedAt field if item is deleted', async () => {
     const variables = {
       userId: '1',
       itemId: '987',
     };
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_POCKET_SAVE,
-      variables,
-    });
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables,
+      });
     expect(res.body.data?._entities[0].pocketSaveById.deletedAt).toBe(
       date5.toISOString()
     );
@@ -159,14 +174,20 @@ describe('getPocketSaveByItemId', () => {
       userId: '1',
       itemId: '55',
     };
-    const archivedRes = await request(app).post(url).set(headers).send({
-      query: GET_POCKET_SAVE,
-      variables: archivedVars,
-    });
-    const nonArchivedRes = await request(app).post(url).set(headers).send({
-      query: GET_POCKET_SAVE,
-      variables: nonArchivedVars,
-    });
+    const archivedRes = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables: archivedVars,
+      });
+    const nonArchivedRes = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables: nonArchivedVars,
+      });
     expect(archivedRes.body.data?._entities[0].pocketSaveById.archived).toBe(
       true
     );
