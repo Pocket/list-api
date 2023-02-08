@@ -1,6 +1,9 @@
+"""
+ISOString scalar - all datetimes fields are Typescript Date objects on this server &
+returned as ISO-8601 encoded date strings (e.g. ISOString scalars) to GraphQL clients.
+See Section 5.6 of the RFC 3339 profile of the ISO 8601 standard: https://www.ietf.org/rfc/rfc3339.txt.
+"""
 scalar ISOString
-
-scalar Markdown
 
 scalar Url
 
