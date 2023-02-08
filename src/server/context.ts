@@ -65,14 +65,6 @@ export class ContextManager implements IContext {
     pocketSave: PocketSaveModel;
   };
 
-  withDbClientOverride(dbClient: Knex): ContextManager {
-    const config = {
-      ...this.config,
-      dbClient,
-    };
-    return new ContextManager(config);
-  }
-
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
   }
