@@ -1,5 +1,6 @@
 import { Knex } from 'knex';
 import { IContext } from '../server/context';
+import { mysqlDateConvert } from './utils';
 import { PocketSaveStatus } from '../types';
 
 export type RawListResult = {
@@ -34,6 +35,43 @@ export type ListResult = {
   user_id: number;
 };
 
+/**
+ * Make PocketSaveStatus enums
+ * to the desired status string.
+ */
+const statusMap = {
+  [PocketSaveStatus.UNREAD]: 'UNREAD',
+  [PocketSaveStatus.ARCHIVED]: 'ARCHIVED',
+  [PocketSaveStatus.DELETED]: 'DELETED',
+  [PocketSaveStatus.HIDDEN]: 'HIDDEN',
+};
+
+/**
+ * Convert the given raw MySQL list row into the desired list row types.
+ * Converts status ints into desired PocketSaveStatus enum strings.
+ * Converts MySQL date responses into validated Typescript Date objects,
+ * filtering out (returning null) values like '0000-00-00 00:00:00'.
+ * @param row
+ */
+const convert = (row: RawListResult) => {
+  const result: ListResult = {
+    api_id: row.api_id,
+    api_id_updated: row.api_id_updated,
+    favorite: row.favorite,
+    given_url: row.given_url,
+    item_id: row.item_id,
+    resolved_id: row.resolved_id,
+    status: statusMap[row.status],
+    time_added: mysqlDateConvert(row.time_added),
+    time_favorited: mysqlDateConvert(row.time_favorited),
+    time_read: mysqlDateConvert(row.time_read),
+    time_updated: mysqlDateConvert(row.time_updated),
+    title: row.title,
+    user_id: row.user_id,
+  };
+  return result;
+};
+
 /***
  * class that handles the read and write from `readitla-temp.list` table
  * note: for mutations, please pass the writeClient, otherwise there will be replication lags.
@@ -42,12 +80,6 @@ export class PocketSaveDataService {
   private db: Knex;
   private readonly apiId: string;
   private readonly userId: string;
-  private static statusMap = {
-    [PocketSaveStatus.UNREAD]: 'UNREAD',
-    [PocketSaveStatus.ARCHIVED]: 'ARCHIVED',
-    [PocketSaveStatus.DELETED]: 'DELETED',
-    [PocketSaveStatus.HIDDEN]: 'HIDDEN',
-  };
 
   constructor(context: Pick<IContext, 'apiId' | 'dbClient' | 'userId'>) {
     this.apiId = context.apiId;
@@ -70,50 +102,10 @@ export class PocketSaveDataService {
       return null;
     }
 
-    const statusConvert = (row: RawListResult) => {
-      console.log(typeof row.time_favorited);
-      const result: ListResult = {
-        api_id: row.api_id,
-        api_id_updated: row.api_id_updated,
-        favorite: row.favorite,
-        given_url: row.given_url,
-        item_id: row.item_id,
-        resolved_id: row.resolved_id,
-        status: PocketSaveDataService.statusMap[row.status],
-        time_added:
-          row.time_added instanceof Date
-            ? !isNaN(row.time_added.getTime())
-              ? row.time_added
-              : null
-            : null,
-        time_favorited:
-          row.time_favorited instanceof Date
-            ? !isNaN(row.time_favorited.getTime())
-              ? row.time_favorited
-              : null
-            : null,
-        time_read:
-          row.time_read instanceof Date
-            ? !isNaN(row.time_read.getTime())
-              ? row.time_read
-              : null
-            : null,
-        time_updated:
-          row.time_updated instanceof Date
-            ? !isNaN(row.time_updated.getTime())
-              ? row.time_updated
-              : null
-            : null,
-        title: row.title,
-        user_id: row.user_id,
-      };
-      return result;
-    };
-
     if (listResult instanceof Array) {
-      return listResult.map((row) => statusConvert(row));
+      return listResult.map((row) => convert(row));
     }
-    return statusConvert(listResult);
+    return convert(listResult);
   }
 
   /**
