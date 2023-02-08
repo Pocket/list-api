@@ -39,7 +39,7 @@ export class PocketSaveModel {
    */
   public async getById(id: string): Promise<PocketSave> {
     const listRow = await this.saveService.getListRowById(id);
-    if (listRow == null) {
+    if (listRow === undefined || listRow === null) {
       throw new NotFoundError(`Saved Item with ID=${id} does not exist.`);
     }
     const pocketSave = PocketSaveModel.transformListRow(listRow);
