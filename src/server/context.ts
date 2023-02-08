@@ -12,6 +12,7 @@ import { createSavedItemDataLoaders } from '../dataLoader/savedItemsDataLoader';
 import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
 import { TagModel } from '../models';
 import * as Sentry from '@sentry/node';
+import { PocketSaveModel } from '../models/pocketSave';
 
 export interface IContext {
   userId: string;
@@ -22,6 +23,7 @@ export interface IContext {
   eventEmitter: ItemsEventEmitter;
   models: {
     tag: TagModel;
+    pocketSave: PocketSaveModel;
   };
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
@@ -55,9 +57,22 @@ export class ContextManager implements IContext {
     };
     this.models = {
       tag: new TagModel(this),
+      pocketSave: new PocketSaveModel(this),
     };
   }
-  models: { tag: TagModel };
+  models: {
+    tag: TagModel;
+    pocketSave: PocketSaveModel;
+  };
+
+  withDbClientOverride(dbClient: Knex): ContextManager {
+    const config = {
+      ...this.config,
+      dbClient,
+    };
+    return new ContextManager(config);
+  }
+
   get headers(): { [key: string]: any } {
     return this.config.request.headers;
   }

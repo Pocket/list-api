@@ -6,6 +6,8 @@ import { strings } from 'locutus/php';
 
 chai.use(deepEqualInAnyOrder);
 describe('tag model', () => {
+  // write test for getSuggestedTags checking isPremium conditional
+
   describe('id', () => {
     it('should encode name + suffix into an id', () => {
       const expected = 'Y2FsZXZpX194cGt0eHRhZ3hfXw==';

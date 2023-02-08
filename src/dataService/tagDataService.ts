@@ -3,6 +3,7 @@ import { IContext } from '../server/context';
 import { knexPaginator as paginate } from '@pocket-tools/apollo-cursor-pagination';
 import {
   Pagination,
+  PocketSave,
   SavedItem,
   SaveTagNameConnection,
   Tag,
@@ -101,7 +102,7 @@ export class TagDataService {
    Returns the latest 3 tags used by the Pocket User
    TODO: DataLoader
    */
-  public async getSuggestedTags(save: SavedItem): Promise<Tag[]> {
+  public async getSuggestedTags(save: SavedItem | PocketSave): Promise<Tag[]> {
     const existingTags = this.db('item_tags')
       .select('tag')
       .where({ user_id: parseInt(this.userId), item_id: parseInt(save.id) });
