@@ -66,7 +66,7 @@ export class PocketSaveDataService {
   public static convertListResult(
     listResult: RawListResult | RawListResult[] | null
   ): ListResult | ListResult[] | null {
-    if (listResult == null) {
+    if (listResult === undefined || listResult === null) {
       return null;
     }
 
