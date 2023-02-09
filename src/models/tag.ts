@@ -144,7 +144,7 @@ export class TagModel {
    * Get paginated saved item tags
    * @param parent
    */
-  public getSuggestedBySaveId(parent: PocketSave) {
+  public async getSuggestedBySaveId(parent: PocketSave): Promise<Tag[] | []> {
     if (!this.context.userIsPremium) {
       // Suggested Tags is a premium feature.
       return [];
