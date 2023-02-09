@@ -21,7 +21,7 @@ import {
   upsertSavedItem,
 } from './mutation';
 import { tagsSavedItems } from './tag';
-import { Item, SavedItem, Tag } from '../types';
+import { Item, PocketSave, SavedItem, Tag } from '../types';
 import { IContext } from '../server/context';
 
 const resolvers = {
@@ -31,6 +31,13 @@ const resolvers = {
     },
   },
   User: {
+    pocketSaveById(
+      _parent: any,
+      args: any,
+      context: IContext
+    ): Promise<PocketSave> {
+      return context.models.pocketSave.getById(args.id);
+    },
     savedItemById,
     savedItems,
     tags: userTags,
@@ -51,6 +58,14 @@ const resolvers = {
   CorpusItem: {
     savedItem: async ({ url }, args, context: IContext) => {
       return await context.dataLoaders.savedItemsByUrl.load(url);
+    },
+  },
+  PocketSave: {
+    suggestedTags(parent: PocketSave, _args: any, context: IContext) {
+      return context.models.tag.getSuggestedBySaveId(parent);
+    },
+    tags(parent: PocketSave, _args: any, context: IContext) {
+      return context.models.tag.getBySaveId(parent.id);
     },
   },
   SavedItem: {

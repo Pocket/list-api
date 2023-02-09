@@ -1,3 +1,10 @@
+"""
+ISOString scalar - all datetimes fields are Typescript Date objects on this server &
+returned as ISO-8601 encoded date strings (e.g. ISOString scalars) to GraphQL clients.
+See Section 5.6 of the RFC 3339 profile of the ISO 8601 standard: https://www.ietf.org/rfc/rfc3339.txt.
+"""
+scalar ISOString
+
 scalar Url
 
 """
@@ -495,6 +502,11 @@ extend type User @key(fields: "id") {
   Get a SavedItem by its id
   """
   savedItemById(id: ID!): SavedItem
+
+  """
+  Get a PocketSave by its id
+  """
+  pocketSaveById(id: ID!): PocketSave
 }
 
 """
@@ -620,3 +632,145 @@ type Mutation {
   """
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
 }
+
+# """
+
+# PocketSave Entities (a rework of SavedItem) starts here.
+
+# """
+
+"""
+Enum to specify the PocketSave Status (mapped to integers in data store).
+"""
+enum PocketSaveStatus {
+  ARCHIVED
+  DELETED
+  HIDDEN
+  UNREAD
+}
+
+"""
+New Pocket Save Type, replacing SavedItem.
+
+Represents a Pocket Item that a user has saved to their list.
+(Said otherways, indicates a saved url to a users list and associated user specific information.)
+"""
+type PocketSave {
+  # Not resolved on this subgraph.
+  # """
+  # Authors credited for content.
+  # """
+  # authors: [Authors!]
+
+  """
+  Indicates if the PocketSave is archived.
+  """
+  archived: Boolean!
+
+  """
+  Timestamp that the PocketSave became archived, null if not archived.
+  """
+  archivedAt: ISOString
+
+  """
+  Unix timestamp of when the PocketSave was created.
+  """
+  createdAt: ISOString!
+
+  """
+  Unix timestamp of when the entity was deleted.
+  """
+  deletedAt: ISOString
+
+  # Not resolved on this subgraph.
+  # """
+  # Excerpt from text content, typically the first paragraph.
+  # """
+  # excerpt: Markdown
+
+  """
+  Indicates if the PocketSave is favorited.
+  """
+  favorite: Boolean!
+
+  """
+  Timestamp that the PocketSave became favorited, null if not favorited.
+  """
+  favoritedAt: ISOString
+
+  """
+  The url the user gave (as opposed to normalized URLs).
+  """
+  givenUrl: String!
+
+  """
+  Surrogate primary key.
+  """
+  id: ID!
+
+  # Not resolved on this subgraph.
+  # """
+  # Reference to the underlying Resource that this PocketSave metadata is about.
+  # """
+  # resource: PocketResource!
+
+  # Not resolved on this subgraph.
+  # """
+  # The web site publisher; defaults to the domain of the PocketSave URL.
+  # """
+  # source: String!
+
+  """
+  The status of this PocketSave; Marked for review for possible removal.
+  """
+  status: PocketSaveStatus
+
+  """
+  The Suggested Tags associated with this PocketSave, if the user is not premium or there are none, this will be empty.
+  """
+  suggestedTags: [Tag!]
+
+  """
+  The Tags associated with this PocketSave.
+  """
+  tags: [Tag!]
+
+  # Not resolved on this subgraph.
+  # """
+  # Direction text should be displayed, e.g. right-to-left; an enum.
+  # """
+  # textDirection: TextDirection
+
+  # Not resolved on this subgraph.
+  # """
+  # Image to display as thumbnail.
+  # """
+  # thumbnail: Image
+
+  # Not resolved on this subgraph.
+  # """
+  # Estimated time to consume content, rounded to the nearest minute.
+  # """
+  # timeToConsume: Int
+
+  """
+  The title of the Resource; defaults to the URL.
+  """
+  title: String!
+
+  """
+  Unix timestamp of when the PocketSave was last updated, if any property on the PocketSave is modified this timestamp is set to the modified time.
+  """
+  updatedAt: ISOString
+}
+
+# To be setup: connect PocketSaves to a new entity - PocketResource
+# extend type PocketResource @key(fields: "itemId") {
+#   "key field to identify the PocketResource entity in the Parser service"
+#   itemId: ID! @external
+
+#   """
+#   Identify if the given PocketResource is in the user's list.
+#   """
+#   pocketSave: PocketSave
+# }

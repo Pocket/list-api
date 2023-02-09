@@ -8,6 +8,7 @@ import {
   TagUpdateInput,
   SavedItemTagsInput,
   DeleteSaveTagResponse,
+  PocketSave,
 } from '../types';
 import config from '../config';
 import { IContext } from '../server/context';
@@ -137,6 +138,19 @@ export class TagModel {
 
   public async getBySaveId(id: string): Promise<Tag[]> {
     return this.tagService.getTagsByUserItem(id);
+  }
+
+  /**
+   * Get paginated saved item tags
+   * @param parent
+   */
+  public async getSuggestedBySaveId(parent: PocketSave): Promise<Tag[] | []> {
+    if (!this.context.userIsPremium) {
+      // Suggested Tags is a premium feature.
+      return [];
+    }
+
+    return this.tagService.getSuggestedTags(parent);
   }
 
   /**

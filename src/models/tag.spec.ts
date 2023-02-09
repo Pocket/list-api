@@ -3,9 +3,54 @@ import { TagCreateInput } from '../types';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import * as tagModel from './tag';
 import { strings } from 'locutus/php';
+import { ContextManager, IContext } from '../server/context';
+import { Knex } from 'knex';
+import { PocketSave, Tag } from '../types';
+import { TagDataService } from '../dataService';
+
+const tagServiceResp: Tag[] = [
+  { name: 'zebra', id: 'emVicmFfX3hwa3R4dGFneF9f' },
+  { name: 'travel', id: 'dHJhdmVsX194cGt0eHRhZ3hfXw==' },
+];
 
 chai.use(deepEqualInAnyOrder);
 describe('tag model', () => {
+  describe('getSuggestedBySaveId', () => {
+    beforeAll(() => {
+      jest
+        .spyOn(TagDataService.prototype, 'getSuggestedTags')
+        .mockResolvedValue(tagServiceResp);
+    });
+    afterAll(() => {
+      jest.restoreAllMocks();
+    });
+    it('premium user gets tags', async () => {
+      let parent: PocketSave;
+      const context: IContext = new ContextManager({
+        request: {
+          headers: { userid: '1', apiid: '0', premium: 'true' },
+        },
+        dbClient: jest.fn() as unknown as Knex,
+        eventEmitter: null,
+      });
+      const resp = context.models.tag.getSuggestedBySaveId(parent);
+      const data = await resp;
+      return expect(data).to.deep.equal(tagServiceResp);
+    });
+    it('non-premium user gets no tags', async () => {
+      let parent: PocketSave;
+      const context: IContext = new ContextManager({
+        request: {
+          headers: { userid: '1', apiid: '0', premium: 'false' },
+        },
+        dbClient: jest.fn() as unknown as Knex,
+        eventEmitter: null,
+      });
+      const resp = context.models.tag.getSuggestedBySaveId(parent);
+      const data = await resp;
+      return expect(data).to.deep.equal([]);
+    });
+  });
   describe('id', () => {
     it('should encode name + suffix into an id', () => {
       const expected = 'Y2FsZXZpX194cGt0eHRhZ3hfXw==';
@@ -28,7 +73,6 @@ describe('tag model', () => {
       expect(tagModel.TagModel.decodeId(id)).to.equal('lee');
     });
   });
-
   describe('deduplicateInput', () => {
     it('should remove duplicates', () => {
       const inputData: TagCreateInput[] = [

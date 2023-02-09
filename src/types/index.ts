@@ -178,3 +178,33 @@ export type DeleteSaveTagResponse = {
   save: SavedItem;
   removed: string[]; // Names
 };
+
+/***
+ * PocketSave Entities (a rework of SavedItem) starts here.
+ ***/
+
+/***
+ * Keeping the arbitrary numbers consistent with PocketSaveStatus enum.
+ ***/
+export enum PocketSaveStatus {
+  UNREAD = 0,
+  ARCHIVED = 1,
+  DELETED = 2,
+  HIDDEN = 3,
+}
+
+export type PocketSave = {
+  archived: boolean;
+  archivedAt: Date | null;
+  createdAt: Date;
+  deletedAt: Date | null;
+  favorite: boolean;
+  favoritedAt: Date | null;
+  givenUrl: string;
+  id: string;
+  status: keyof typeof PocketSaveStatus;
+  suggestedTags?: Tag[];
+  tags?: Tag[];
+  title: string;
+  updatedAt: Date;
+};
