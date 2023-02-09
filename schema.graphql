@@ -514,6 +514,12 @@ Union type for items that may or may not be processed
 """
 union ItemResult = PendingItem | Item
 
+
+input BulkMutationInput {
+  bulkInputs: [String!]! @constraint(minItems: 1, maxItems: 30)
+  timestamp: ISOString!
+}
+
 enum PendingItemStatus {
   RESOLVED
   UNRESOLVED
@@ -631,6 +637,8 @@ type Mutation {
   Returns the SavedItem for which the tags have been modified.
   """
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+
+  fakeBulkMutation(input: BulkMutationInput!): Boolean!
 }
 
 # """

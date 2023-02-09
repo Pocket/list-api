@@ -103,6 +103,7 @@ const resolvers = {
     deleteTag,
     createSavedItemTags,
     replaceSavedItemTags,
+    fakeBulkMutation: () => true,
   },
 };
 
