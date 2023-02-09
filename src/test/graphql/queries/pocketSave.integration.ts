@@ -23,7 +23,7 @@ describe('getPocketSaveByItemId', () => {
     query getPocketSave($userId: ID!, $itemId: ID!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
-          pocketSaveById(id: $itemId) {
+          saveById(id: $itemId) {
             archived
             archivedAt
             createdAt
@@ -111,23 +111,21 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables,
       });
-    expect(res.body.data?._entities[0].pocketSaveById.archived).toBe(false);
-    expect(res.body.data?._entities[0].pocketSaveById.archivedAt).toBe(null);
-    expect(res.body.data?._entities[0].pocketSaveById.createdAt).toBe(
+    expect(res.body.data?._entities[0].saveById.archived).toBe(false);
+    expect(res.body.data?._entities[0].saveById.archivedAt).toBe(null);
+    expect(res.body.data?._entities[0].saveById.createdAt).toBe(
       date1.toISOString()
     );
-    expect(res.body.data?._entities[0].pocketSaveById.deletedAt).toBe(null);
-    expect(res.body.data?._entities[0].pocketSaveById.favorite).toBe(false);
-    expect(res.body.data?._entities[0].pocketSaveById.favoritedAt).toBe(null);
-    expect(res.body.data?._entities[0].pocketSaveById.givenUrl).toBe(
+    expect(res.body.data?._entities[0].saveById.deletedAt).toBe(null);
+    expect(res.body.data?._entities[0].saveById.favorite).toBe(false);
+    expect(res.body.data?._entities[0].saveById.favoritedAt).toBe(null);
+    expect(res.body.data?._entities[0].saveById.givenUrl).toBe(
       'http://www.ideashower.com/'
     );
-    expect(res.body.data?._entities[0].pocketSaveById.id).toBe('55');
-    expect(res.body.data?._entities[0].pocketSaveById.status).toBe('UNREAD');
-    expect(res.body.data?._entities[0].pocketSaveById.title).toBe(
-      'the Idea Shower'
-    );
-    expect(res.body.data?._entities[0].pocketSaveById.updatedAt).toBe(
+    expect(res.body.data?._entities[0].saveById.id).toBe('55');
+    expect(res.body.data?._entities[0].saveById.status).toBe('UNREAD');
+    expect(res.body.data?._entities[0].saveById.title).toBe('the Idea Shower');
+    expect(res.body.data?._entities[0].saveById.updatedAt).toBe(
       date4.toISOString()
     );
   });
@@ -143,7 +141,7 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables,
       });
-    expect(res.body.data?._entities[0].pocketSaveById).toBe(null);
+    expect(res.body.data?._entities[0].saveById).toBe(null);
     expect(res.body.errors[0].message).toBe(
       `Error - Not Found: Saved Item with ID=${variables.itemId} does not exist.`
     );
@@ -161,7 +159,7 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables,
       });
-    expect(res.body.data?._entities[0].pocketSaveById.deletedAt).toBe(
+    expect(res.body.data?._entities[0].saveById.deletedAt).toBe(
       date5.toISOString()
     );
   });
@@ -188,17 +186,15 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables: nonArchivedVars,
       });
-    expect(archivedRes.body.data?._entities[0].pocketSaveById.archived).toBe(
-      true
-    );
-    expect(archivedRes.body.data?._entities[0].pocketSaveById.archivedAt).toBe(
+    expect(archivedRes.body.data?._entities[0].saveById.archived).toBe(true);
+    expect(archivedRes.body.data?._entities[0].saveById.archivedAt).toBe(
       date5.toISOString()
     );
-    expect(nonArchivedRes.body.data?._entities[0].pocketSaveById.archived).toBe(
+    expect(nonArchivedRes.body.data?._entities[0].saveById.archived).toBe(
       false
     );
-    expect(
-      nonArchivedRes.body.data?._entities[0].pocketSaveById.archivedAt
-    ).toBe(null);
+    expect(nonArchivedRes.body.data?._entities[0].saveById.archivedAt).toBe(
+      null
+    );
   });
 });

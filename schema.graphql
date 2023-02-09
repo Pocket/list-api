@@ -506,7 +506,7 @@ extend type User @key(fields: "id") {
   """
   Get a PocketSave by its id
   """
-  pocketSaveById(id: ID!): PocketSave
+  saveById(id: ID!): PocketSave
 }
 
 """
