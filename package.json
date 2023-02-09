@@ -25,7 +25,7 @@
     "@opentelemetry/id-generator-aws-xray": "1.1.1",
     "@opentelemetry/instrumentation-aws-sdk": "0.10.0",
     "@opentelemetry/propagator-aws-xray": "1.1.1",
-    "@opentelemetry/resource-detector-aws": "1.2.1",
+    "@opentelemetry/resource-detector-aws": "1.2.2",
     "@opentelemetry/sdk-node": "0.34.0",
     "@opentelemetry/sdk-trace-node": "1.8.0",
     "@pocket-tools/apollo-cursor-pagination": "1.0.3",
