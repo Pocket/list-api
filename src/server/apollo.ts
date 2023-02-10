@@ -11,6 +11,12 @@ import {
   ApolloServerPluginUsageReportingDisabled,
 } from '@apollo/server/plugin/disabled';
 import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
+import {
+  createApollo4QueryValidationPlugin,
+  // TODO: use constraintDirectiveTypeDefsGql once fix is released
+  constraintDirectiveTypeDefs,
+} from 'graphql-constraint-directive/apollo4';
+import { gql } from 'graphql-tag';
 import config from '../config';
 import { ContextManager } from './context';
 import { readClient, writeClient } from '../database/client';
@@ -91,10 +97,17 @@ export async function startServer(port: number) {
     });
   };
 
+  const schema = buildSubgraphSchema({
+    // TODO: Can use contraintDirectiveTypeDefsGql once fix is released
+    typeDefs: [gql(constraintDirectiveTypeDefs), typeDefs],
+    resolvers,
+  });
+
   const server = new ApolloServer<ContextManager>({
-    schema: buildSubgraphSchema({ typeDefs, resolvers }),
+    schema,
     plugins: [
       sentryPlugin,
+      createApollo4QueryValidationPlugin({ schema }),
       process.env.NODE_ENV === 'production'
         ? ApolloServerPluginLandingPageDisabled()
         : ApolloServerPluginLandingPageGraphQLPlayground(),
