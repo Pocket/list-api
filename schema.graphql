@@ -1,4 +1,10 @@
-extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+extend schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.0",
+        import: ["@key"])
+  @composeDirective(name:"@constraint")
+
+directive @composeDirective(name: String!) repeatable on SCHEMA
 
 """
 ISOString scalar - all datetimes fields are Typescript Date objects on this server &
@@ -91,8 +97,8 @@ input PaginationInput {
   last: Int
 }
 
-extend type CorpusItem @key(fields: "url") {
-  url: Url! @external
+type CorpusItem @key(fields: "url") {
+  url: Url!
 
   """
   The user's saved item, from the Corpus Item, if the corpus item was saved to the user's saves
@@ -478,13 +484,13 @@ type SavedItemTagAssociation {
   tagId: ID!
 }
 
-extend type User @key(fields: "id") {
+type User @key(fields: "id") {
   #Note more properties exist here but are defined in another service.
 
   """
   User id, provided by the user service.
   """
-  id: ID! @external
+  id: ID
 
   """
   Get a general paginated listing of all SavedItems for the user
@@ -536,9 +542,9 @@ type PendingItem @key(fields: "url") {
   status: PendingItemStatus
 }
 
-extend type Item @key(fields: "givenUrl") {
+type Item @key(fields: "givenUrl") {
   "key field to identify the Item entity in the Parser service"
-  givenUrl: Url! @external
+  givenUrl: Url! 
 
   #Note more properties exist here but are defined in another service.
 
@@ -775,9 +781,9 @@ type PocketSave {
 }
 
 # To be setup: connect PocketSaves to a new entity - PocketResource
-# extend type PocketResource @key(fields: "itemId") {
+# type PocketResource @key(fields: "itemId") {
 #   "key field to identify the PocketResource entity in the Parser service"
-#   itemId: ID! @external
+#   itemId: ID!
 
 #   """
 #   Identify if the given PocketResource is in the user's list.

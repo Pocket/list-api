@@ -14,7 +14,7 @@
   "dependencies": {
     "@apollo/server": "4.3.0",
     "@apollo/server-plugin-landing-page-graphql-playground": "4.0.0",
-    "@apollo/subgraph": "2.0.5",
+    "@apollo/subgraph": "2.3.2",
     "@aws-sdk/client-eventbridge": "3.92.0",
     "@aws-sdk/client-kinesis": "3.53.0",
     "@aws-sdk/client-sqs": "3.53.0",
