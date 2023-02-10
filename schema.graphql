@@ -1,3 +1,5 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+
 """
 ISOString scalar - all datetimes fields are Typescript Date objects on this server &
 returned as ISO-8601 encoded date strings (e.g. ISOString scalars) to GraphQL clients.
@@ -516,7 +518,7 @@ union ItemResult = PendingItem | Item
 
 
 input BulkMutationInput {
-  bulkInputs: [String!]! @constraint(minItems: 1, maxItems: 30)
+  bulkInputs: [Int!]! @constraint(minItems: 1, maxItems: 30)
   timestamp: ISOString!
 }
 

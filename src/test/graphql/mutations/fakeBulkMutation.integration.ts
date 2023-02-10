@@ -12,7 +12,7 @@ describe('fake bulk mutation', () => {
 
   const fakeBulkMutation = `
   mutation fakeBulkMutation($input: BulkMutationInput!) {
-    updateTag(input: $input)
+    fakeBulkMutation(input: $input)
   }
 `;
 
@@ -32,7 +32,37 @@ describe('fake bulk mutation', () => {
       variables,
     });
     expect(res.body.errors.length).toEqual(1);
+    expect(res.body.errors[0].extensions.code).toEqual('BAD_USER_INPUT');
+    expect(res.body.errors[0].message).toContain(
+      'must be at least 1 in length'
+    );
   });
-  it.todo('disallows array size > 30');
-  it.todo('works for array size greater than 0 and less than 30');
+  it('disallows array size > 30', async () => {
+    const variables = {
+      input: {
+        bulkInputs: Array.from(Array(100).keys()),
+        timestamp: '10-06-2023',
+      },
+    };
+    const res = await request(app).post(url).set(headers).send({
+      query: fakeBulkMutation,
+      variables,
+    });
+    expect(res.body.errors[0].extensions.code).toEqual('BAD_USER_INPUT');
+    expect(res.body.errors[0].message).toContain('must be no more than 30');
+  });
+  it('works for array size greater than 0 and less than 30', async () => {
+    const variables = {
+      input: {
+        bulkInputs: Array.from(Array(10).keys()),
+        timestamp: '10-06-2023',
+      },
+    };
+    const res = await request(app).post(url).set(headers).send({
+      query: fakeBulkMutation,
+      variables,
+    });
+    expect(res.body.errors).toBeUndefined;
+    expect(res.body.data.fakeBulkMutation).toEqual(true);
+  });
 });
