@@ -31,11 +31,7 @@ const resolvers = {
     },
   },
   User: {
-    pocketSaveById(
-      _parent: any,
-      args: any,
-      context: IContext
-    ): Promise<PocketSave> {
+    saveById(_parent: any, args: any, context: IContext): Promise<PocketSave> {
       return context.models.pocketSave.getById(args.id);
     },
     savedItemById,

@@ -7,6 +7,22 @@ scalar ISOString
 
 scalar Url
 
+type SyncConflict implements BaseError {
+  path: String!
+  message: String!
+}
+
+type NotFound implements BaseError {
+  path: String!
+  message: String!
+}
+
+interface BaseError {
+  path: String!
+  message: String! 
+}
+
+
 """
 Interface that all state based entities must implement
 """
@@ -506,13 +522,19 @@ extend type User @key(fields: "id") {
   """
   Get a PocketSave by its id
   """
-  pocketSaveById(id: ID!): PocketSave
+  saveById(id: ID!): PocketSave
 }
 
 """
 Union type for items that may or may not be processed
 """
 union ItemResult = PendingItem | Item
+
+"""All types in this union should implement BaseError, for client fallback"""
+union TagMutationError = NotFound | SyncConflict # hypothetically others in the future...
+
+"""All types in this union should implement BaseError, for client fallback"""
+union SaveMutationError = NotFound | SyncConflict # hypothetically others in the future
 
 enum PendingItemStatus {
   RESOLVED
@@ -764,6 +786,57 @@ type PocketSave {
   updatedAt: ISOString
 }
 
+
+"""
+Payload for mutations that create or update Saves
+"""
+type SaveWriteMutationPayload {
+  """
+  The mutated Save objects; empty if the mutation did not succeed.
+  """
+  save: [PocketSave!]!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [SaveMutationError!]!
+}
+
+"""
+Payload for mutations that delete Saves
+"""
+type SaveDeleteMutationPayload {
+  success: Boolean!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [SaveMutationError!]!
+}
+
+
+"""
+Payload for mutations that create or update Tags
+"""
+type TagWriteMutationPayload {
+  """
+  The mutated Tag objects; empty if the mutation did not succeed.
+  """
+  tag: [Tag!]!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [TagMutationError!]!
+}
+
+"""
+Payload for mutations that delete Tags
+"""
+type TagDeleteMutationPayload {
+  success: Boolean!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [TagMutationError!]!
+}
 # To be setup: connect PocketSaves to a new entity - PocketResource
 # extend type PocketResource @key(fields: "itemId") {
 #   "key field to identify the PocketResource entity in the Parser service"
