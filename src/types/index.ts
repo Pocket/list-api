@@ -208,3 +208,8 @@ export type PocketSave = {
   title: string;
   updatedAt: Date;
 };
+
+export type saveArchiveInput = {
+  id: string[];
+  timestamp: string;
+};

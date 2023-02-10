@@ -101,6 +101,7 @@ const resolvers = {
     deleteTag,
     createSavedItemTags,
     replaceSavedItemTags,
+    saveArchive,
   },
 };
 

@@ -1,4 +1,4 @@
-import { PocketSave } from '../types';
+import { PocketSave, saveArchiveInput } from '../types';
 import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
@@ -44,5 +44,10 @@ export class PocketSaveModel {
     }
     const pocketSave = PocketSaveModel.transformListRow(listRow);
     return pocketSave;
+  }
+
+  public async saveArchive(input: saveArchiveInput): Promise<PocketSave> {
+    const response = await this.saveService.saveArchive(input);
+    return null;
   }
 }

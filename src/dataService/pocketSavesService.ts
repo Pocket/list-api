@@ -144,4 +144,12 @@ export class PocketSaveDataService {
     const resp = PocketSaveDataService.convertListResult(rawResp);
     return resp;
   }
+
+  //todo: should we be passing the Dto here  - e.g SaveArchiveInputDto and transform happens in save.toDto(saveArchiveInput)
+  public async saveArchive(saveArchiveInput: SaveArchiveInput) : Promise<ListResult> {
+    const query =  await this.db('list').update({
+      status = '1' //todo: use enum,
+      
+    }).whereIn({ item_id: })
+  }
 }

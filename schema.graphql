@@ -645,6 +645,9 @@ type Mutation {
   Returns the SavedItem for which the tags have been modified.
   """
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+
+  """Archives a Save"""
+  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
 }
 
 # """

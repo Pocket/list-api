@@ -331,3 +331,11 @@ export async function updateTag(
 ): Promise<Tag> {
   return context.models.tag.renameTag(args.input);
 }
+
+export async function saveArchive(
+  root,
+  args: { input: saveArchiveInput },
+  context: IContext
+): Promise<PocketSave> {
+  return context.models.pocketSave.saveArchive(args.input);
+}
