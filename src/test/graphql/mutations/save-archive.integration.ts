@@ -1,7 +1,5 @@
 import { writeClient } from '../../../database/client';
-import { EventType } from '../../../businessEvents';
 import sinon from 'sinon';
-import { getUnixTimestamp } from '../../../utils';
 import { ContextManager } from '../../../server/context';
 import { startServer } from '../../../server/apollo';
 import { Express } from 'express';
@@ -9,16 +7,13 @@ import { ApolloServer } from '@apollo/server';
 import { gql } from 'graphql-tag';
 import { print } from 'graphql';
 import request from 'supertest';
-import * as Client from '../../../database/client';
 
 describe('saveArchive mutation', function () {
   const db = writeClient();
   const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
   const headers = { userid: '1' };
-  const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
-  const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
-  const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
-  let clock;
+  const date = new Date('2020-10-03T10:20:30.000Z'); // Consistent date for seeding
+  const date1 = new Date('2020-10-03T10:30:30.000Z'); // Consistent date for seeding
   let app: Express;
   let server: ApolloServer<ContextManager>;
   let url: string;
@@ -32,6 +27,7 @@ describe('saveArchive mutation', function () {
         archivedAt
       }
       errors {
+        __typename
         path
         message
       }
@@ -54,7 +50,7 @@ describe('saveArchive mutation', function () {
         title: `title ${row.item_id}`,
         time_added: date,
         time_updated: date1,
-        time_read: date,
+        time_read: row.status === 1 ? date : '0000-00-00 00:00:00',
         time_favorited: date,
         api_id: 'apiid',
         api_id_updated: 'apiid',
@@ -65,17 +61,10 @@ describe('saveArchive mutation', function () {
 
   beforeAll(async () => {
     ({ app, server, url } = await startServer(0));
-
-    // Mock Date.now() to get a consistent date for inserting data
-    clock = sinon.useFakeTimers({
-      now: updateDate,
-      shouldAdvanceTime: false,
-    });
   });
 
   afterAll(async () => {
     await db.destroy();
-    clock.restore();
     sinon.restore();
     await server.stop();
   });
@@ -95,9 +84,14 @@ describe('saveArchive mutation', function () {
       .send({ query: print(ARCHIVE_MUTATION), variables });
 
     expect(res).not.toBeUndefined();
-    const data = res.body.data.saveArchive;
-    expect(data[0].url).toEqual('http://0');
-    //expect(data[0]._updatedAt).equals('http://0');
+    expect(res.body.data.saveArchive.save.length).toEqual(1);
+    expect(res.body.data.saveArchive.errors.length).toEqual(0);
+    const actual = res.body.data.saveArchive.save[0];
+    expect(actual).toStrictEqual({
+      id: '1',
+      archived: true,
+      archivedAt: testTimestamp,
+    });
   });
 
   it('should fail the entire batch if one fails (NOT_FOUND)', async () => {
@@ -113,16 +107,17 @@ describe('saveArchive mutation', function () {
       .send({ query: print(ARCHIVE_MUTATION), variables });
 
     expect(res).not.toBeUndefined();
-    // Technically I think this is an empty array?
-    expect(res.body.data.saveArchive).toBeUndefined();
-    const errors = res.body.errors;
-    // todo check extensions
+    expect(res.body.data.saveArchive.save.length).toEqual(0);
+    const errors = res.body.saveArchive.errors;
+    expect(errors.length).toEqual(1);
+    expect(errors[0].code.__typename).toEqual('NotFound');
+    // TODO: Message/path?
   });
 
   it('should archive multiple savedItems', async () => {
     const testTimestamp = '2023-10-05T14:48:00.000Z';
     const variables = {
-      id: ['1', '2'],
+      id: ['0', '1'],
       timestamp: testTimestamp,
     };
 
@@ -136,34 +131,67 @@ describe('saveArchive mutation', function () {
       save: [
         {
           id: '1',
+          archived: true,
+          archivedAt: testTimestamp,
         },
         {
           id: '2',
+          archived: true,
+          archivedAt: testTimestamp,
         },
       ],
       errors: [],
     };
     const data = res.body.data.saveArchive;
+    expect(data.save.length).toEqual(2);
+    expect(data).toMatchObject(expected);
   });
 
   it('should not fail if trying to archive a save that is already archived (no-op)', async () => {
     const testTimestamp = '2023-10-05T14:48:00.000Z';
     const variables = {
-      id: ['1'],
+      id: ['2'],
       timestamp: testTimestamp,
     };
 
-    const res1 = await request(app)
+    const res = await request(app)
       .post(url)
       .set(headers)
       .send({ query: print(ARCHIVE_MUTATION), variables });
-    // already validated above, just ensure this didn't fail
-    expect(res1).toBeDefined();
-    expect(res1.body.data).toBeDefined();
 
-    const res2 = await request(app)
+    const data = res.body.data.saveArchive.save;
+    expect(data).toMatchObject({
+      archived: true,
+      archivedAt: date.toISOString(),
+    });
+    expect(res.body.errors.length).toEqual(0);
+    expect(eventSpy.callCount).toEqual(1);
+  });
+  it('should emit an archive event for each save archived', async () => {
+    const testTimestamp = '2023-10-05T14:48:00.000Z';
+    const variables = {
+      id: ['0', '1'],
+      timestamp: testTimestamp,
+    };
+    await request(app)
       .post(url)
       .set(headers)
       .send({ query: print(ARCHIVE_MUTATION), variables });
+    expect(eventSpy.callCount).toEqual(2);
   });
+
+  it('should not emit an archive event if the save is already archived', async () => {
+    const testTimestamp = '2023-10-05T14:48:00.000Z';
+    const variables = {
+      id: ['2'],
+      timestamp: testTimestamp,
+    };
+    await request(app)
+      .post(url)
+      .set(headers)
+      .send({ query: print(ARCHIVE_MUTATION), variables });
+    expect(eventSpy.callCount).toEqual(0);
+  });
+  it.todo('should not accept more than 30 input ids');
+  it.todo('should require at least one input id');
 });
