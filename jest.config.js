@@ -14,4 +14,5 @@ module.exports = {
   testPathIgnorePatterns: ['/dist/', '/lambda/'],
   testTimeout: 10000,
   displayName: 'list-api',
+  setupFilesAfterEnv: ['jest-extended/all'],
 };

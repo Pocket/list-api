@@ -84,8 +84,8 @@ describe('saveArchive mutation', function () {
       .send({ query: print(ARCHIVE_MUTATION), variables });
 
     expect(res).not.toBeUndefined();
-    expect(res.body.data.saveArchive.save.length).toEqual(1);
-    expect(res.body.data.saveArchive.errors.length).toEqual(0);
+    expect(res.body.data.saveArchive.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveArchive.errors).toBeArrayOfSize(0);
     const actual = res.body.data.saveArchive.save[0];
     expect(actual).toStrictEqual({
       id: '1',
@@ -107,9 +107,9 @@ describe('saveArchive mutation', function () {
       .send({ query: print(ARCHIVE_MUTATION), variables });
 
     expect(res).not.toBeUndefined();
-    expect(res.body.data.saveArchive.save.length).toEqual(0);
+    expect(res.body.data.saveArchive.save).toBeArrayOfSize(0);
     const errors = res.body.saveArchive.errors;
-    expect(errors.length).toEqual(1);
+    expect(errors).toBeArrayOfSize(1);
     expect(errors[0].code.__typename).toEqual('NotFound');
     // TODO: Message/path?
   });
@@ -126,7 +126,6 @@ describe('saveArchive mutation', function () {
       .set(headers)
       .send({ query: print(ARCHIVE_MUTATION), variables });
 
-    expect(res).toBeUndefined();
     const expected = {
       save: [
         {
@@ -143,8 +142,8 @@ describe('saveArchive mutation', function () {
       errors: [],
     };
     const data = res.body.data.saveArchive;
-    expect(data.save.length).toEqual(2);
-    expect(data).toMatchObject(expected);
+    expect(data.save).toIncludeSameMembers(expected.save);
+    expect(data.errors).toBeArrayOfSize(0);
   });
 
   it('should not fail if trying to archive a save that is already archived (no-op)', async () => {
@@ -164,7 +163,7 @@ describe('saveArchive mutation', function () {
       archived: true,
       archivedAt: date.toISOString(),
     });
-    expect(res.body.errors.length).toEqual(0);
+    expect(res.body.errors).toBeArrayOfSize(0);
     expect(eventSpy.callCount).toEqual(1);
   });
   it('should emit an archive event for each save archived', async () => {
