@@ -25,3 +25,19 @@ export function mysqlDateConvert(mysqlDate: Date | string | null): Date | null {
   }
   return null;
 }
+
+/**
+ * Extract unique values from an array of strings or numbers
+ * @param input an array which might contain non-unique values
+ * @returns the unique values of `input`
+ */
+export function uniqueArray<T extends string | number>(input: T[]): T[] {
+  const keys = new Set();
+  const uniqueValues = [];
+  input.forEach((element) => {
+    if (!keys.has(element)) {
+      uniqueValues.push(element);
+    }
+  });
+  return uniqueValues;
+}
