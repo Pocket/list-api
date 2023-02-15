@@ -1,7 +1,14 @@
 import { Knex } from 'knex';
 import { IContext } from '../server/context';
-import { mysqlDateConvert } from './utils';
+import {
+  mysqlDateConvert,
+  mysqlTimeString,
+  setDifference,
+  uniqueArray,
+} from './utils';
 import { PocketSaveStatus } from '../types';
+import { NotFoundError } from '@pocket-tools/apollo-utils';
+import config from '../config';
 
 export type RawListResult = {
   api_id: string;
@@ -33,6 +40,11 @@ export type ListResult = {
   time_updated: Date;
   title: string;
   user_id: number;
+};
+
+export type ListArchiveUpdate = {
+  status: PocketSaveStatus.ARCHIVED;
+  time_read: Date;
 };
 
 /**
@@ -80,6 +92,21 @@ export class PocketSaveDataService {
   private db: Knex;
   private readonly apiId: string;
   private readonly userId: string;
+  private readonly selectCols: Array<keyof RawListResult> = [
+    'api_id',
+    'api_id_updated',
+    'favorite',
+    'given_url',
+    'item_id',
+    'resolved_id',
+    'status',
+    'time_added',
+    'time_favorited',
+    'time_read',
+    'time_updated',
+    'title',
+    'user_id',
+  ];
 
   constructor(context: Pick<IContext, 'apiId' | 'dbClient' | 'userId'>) {
     this.apiId = context.apiId;
@@ -113,22 +140,8 @@ export class PocketSaveDataService {
    * Will eventually be extended for building filter, sorts, etc. for different pagination, etc.
    * For now just to reuse the same query and reduce testing burden :)
    */
-  public buildQuery(): any {
-    return this.db('list').select(
-      'api_id',
-      'api_id_updated',
-      'favorite',
-      'given_url',
-      'item_id',
-      'resolved_id',
-      'status',
-      'time_added',
-      'time_favorited',
-      'time_read',
-      'time_updated',
-      'title',
-      'user_id'
-    );
+  public buildQuery(): Knex.QueryBuilder<RawListResult, RawListResult[]> {
+    return this.db('list').select(this.selectCols);
   }
 
   /**
@@ -137,19 +150,71 @@ export class PocketSaveDataService {
    */
   public async getListRowById(itemId: string): Promise<ListResult> {
     const query = await this.buildQuery()
-      .where({ user_id: this.userId, item_id: itemId })
+      .where('user_id', this.userId)
+      .andWhere('item_id', itemId)
       .first();
+    return PocketSaveDataService.convertListResult(query);
+  }
 
-    const rawResp = query;
-    const resp = PocketSaveDataService.convertListResult(rawResp);
-    return resp;
+  public async getListRowByIds(itemIds: string[]): Promise<ListResult[]> {
+    const query = await this.buildQuery()
+      .whereIn('item_id', itemIds)
+      .where('user_id', this.userId);
+    return PocketSaveDataService.convertListResult(query);
   }
 
   //todo: should we be passing the Dto here  - e.g SaveArchiveInputDto and transform happens in save.toDto(saveArchiveInput)
-  public async saveArchive(saveArchiveInput: SaveArchiveInput) : Promise<ListResult> {
-    const query =  await this.db('list').update({
-      status = '1' //todo: use enum,
-      
-    }).whereIn({ item_id: })
+  public async archiveListRow(
+    ids: string[],
+    timestamp: Date
+  ): Promise<{ updated: ListResult[]; missing: string[] }> {
+    const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
+    const uniqueIds = uniqueArray(ids.map(parseInt));
+    const updateSet = {
+      status: PocketSaveStatus.ARCHIVED,
+      // Don't reset timestamp if already archived -- essentially a no-op
+      time_read: this.db.raw(
+        `IF(status != ${PocketSaveStatus.ARCHIVED}, "${timeUpdate}", time_read)`
+      ),
+    };
+    // Initialize response variables for use in outer scope
+    let updated: RawListResult[];
+    let missing: string[];
+    try {
+      await this.db.transaction(async (trx) => {
+        const count = await trx('list')
+          .update(updateSet)
+          .whereIn('item_id', uniqueIds)
+          .andWhere('user_id', this.userId);
+
+        updated = await trx<RawListResult>('list')
+          .select(this.selectCols)
+          .whereIn('item_id', uniqueIds)
+          .andWhere('user_id', this.userId);
+
+        // Batches should be atomic -- roll back transaction if
+        // there is an update that can't succeed due to value not
+        // being present
+        if (count !== uniqueIds.length) {
+          throw new NotFoundError('At least one ID was not found');
+        }
+      });
+    } catch (error) {
+      // Capture NotFoundError and add to response
+      if (error instanceof NotFoundError) {
+        const extantIds = new Set(updated.map((row) => row.item_id));
+        missing = setDifference(new Set(uniqueIds), extantIds).map((id) =>
+          id.toString()
+        );
+        updated = [];
+      } else {
+        // Re-throw for resolver layer -- this is an internal server failure
+        throw error;
+      }
+    }
+    return {
+      updated: PocketSaveDataService.convertListResult(updated),
+      missing,
+    };
   }
 }

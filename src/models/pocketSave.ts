@@ -46,8 +46,11 @@ export class PocketSaveModel {
     return pocketSave;
   }
 
-  public async saveArchive(input: saveArchiveInput): Promise<PocketSave> {
-    const response = await this.saveService.saveArchive(input);
+  public async saveArchive(
+    ids: string[],
+    timestamp: Date
+  ): Promise<PocketSave> {
+    const response = await this.saveService.archiveListRow(ids, timestamp);
     return null;
   }
 }
