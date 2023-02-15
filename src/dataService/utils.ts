@@ -41,3 +41,13 @@ export function uniqueArray<T extends string | number>(input: T[]): T[] {
   });
   return uniqueValues;
 }
+
+/**
+ * Set difference, `base` - `compare`; return an array of all elements
+ * present in `base` but not in `compare`.
+ * @param base the Set to compute difference on
+ * @param compare the Set to compare to base
+ **/
+export function setDifference<T>(base: Set<T>, compare: Set<T>): Array<T> {
+  return Array.from(base).filter((elem) => !compare.has(elem));
+}

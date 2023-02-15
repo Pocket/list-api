@@ -1,4 +1,9 @@
-import { mysqlDateConvert, mysqlTimeString, uniqueArray } from './utils';
+import {
+  mysqlDateConvert,
+  mysqlTimeString,
+  setDifference,
+  uniqueArray,
+} from './utils';
 
 const dateGood = new Date('2008-11-03 08:51:01');
 const dateNull = new Date('0000-00-00 00:00:00');
@@ -51,6 +56,27 @@ describe('uniqueArray', () => {
   ])('returns unique values for numbers', ({ arr, expected }) => {
     // Can do arrayContaining twice to get array equivalence
     const actual = uniqueArray(arr);
+    expect(actual).toIncludeSameMembers(expected);
+  });
+});
+describe('setDifference', () => {
+  test.each([
+    { a: new Set([]), b: new Set([]), expected: [] },
+    { a: new Set(['a']), b: new Set(['b']), expected: ['a'] },
+    { a: new Set(['a', 'b']), b: new Set(['b', 'a']), expected: [] },
+    { a: new Set([]), b: new Set(['a']), expected: [] },
+    { a: new Set(['a', 'b']), b: new Set([]), expected: ['a', 'b'] },
+  ])('returns values in A not present in B', ({ a, b, expected }) => {
+    const actual = setDifference(a, b);
+    expect(actual).toIncludeSameMembers(expected);
+  });
+  test.each([
+    { a: new Set([null]), b: new Set([null]), expected: [] },
+    { a: new Set([null]), b: new Set([]), expected: [null] },
+    { a: new Set([]), b: new Set([null]), expected: [] },
+    { a: new Set([null, 'a', 'b']), b: new Set(['b']), expected: [null, 'a'] },
+  ])('works for null values', ({ a, b, expected }) => {
+    const actual = setDifference(a, b);
     expect(actual).toIncludeSameMembers(expected);
   });
 });
