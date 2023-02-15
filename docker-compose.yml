@@ -41,7 +41,7 @@ services:
       - '4138:4138'
 
   app:
-    image: node:16@sha256:1bbd8b82f5a78b6461d3285b62293db99ad60cf4eca35c715636d7143abb057c
+    image: node:16@sha256:ce3d204ff857d48fbf2cdd16649b5a0b57cc1fd1a3cb2ff0d8727532f5211cf1
     platform: linux/amd64
     working_dir: /app
     ports:
