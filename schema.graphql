@@ -647,7 +647,7 @@ type Mutation {
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
 
   """Archives a Save"""
-  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
 }
 
 # """
