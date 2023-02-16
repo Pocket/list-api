@@ -7,7 +7,7 @@ import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
 import { uniqueArray } from '../dataService/utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
-// import { EventType } from '../businessEvents';
+import { GraphQLResolveInfo } from 'graphql';
 
 export class PocketSaveModel {
   private saveService: PocketSaveDataService;
@@ -57,9 +57,22 @@ export class PocketSaveModel {
     return pocketSave;
   }
 
+  /**
+   * Bulk update method for archiving saves; if the save is already
+   * archived, will be a no-op and no changes will occur.
+   * All IDs passed to this function must be valid; if any are not
+   * found in the user's saves, the entire operation will be rolled
+   * back and NotFound payload returned.
+   * @param ids itemId associated to the save to archive; must be
+   * @param timestamp timestamp for when the bulk operation occurred
+   * @returns an array of updated saves and the missing ids (if any
+   * encountered; these arrays are mutually exclusive, so if one is
+   * populated, the other is empty)
+   */
   public async saveArchive(
     ids: string[],
-    timestamp: Date
+    timestamp: Date,
+    path: GraphQLResolveInfo['path']
   ): Promise<SaveWriteMutationPayload> {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.archiveListRow(
@@ -72,10 +85,17 @@ export class PocketSaveModel {
         ? missing.map((missingId) => this.notFoundPayload('id', missingId))
         : [];
     const save = updated.map((row) => PocketSaveModel.transformListRow(row));
-    // Emit events
+    // TODO: Emit events
     // save.forEach((saveItem) => {
     //   this.context.emitItemEvent(EventType.ARCHIVE_ITEM, saveItem);
     // });
-    return { save, errors };
+    // Hydrate errors path with current location
+    // Resolved on saveArchive because it needs to be aware
+    // of this path, not the path of the error resolver type
+    const resolvedErrors = errors.map((error) => ({
+      ...error,
+      path: this.context.models.baseError.path(path),
+    }));
+    return { save, errors: resolvedErrors };
   }
 }

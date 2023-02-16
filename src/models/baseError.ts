@@ -1,5 +1,10 @@
 import { GraphQLResolveInfo } from 'graphql';
 
+/**
+ * Class for handling shared methods in errors
+ * that are modeled in the schema (e.g. NotFound or
+ * any other error that implements BaseError interface)
+ */
 export class BaseErrorModel {
   /**
    * Stringify the path data; traverses path ancestors

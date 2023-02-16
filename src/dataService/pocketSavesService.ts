@@ -166,12 +166,6 @@ export class PocketSaveDataService {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
     const updateValues = {
       status: PocketSaveStatus.ARCHIVED,
-      // Don't reset data if already archived -- essentially a no-op
-      //   time_read: this.db.raw(
-      //     `IF(status != ${PocketSaveStatus.ARCHIVED}, "${timeUpdate}", time_read)`
-      //   ),
-      //   time_updated: `IF(status != ${PocketSaveStatus.ARCHIVED}, "${timeUpdate}", time_updated)`,
-      //   api_id_updated: `IF(status != ${PocketSaveStatus.ARCHIVED}, "${this.apiId}", api_id_updated)`,
       time_read: timeUpdate,
       time_updated: timeUpdate,
       api_id_updated: this.apiId,

@@ -235,5 +235,5 @@ export interface NotFound extends BaseError {
 
 export type SaveWriteMutationPayload = {
   save: PocketSave[];
-  errors: BaseErrorInternal[];
+  errors: BaseError[];
 };

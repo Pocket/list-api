@@ -21,7 +21,14 @@ import {
   upsertSavedItem,
 } from './mutation';
 import { tagsSavedItems } from './tag';
-import { BaseError, Item, PocketSave, SavedItem, Tag } from '../types';
+import {
+  BaseError,
+  Item,
+  PocketSave,
+  SaveWriteMutationPayload,
+  SavedItem,
+  Tag,
+} from '../types';
 import { IContext } from '../server/context';
 import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
 import { GraphQLResolveInfo } from 'graphql';
@@ -112,19 +119,12 @@ const resolvers = {
       args: { id: string[]; timestamp: Date },
       context: IContext,
       info: GraphQLResolveInfo
-    ) => {
-      const { save, errors } = await context.models.pocketSave.saveArchive(
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.pocketSave.saveArchive(
         args.id,
-        args.timestamp
+        args.timestamp,
+        info.path
       );
-      // Hydrate errors path with current location
-      // Resolved on saveArchive because it needs to be aware
-      // of this path, not the path of the error resolver type
-      const resolvedErrors = errors.map((error) => ({
-        ...error,
-        path: context.models.baseError.path(info.path),
-      }));
-      return { save, errors: resolvedErrors };
     },
   },
 };
