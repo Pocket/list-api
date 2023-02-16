@@ -62,7 +62,7 @@ jobs:
         type: boolean
         default: true
     docker:
-      - image: circleci/node:14@sha256:6f6b36595d00d61545f502d191c459a52e8f3d55a3607f4e2e2dd8f15a01c9ad
+      - image: circleci/node:16@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -110,7 +110,7 @@ jobs:
         type: string
         description: The relative path containing the lambda source code
     docker:
-      - image: cimg/node:14.19@sha256:529d618877cb283d38fdaa3aa3c725ebba662702e704fcefefbbadd99a5bf6b6
+      - image: circleci/node:16@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
