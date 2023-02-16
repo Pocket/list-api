@@ -33,11 +33,6 @@ const resolvers = {
       return parent.__typename;
     },
   },
-  NotFound: {
-    path: (parent, args, context: IContext, info: GraphQLResolveInfo) => {
-      return info.path;
-    },
-  },
   ItemResult: {
     __resolveType(savedItem: SavedItem) {
       return parseInt(savedItem.resolvedId) ? 'Item' : 'PendingItem';
@@ -115,12 +110,21 @@ const resolvers = {
     saveArchive: async (
       _,
       args: { id: string[]; timestamp: Date },
-      context: IContext
+      context: IContext,
+      info: GraphQLResolveInfo
     ) => {
-      return await context.models.pocketSave.saveArchive(
+      const { save, errors } = await context.models.pocketSave.saveArchive(
         args.id,
         args.timestamp
       );
+      // Hydrate errors path with current location
+      // Resolved on saveArchive because it needs to be aware
+      // of this path, not the path of the error resolver type
+      const resolvedErrors = errors.map((error) => ({
+        ...error,
+        path: context.models.baseError.path(info.path),
+      }));
+      return { save, errors: resolvedErrors };
     },
   },
 };

@@ -1,11 +1,6 @@
 import { Knex } from 'knex';
 import { IContext } from '../server/context';
-import {
-  mysqlDateConvert,
-  mysqlTimeString,
-  setDifference,
-  uniqueArray,
-} from './utils';
+import { mysqlDateConvert, mysqlTimeString, setDifference } from './utils';
 import { PocketSaveStatus } from '../types';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import config from '../config';
@@ -156,59 +151,69 @@ export class PocketSaveDataService {
     return PocketSaveDataService.convertListResult(query);
   }
 
-  public async getListRowByIds(itemIds: string[]): Promise<ListResult[]> {
-    const query = await this.buildQuery()
-      .whereIn('item_id', itemIds)
-      .where('user_id', this.userId);
-    return PocketSaveDataService.convertListResult(query);
-  }
-
-  //todo: should we be passing the Dto here  - e.g SaveArchiveInputDto and transform happens in save.toDto(saveArchiveInput)
+  /**
+   * Batch update to set status of saves in a user's list to ARCHIVED.
+   * Requires all IDs in the batch to be valid; otherwise will roll back
+   * transaction and return missing IDs, for use in NOT_FOUND response
+   * in business layer.
+   * If the row was already ARCHIVED status, the method is a "no-op"
+   * (e.g. does not reset the time_read, time_updated, or api_id_updated values)
+   */
   public async archiveListRow(
-    ids: string[],
+    ids: number[],
     timestamp: Date
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
-    const uniqueIds = uniqueArray(ids.map(parseInt));
-    const updateSet = {
+    const updateValues = {
       status: PocketSaveStatus.ARCHIVED,
-      // Don't reset timestamp if already archived -- essentially a no-op
-      time_read: this.db.raw(
-        `IF(status != ${PocketSaveStatus.ARCHIVED}, "${timeUpdate}", time_read)`
-      ),
+      // Don't reset data if already archived -- essentially a no-op
+      //   time_read: this.db.raw(
+      //     `IF(status != ${PocketSaveStatus.ARCHIVED}, "${timeUpdate}", time_read)`
+      //   ),
+      //   time_updated: `IF(status != ${PocketSaveStatus.ARCHIVED}, "${timeUpdate}", time_updated)`,
+      //   api_id_updated: `IF(status != ${PocketSaveStatus.ARCHIVED}, "${this.apiId}", api_id_updated)`,
+      time_read: timeUpdate,
+      time_updated: timeUpdate,
+      api_id_updated: this.apiId,
     };
-    // Initialize response variables for use in outer scope
-    let updated: RawListResult[];
-    let missing: string[];
+    // Initialize in outer scope so we can access outside of the
+    // try/catch block and transaction block
+    let updated: RawListResult[] = [];
+    let missing: string[] = [];
+
     try {
       await this.db.transaction(async (trx) => {
-        const count = await trx('list')
-          .update(updateSet)
-          .whereIn('item_id', uniqueIds)
-          .andWhere('user_id', this.userId);
+        await trx('list')
+          .update(updateValues)
+          .whereIn('item_id', ids)
+          .andWhere('user_id', this.userId)
+          // Don't change any rows that are already archived
+          .andWhere('status', '!=', PocketSaveStatus.ARCHIVED);
 
         updated = await trx<RawListResult>('list')
           .select(this.selectCols)
-          .whereIn('item_id', uniqueIds)
+          .whereIn('item_id', ids)
           .andWhere('user_id', this.userId);
 
         // Batches should be atomic -- roll back transaction if
         // there is an update that can't succeed due to value not
         // being present
-        if (count !== uniqueIds.length) {
+        if (updated.length !== ids.length) {
           throw new NotFoundError('At least one ID was not found');
         }
       });
     } catch (error) {
-      // Capture NotFoundError and add to response
+      // Capture NotFoundError thrown by inner block, and use response
+      // prior to transaction rollback to determine which IDs are missing
       if (error instanceof NotFoundError) {
         const extantIds = new Set(updated.map((row) => row.item_id));
-        missing = setDifference(new Set(uniqueIds), extantIds).map((id) =>
+        missing = setDifference(new Set(ids), extantIds).map((id) =>
           id.toString()
         );
+        // The transaction was rolled back; reset values
         updated = [];
       } else {
-        // Re-throw for resolver layer -- this is an internal server failure
+        // Re-throw for resolver layer -- this is an internal server error
         throw error;
       }
     }

@@ -13,6 +13,7 @@ import { createTagDataLoaders } from '../dataLoader/tagsDataLoader';
 import { TagModel } from '../models';
 import * as Sentry from '@sentry/node';
 import { PocketSaveModel } from '../models/pocketSave';
+import { BaseErrorModel } from '../models/baseError';
 
 export interface IContext {
   userId: string;
@@ -24,6 +25,7 @@ export interface IContext {
   models: {
     tag: TagModel;
     pocketSave: PocketSaveModel;
+    baseError: BaseErrorModel;
   };
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
@@ -58,11 +60,13 @@ export class ContextManager implements IContext {
     this.models = {
       tag: new TagModel(this),
       pocketSave: new PocketSaveModel(this),
+      baseError: new BaseErrorModel(),
     };
   }
   models: {
     tag: TagModel;
     pocketSave: PocketSaveModel;
+    baseError: BaseErrorModel;
   };
 
   get headers(): { [key: string]: any } {

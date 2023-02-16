@@ -75,6 +75,7 @@
     "chai-datetime": "1.8.0",
     "chai-shallow-deep-equal": "1.4.6",
     "deep-equal-in-any-order": "2.0.3",
+    "jest-extended": "3.2.3",
     "nock": "13.3.0",
     "nodemon": "2.0.20",
     "prettier": "2.8.4",

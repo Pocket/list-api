@@ -1,7 +1,13 @@
-import { PocketSave, saveArchiveInput } from '../types';
+import {
+  NotFoundInternal,
+  PocketSave,
+  SaveWriteMutationPayload,
+} from '../types';
 import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
+import { uniqueArray } from '../dataService/utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
+// import { EventType } from '../businessEvents';
 
 export class PocketSaveModel {
   private saveService: PocketSaveDataService;
@@ -31,6 +37,11 @@ export class PocketSaveModel {
     return result;
   }
 
+  private notFoundPayload(key: string, value: string): NotFoundInternal {
+    const message = `Entity identified by key=${key}, value=${value} was not found.`;
+    return { message, __typename: 'NotFound' };
+  }
+
   /**
    * * Fetch a PocketSave by its ID
    * * @param id the ID of the PocketSave to retrieve
@@ -49,8 +60,22 @@ export class PocketSaveModel {
   public async saveArchive(
     ids: string[],
     timestamp: Date
-  ): Promise<PocketSave> {
-    const response = await this.saveService.archiveListRow(ids, timestamp);
-    return null;
+  ): Promise<SaveWriteMutationPayload> {
+    const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
+    const { updated, missing } = await this.saveService.archiveListRow(
+      uniqueIds,
+      // TODO REMOVE Date converter
+      new Date(timestamp)
+    );
+    const errors =
+      missing.length > 0
+        ? missing.map((missingId) => this.notFoundPayload('id', missingId))
+        : [];
+    const save = updated.map((row) => PocketSaveModel.transformListRow(row));
+    // Emit events
+    // save.forEach((saveItem) => {
+    //   this.context.emitItemEvent(EventType.ARCHIVE_ITEM, saveItem);
+    // });
+    return { save, errors };
   }
 }
