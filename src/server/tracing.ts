@@ -1,18 +1,24 @@
+import config from '../config/index';
 import process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
-import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
+import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-import config from '../config/index';
+import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
+import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
+import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { FsInstrumentation } from '@opentelemetry/instrumentation-fs';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
+import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
+import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
+import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { Resource } from '@opentelemetry/resources';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
 import {
   ParentBasedSampler,
@@ -55,22 +61,27 @@ export async function nodeSDKBuilder() {
   const sdk = new NodeSDK({
     textMapPropagator: new AWSXRayPropagator(),
     instrumentations: [
-      getNodeAutoInstrumentations(),
-      //add instrumentation library below if you want to configure params
       new AwsInstrumentation({
         suppressInternalInstrumentation: true,
       }),
-      new HttpInstrumentation({
-        ignoreIncomingPaths: ['/.well-known/apollo/server-health'],
-      }),
+      new AwsLambdaInstrumentation({}),
+      new DataloaderInstrumentation({}),
       new ExpressInstrumentation({
         ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
       }),
+      new FsInstrumentation({}),
       new GraphQLInstrumentation({
         // optional params
         depth: config.tracing.graphQLDepth, //query depth
         allowValues: true,
       }),
+      new HttpInstrumentation({
+        ignoreIncomingPaths: ['/.well-known/apollo/server-health'],
+      }),
+      new KnexInstrumentation({}),
+      new MySQLInstrumentation({}),
+      new MySQL2Instrumentation({}),
+      new NetInstrumentation({}),
     ],
     resource: _resource,
     spanProcessor: _spanProcessor,
