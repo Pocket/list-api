@@ -77,8 +77,7 @@ export class PocketSaveModel {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.archiveListRow(
       uniqueIds,
-      // TODO REMOVE Date converter
-      new Date(timestamp)
+      timestamp
     );
     const errors =
       missing.length > 0
