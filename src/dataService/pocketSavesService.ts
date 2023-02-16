@@ -39,7 +39,9 @@ export type ListResult = {
 
 export type ListArchiveUpdate = {
   status: PocketSaveStatus.ARCHIVED;
-  time_read: Date;
+  time_updated: string; // Timestamp string
+  api_id_updated: string;
+  time_read: string; // Timestamp string
 };
 
 /**
@@ -164,7 +166,7 @@ export class PocketSaveDataService {
     timestamp: Date
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
-    const updateValues = {
+    const updateValues: ListArchiveUpdate = {
       status: PocketSaveStatus.ARCHIVED,
       time_read: timeUpdate,
       time_updated: timeUpdate,
