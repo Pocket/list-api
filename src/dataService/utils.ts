@@ -36,6 +36,7 @@ export function uniqueArray<T extends string | number>(input: T[]): T[] {
   const uniqueValues = [];
   input.forEach((element) => {
     if (!keys.has(element)) {
+      keys.add(element);
       uniqueValues.push(element);
     }
   });
