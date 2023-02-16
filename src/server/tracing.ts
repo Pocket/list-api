@@ -9,7 +9,6 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { FsInstrumentation } from '@opentelemetry/instrumentation-fs';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
@@ -69,7 +68,6 @@ export async function nodeSDKBuilder() {
       new ExpressInstrumentation({
         ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
       }),
-      new FsInstrumentation({}),
       new GraphQLInstrumentation({
         // optional params
         depth: config.tracing.graphQLDepth, //query depth
