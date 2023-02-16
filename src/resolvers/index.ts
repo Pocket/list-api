@@ -21,12 +21,23 @@ import {
   upsertSavedItem,
 } from './mutation';
 import { tagsSavedItems } from './tag';
-import { Item, PocketSave, SavedItem, Tag } from '../types';
+import { BaseError, Item, PocketSave, SavedItem, Tag } from '../types';
 import { IContext } from '../server/context';
 import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
+import { GraphQLResolveInfo } from 'graphql';
 
 const resolvers = {
   ...PocketDefaultScalars,
+  BaseError: {
+    __resolveType(parent: BaseError) {
+      return parent.__typename;
+    },
+  },
+  NotFound: {
+    path: (parent, args, context: IContext, info: GraphQLResolveInfo) => {
+      return info.path;
+    },
+  },
   ItemResult: {
     __resolveType(savedItem: SavedItem) {
       return parseInt(savedItem.resolvedId) ? 'Item' : 'PendingItem';
@@ -101,7 +112,16 @@ const resolvers = {
     deleteTag,
     createSavedItemTags,
     replaceSavedItemTags,
-    saveArchive,
+    saveArchive: async (
+      _,
+      args: { id: string[]; timestamp: Date },
+      context: IContext
+    ) => {
+      return await context.models.pocketSave.saveArchive(
+        args.id,
+        args.timestamp
+      );
+    },
   },
 };
 
