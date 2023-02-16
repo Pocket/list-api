@@ -23,8 +23,10 @@ import {
 import { tagsSavedItems } from './tag';
 import { Item, PocketSave, SavedItem, Tag } from '../types';
 import { IContext } from '../server/context';
+import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
 
 const resolvers = {
+  ...PocketDefaultScalars,
   ItemResult: {
     __resolveType(savedItem: SavedItem) {
       return parseInt(savedItem.resolvedId) ? 'Item' : 'PendingItem';
