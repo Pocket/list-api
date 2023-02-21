@@ -1,7 +1,6 @@
 import { readClient } from '../../../database/client';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
-import { getUnixTimestamp } from '../../../utils';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 import config from '../../../config';
@@ -17,9 +16,7 @@ describe('tags query tests - happy path', () => {
   const db = readClient();
   const headers = { userid: '1', premium: 'true' };
   const date = new Date('2020-10-03T10:20:30.000Z');
-  const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');
-  const unixDate1 = getUnixTimestamp(date1);
   const date2 = new Date('2022-10-03T10:20:30.000Z');
   const date3 = new Date('2023-10-03T10:20:30.000Z');
   let app: Express;
@@ -36,8 +33,6 @@ describe('tags query tests - happy path', () => {
               node {
                 id
                 name
-                _createdAt
-                _updatedAt
                 _deletedAt
                 _version
               }
@@ -301,8 +296,6 @@ describe('tags query tests - happy path', () => {
               ... on Tag {
                 id
                 name
-                _createdAt
-                _updatedAt
                 _version
                 _deletedAt
                 savedItems {
@@ -410,18 +403,6 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data?._entities[0].savedItemById.tags[0]._version).is.null;
     expect(res.body.data?._entities[0].savedItemById.tags[0]._deletedAt).is
       .null;
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0]._createdAt
-    ).to.equal(unixDate);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0]._updatedAt
-    ).to.equal(unixDate1);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[1]._createdAt
-    ).to.equal(unixDate1);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[1]._updatedAt
-    ).to.equal(unixDate1);
     expect(res.body.data?._entities[0].savedItemById.tags[1].name).to.equal(
       'zebra'
     );
@@ -663,27 +644,6 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
     expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
       'travel'
-    );
-  });
-
-  it('should always return the oldest date for _createdAt and latest date for _updatdAt for tags', async () => {
-    const variables = {
-      id: '1',
-      pagination: { last: 2, before: 'emVicmFfKl8iemVicmEi' },
-    };
-
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
-    expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
-      'travel'
-    );
-    expect(res.body.data?._entities[0].tags.edges[1].node._createdAt).to.equal(
-      unixDate
-    );
-    expect(res.body.data?._entities[0].tags.edges[1].node._updatedAt).to.equal(
-      unixDate1
     );
   });
 

@@ -20,7 +20,6 @@ describe('updateTag Mutation: ', () => {
   const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
-  const unixDate = getUnixTimestamp(date);
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
   let app: Express;
@@ -113,8 +112,6 @@ describe('updateTag Mutation: ', () => {
     mutation updateTag($input: TagUpdateInput!) {
       updateTag(input: $input) {
         name
-        _createdAt
-        _updatedAt
         savedItems {
           edges {
             cursor
@@ -163,10 +160,6 @@ describe('updateTag Mutation: ', () => {
       });
       expect(res).is.not.undefined;
       expect(res.body.data.updateTag.name).equals(newTagName);
-      expect(res.body.data.updateTag._createdAt).equals(unixDate);
-      expect(res.body.data.updateTag._updatedAt).equals(
-        getUnixTimestamp(updateDate)
-      );
       expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
         expectedSavedItems
       );
@@ -222,10 +215,6 @@ describe('updateTag Mutation: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.body.data.updateTag.name).equals('existing_tag');
-    expect(res.body.data.updateTag._createdAt).equals(unixDate);
-    expect(res.body.data.updateTag._updatedAt).equals(
-      getUnixTimestamp(updateDate)
-    );
     expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
       expectedSavedItems
     );

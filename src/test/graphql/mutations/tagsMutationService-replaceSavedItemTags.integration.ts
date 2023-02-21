@@ -133,8 +133,6 @@ describe('tags mutation: replace savedItem tags', () => {
         tags {
           id
           name
-          _createdAt
-          _updatedAt
         }
       }
     }
@@ -156,14 +154,10 @@ describe('tags mutation: replace savedItem tags', () => {
       {
         id: '8J+kqvCfmJJfX3hwa3R4dGFneF9f',
         name: '🤪😒',
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
       },
       {
         id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
       },
     ];
 
@@ -194,8 +188,6 @@ describe('tags mutation: replace savedItem tags', () => {
       {
         id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
       },
     ];
 

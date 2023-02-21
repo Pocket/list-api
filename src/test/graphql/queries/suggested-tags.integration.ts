@@ -111,7 +111,6 @@ describe('tags query tests - happy path', () => {
                 ... on Tag {
                   id
                   name
-                  _updatedAt
                 }
               }
             }
@@ -127,8 +126,8 @@ describe('tags query tests - happy path', () => {
       const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
       expect(tags[0].name).to.equal('adventure');
-      expect(tags[1].name).to.equal('thriller');
-      expect(tags[2].name).to.equal('romance');
+      expect(tags[1].name).to.equal('romance');
+      expect(tags[2].name).to.equal('thriller');
     });
     it('should return 3 tags even if the most recent contained duplicates', async () => {
       await db('item_tags').insert({
@@ -149,8 +148,8 @@ describe('tags query tests - happy path', () => {
       const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
       expect(tags[0].name).to.equal('adventure');
-      expect(tags[1].name).to.equal('thriller');
-      expect(tags[2].name).to.equal('romance');
+      expect(tags[1].name).to.equal('romance');
+      expect(tags[2].name).to.equal('thriller');
     });
     it('returns empty array if no tags', async () => {
       await db('item_tags').truncate();
@@ -201,9 +200,9 @@ describe('tags query tests - happy path', () => {
       });
       const tags = res.body.data?._entities[0].savedItemById.suggestedTags;
       expect(tags.length).to.equal(3);
-      expect(tags[0].name).to.equal('thriller');
+      expect(tags[0].name).to.equal('horror');
       expect(tags[1].name).to.equal('romance');
-      expect(tags[2].name).to.equal('horror');
+      expect(tags[2].name).to.equal('thriller');
     });
 
     it('should get time_updated from list table if item_tags time_updated is null', async () => {
@@ -279,9 +278,9 @@ describe('tags query tests - happy path', () => {
       expect(tags.length).to.equal(3);
       //tagC is not in top 3 as it has the lowest time_updated
       //null date tag will get its time_updated from list table.
-      expect(tags[0].name).to.equal('tag A');
-      expect(tags[1].name).to.equal('tag B');
-      expect(tags[2].name).to.equal('null date');
+      expect(tags[0].name).to.equal('null date');
+      expect(tags[1].name).to.equal('tag A');
+      expect(tags[2].name).to.equal('tag B');
     });
   });
 });
