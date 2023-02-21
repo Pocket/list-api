@@ -161,10 +161,6 @@ describe('updateTag Mutation: ', () => {
       });
       expect(res).is.not.undefined;
       expect(res.body.data.updateTag.name).equals(newTagName);
-      expect(res.body.data.updateTag._createdAt).equals(unixDate);
-      expect(res.body.data.updateTag._updatedAt).equals(
-        getUnixTimestamp(updateDate)
-      );
       expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
         expectedSavedItems
       );
@@ -220,10 +216,6 @@ describe('updateTag Mutation: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.body.data.updateTag.name).equals('existing_tag');
-    expect(res.body.data.updateTag._createdAt).equals(unixDate);
-    expect(res.body.data.updateTag._updatedAt).equals(
-      getUnixTimestamp(updateDate)
-    );
     expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
       expectedSavedItems
     );

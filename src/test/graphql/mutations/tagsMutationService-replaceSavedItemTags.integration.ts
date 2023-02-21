@@ -133,8 +133,6 @@ describe('tags mutation: replace savedItem tags', () => {
         tags {
           id
           name
-          _createdAt
-          _updatedAt
         }
       }
     }
