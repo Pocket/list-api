@@ -125,8 +125,8 @@ export class TagDataService {
       .pluck('tag');
 
     const tags = await this.getTagsByUserSubQuery()
-      .whereIn('tag', latestTags)
-      .orderBy('_updatedAt', 'desc');
+      .whereIn('tag', latestTags);
+      //.orderBy('_updatedAt', 'desc');
 
     return tags.map(TagModel.toGraphqlEntity);
   }
