@@ -111,8 +111,6 @@ describe('createSavedItemTags mutation', function () {
         tags {
           id
           name
-          _createdAt
-          _updatedAt
         }
       }
     }
@@ -141,14 +139,10 @@ describe('createSavedItemTags mutation', function () {
         {
           id: '8J+kqvCfmJJfX3hwa3R4dGFneF9f',
           name: '🤪😒',
-          _createdAt: getUnixTimestamp(updateDate),
-          _updatedAt: getUnixTimestamp(updateDate),
         },
         {
           id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
           name: '(╯°□°)╯︵ ┻━┻',
-          _createdAt: getUnixTimestamp(updateDate),
-          _updatedAt: getUnixTimestamp(updateDate),
         },
       ];
 
@@ -156,15 +150,11 @@ describe('createSavedItemTags mutation', function () {
         ...addedResult,
         {
           id: 'c3VtbWVyX194cGt0eHRhZ3hfXw==',
-          name: 'summer',
-          _createdAt: getUnixTimestamp(date),
-          _updatedAt: getUnixTimestamp(date),
+          name: 'summer'
         },
         {
           id: 'emVicmFfX3hwa3R4dGFneF9f',
-          name: 'zebra',
-          _createdAt: getUnixTimestamp(date1),
-          _updatedAt: getUnixTimestamp(date1),
+          name: 'zebra'
         },
       ];
 
@@ -172,15 +162,11 @@ describe('createSavedItemTags mutation', function () {
         ...addedResult,
         {
           id: 'ZXhpc3RpbmdfdGFnX194cGt0eHRhZ3hfXw==',
-          name: 'existing_tag',
-          _createdAt: getUnixTimestamp(date1),
-          _updatedAt: getUnixTimestamp(date1),
+          name: 'existing_tag'
         },
         {
           id: 'YW5vdGhlcl9uZXdfdGFnX194cGt0eHRhZ3hfXw==',
-          name: 'another_new_tag',
-          _createdAt: getUnixTimestamp(updateDate),
-          _updatedAt: getUnixTimestamp(updateDate),
+          name: 'another_new_tag'
         },
       ];
 

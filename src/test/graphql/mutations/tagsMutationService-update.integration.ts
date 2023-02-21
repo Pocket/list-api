@@ -113,8 +113,6 @@ describe('updateTag Mutation: ', () => {
     mutation updateTag($input: TagUpdateInput!) {
       updateTag(input: $input) {
         name
-        _createdAt
-        _updatedAt
         savedItems {
           edges {
             cursor

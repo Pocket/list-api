@@ -293,8 +293,6 @@ const validateTag = (tag: any): true => {
   const tagModelFields: { field: string; required?: boolean }[] = [
     { field: 'name', required: true },
     { field: 'savedItems', required: true },
-    { field: '_updatedAt', required: false },
-    { field: '_createdAt', required: false },
     { field: '_version', required: false },
     { field: '_deletedAt', required: false },
   ];

@@ -125,8 +125,6 @@ describe('tags mutation update: ', () => {
         tags {
           id
           name
-          _createdAt
-          _updatedAt
         }
       }
     }
@@ -165,20 +163,14 @@ describe('tags mutation update: ', () => {
       {
         id: 'Y2hhbmdlZF9uYW1lX194cGt0eHRhZ3hfXw==',
         name: 'changed_name',
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
       },
       {
         id: '8J+kqvCfmJJfX3hwa3R4dGFneF9f',
         name: '🤪😒',
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
       },
       {
         id: 'KOKVr8Kw4pahwrAp4pWv77i1IOKUu+KUgeKUu19feHBrdHh0YWd4X18=',
         name: '(╯°□°)╯︵ ┻━┻',
-        _createdAt: getUnixTimestamp(updateDate),
-        _updatedAt: getUnixTimestamp(updateDate),
       },
     ];
 

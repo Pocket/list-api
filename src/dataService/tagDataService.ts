@@ -48,11 +48,6 @@ export class TagDataService {
         'tag as name',
         'tag',
         this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
-        this.db.raw('UNIX_TIMESTAMP(MIN(time_added)) as _createdAt'),
-        // Coalescing because the data in time_updated is very sparse in prod db
-        this.db.raw(
-          'UNIX_TIMESTAMP(MAX(COALESCE(time_updated, time_added))) as _updatedAt'
-        ),
         this.db.raw('NULL as _deletedAt'),
         this.db.raw('NULL as _version')
         //TODO: add version and deletedAt feature to tag

@@ -111,7 +111,6 @@ describe('tags query tests - happy path', () => {
                 ... on Tag {
                   id
                   name
-                  _updatedAt
                 }
               }
             }
