@@ -1,7 +1,6 @@
 import { readClient } from '../../../database/client';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
-import { getUnixTimestamp } from '../../../utils';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 import config from '../../../config';
@@ -17,9 +16,7 @@ describe('tags query tests - happy path', () => {
   const db = readClient();
   const headers = { userid: '1', premium: 'true' };
   const date = new Date('2020-10-03T10:20:30.000Z');
-  const unixDate = getUnixTimestamp(date);
   const date1 = new Date('2021-10-03T10:20:30.000Z');
-  const unixDate1 = getUnixTimestamp(date1);
   const date2 = new Date('2022-10-03T10:20:30.000Z');
   const date3 = new Date('2023-10-03T10:20:30.000Z');
   let app: Express;

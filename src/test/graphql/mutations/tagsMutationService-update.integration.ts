@@ -20,7 +20,6 @@ describe('updateTag Mutation: ', () => {
   const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
-  const unixDate = getUnixTimestamp(date);
   const updateDate = new Date(2021, 1, 1, 0, 0); // mock date for insert
   let clock;
   let app: Express;

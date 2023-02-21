@@ -124,8 +124,7 @@ export class TagDataService {
       .limit(3)
       .pluck('tag');
 
-    const tags = await this.getTagsByUserSubQuery()
-      .whereIn('tag', latestTags);
+    const tags = await this.getTagsByUserSubQuery().whereIn('tag', latestTags);
 
     return tags.map(TagModel.toGraphqlEntity);
   }

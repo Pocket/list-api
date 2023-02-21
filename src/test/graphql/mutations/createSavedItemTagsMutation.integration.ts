@@ -150,11 +150,11 @@ describe('createSavedItemTags mutation', function () {
         ...addedResult,
         {
           id: 'c3VtbWVyX194cGt0eHRhZ3hfXw==',
-          name: 'summer'
+          name: 'summer',
         },
         {
           id: 'emVicmFfX3hwa3R4dGFneF9f',
-          name: 'zebra'
+          name: 'zebra',
         },
       ];
 
@@ -162,11 +162,11 @@ describe('createSavedItemTags mutation', function () {
         ...addedResult,
         {
           id: 'ZXhpc3RpbmdfdGFnX194cGt0eHRhZ3hfXw==',
-          name: 'existing_tag'
+          name: 'existing_tag',
         },
         {
           id: 'YW5vdGhlcl9uZXdfdGFnX194cGt0eHRhZ3hfXw==',
-          name: 'another_new_tag'
+          name: 'another_new_tag',
         },
       ];
 
