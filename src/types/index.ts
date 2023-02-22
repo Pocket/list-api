@@ -227,12 +227,6 @@ export interface NotFoundInternal extends BaseErrorInternal {
   __typename: 'NotFound';
 }
 
-export interface NotFound extends BaseError {
-  path: string;
-  message: string;
-  __typename: 'NotFound';
-}
-
 export type SaveWriteMutationPayload = {
   save: PocketSave[];
   errors: BaseError[];

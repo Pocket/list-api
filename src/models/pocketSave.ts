@@ -63,7 +63,8 @@ export class PocketSaveModel {
    * All IDs passed to this function must be valid; if any are not
    * found in the user's saves, the entire operation will be rolled
    * back and NotFound payload returned.
-   * @param ids itemId associated to the save to archive; must be
+   * @param ids itemIds associated to the saves to archive; must all be
+   * valid or the operation will fail.
    * @param timestamp timestamp for when the bulk operation occurred
    * @returns an array of updated saves and the missing ids (if any
    * encountered; these arrays are mutually exclusive, so if one is

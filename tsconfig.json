@@ -2,8 +2,7 @@
   "extends": "@pocket-tools/tsconfig",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDirs": ["src", "lambda"],
-    "esModuleInterop": true
+    "rootDirs": ["src", "lambda"]
   },
   "exclude": ["node_modules"],
   "include": ["src/**/*.ts", "src/config"],
