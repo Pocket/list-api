@@ -208,3 +208,26 @@ export type PocketSave = {
   title: string;
   updatedAt: Date;
 };
+
+export type MutationErrorTypes = 'NotFound' | 'SyncConflict';
+
+export interface BaseErrorInternal {
+  message: string;
+  __typename: MutationErrorTypes;
+}
+
+export interface BaseError extends BaseErrorInternal {
+  path: string;
+  message: string;
+  __typename: MutationErrorTypes;
+}
+
+export interface NotFoundInternal extends BaseErrorInternal {
+  message: string;
+  __typename: 'NotFound';
+}
+
+export type SaveWriteMutationPayload = {
+  save: PocketSave[];
+  errors: BaseError[];
+};

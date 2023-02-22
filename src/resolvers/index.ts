@@ -21,12 +21,25 @@ import {
   upsertSavedItem,
 } from './mutation';
 import { tagsSavedItems } from './tag';
-import { Item, PocketSave, SavedItem, Tag } from '../types';
+import {
+  BaseError,
+  Item,
+  PocketSave,
+  SaveWriteMutationPayload,
+  SavedItem,
+  Tag,
+} from '../types';
 import { IContext } from '../server/context';
 import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
+import { GraphQLResolveInfo } from 'graphql';
 
 const resolvers = {
   ...PocketDefaultScalars,
+  BaseError: {
+    __resolveType(parent: BaseError) {
+      return parent.__typename;
+    },
+  },
   ItemResult: {
     __resolveType(savedItem: SavedItem) {
       return parseInt(savedItem.resolvedId) ? 'Item' : 'PendingItem';
@@ -101,6 +114,18 @@ const resolvers = {
     deleteTag,
     createSavedItemTags,
     replaceSavedItemTags,
+    saveArchive: async (
+      _,
+      args: { id: string[]; timestamp: Date },
+      context: IContext,
+      info: GraphQLResolveInfo
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.pocketSave.saveArchive(
+        args.id,
+        args.timestamp,
+        info.path
+      );
+    },
   },
 };
 

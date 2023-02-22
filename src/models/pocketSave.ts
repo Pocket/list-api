@@ -1,7 +1,13 @@
-import { PocketSave } from '../types';
+import {
+  NotFoundInternal,
+  PocketSave,
+  SaveWriteMutationPayload,
+} from '../types';
 import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
+import { uniqueArray } from '../dataService/utils';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
+import { GraphQLResolveInfo } from 'graphql';
 
 export class PocketSaveModel {
   private saveService: PocketSaveDataService;
@@ -31,6 +37,11 @@ export class PocketSaveModel {
     return result;
   }
 
+  private notFoundPayload(key: string, value: string): NotFoundInternal {
+    const message = `Entity identified by key=${key}, value=${value} was not found.`;
+    return { message, __typename: 'NotFound' };
+  }
+
   /**
    * * Fetch a PocketSave by its ID
    * * @param id the ID of the PocketSave to retrieve
@@ -44,5 +55,47 @@ export class PocketSaveModel {
     }
     const pocketSave = PocketSaveModel.transformListRow(listRow);
     return pocketSave;
+  }
+
+  /**
+   * Bulk update method for archiving saves; if the save is already
+   * archived, will be a no-op and no changes will occur.
+   * All IDs passed to this function must be valid; if any are not
+   * found in the user's saves, the entire operation will be rolled
+   * back and NotFound payload returned.
+   * @param ids itemIds associated to the saves to archive; must all be
+   * valid or the operation will fail.
+   * @param timestamp timestamp for when the bulk operation occurred
+   * @returns an array of updated saves and the missing ids (if any
+   * encountered; these arrays are mutually exclusive, so if one is
+   * populated, the other is empty)
+   */
+  public async saveArchive(
+    ids: string[],
+    timestamp: Date,
+    path: GraphQLResolveInfo['path']
+  ): Promise<SaveWriteMutationPayload> {
+    const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
+    const { updated, missing } = await this.saveService.archiveListRow(
+      uniqueIds,
+      timestamp
+    );
+    const errors =
+      missing.length > 0
+        ? missing.map((missingId) => this.notFoundPayload('id', missingId))
+        : [];
+    const save = updated.map((row) => PocketSaveModel.transformListRow(row));
+    // TODO: Emit events
+    // save.forEach((saveItem) => {
+    //   this.context.emitItemEvent(EventType.ARCHIVE_ITEM, saveItem);
+    // });
+    // Hydrate errors path with current location
+    // Resolved on saveArchive because it needs to be aware
+    // of this path, not the path of the error resolver type
+    const resolvedErrors = errors.map((error) => ({
+      ...error,
+      path: this.context.models.baseError.path(path),
+    }));
+    return { save, errors: resolvedErrors };
   }
 }

@@ -25,3 +25,30 @@ export function mysqlDateConvert(mysqlDate: Date | string | null): Date | null {
   }
   return null;
 }
+
+/**
+ * Extract unique values from an array of strings or numbers
+ * @param input an array which might contain non-unique values
+ * @returns the unique values of `input`
+ */
+export function uniqueArray<T extends string | number>(input: T[]): T[] {
+  const keys = new Set();
+  const uniqueValues = [];
+  input.forEach((element) => {
+    if (!keys.has(element)) {
+      keys.add(element);
+      uniqueValues.push(element);
+    }
+  });
+  return uniqueValues;
+}
+
+/**
+ * Set difference, `base` - `compare`; return an array of all elements
+ * present in `base` but not in `compare`.
+ * @param base the Set to compute difference on
+ * @param compare the Set to compare to base
+ **/
+export function setDifference<T>(base: Set<T>, compare: Set<T>): Array<T> {
+  return Array.from(base).filter((elem) => !compare.has(elem));
+}
