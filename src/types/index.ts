@@ -231,3 +231,8 @@ export type SaveWriteMutationPayload = {
   save: PocketSave[];
   errors: BaseError[];
 };
+
+export type SaveMutationInput = {
+  id: string[];
+  timestamp: Date;
+};

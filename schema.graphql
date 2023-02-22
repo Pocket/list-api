@@ -648,6 +648,11 @@ type Mutation {
 
   """Archives a Save"""
   saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  """
+  Favorites PocketSaves
+  Fetches the list of Ids that we want to save.
+  """
+  saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
 }
 
 # """

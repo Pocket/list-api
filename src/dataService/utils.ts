@@ -32,15 +32,7 @@ export function mysqlDateConvert(mysqlDate: Date | string | null): Date | null {
  * @returns the unique values of `input`
  */
 export function uniqueArray<T extends string | number>(input: T[]): T[] {
-  const keys = new Set();
-  const uniqueValues = [];
-  input.forEach((element) => {
-    if (!keys.has(element)) {
-      keys.add(element);
-      uniqueValues.push(element);
-    }
-  });
-  return uniqueValues;
+  return Array.from(new Set(input));
 }
 
 /**
