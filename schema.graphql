@@ -542,7 +542,7 @@ type PendingItem @key(fields: "url") {
   URL of the item that the user gave for the SavedItem
   that is pending processing by parser
   """
-  itemId: ID!
+  itemId: String!
   url: Url!
   status: PendingItemStatus
 }
