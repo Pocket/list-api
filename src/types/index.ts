@@ -33,6 +33,7 @@ export type RemoteEntity = {
 export type Item = {
   __typename: string;
   givenUrl: string;
+  itemId: string;
   resolvedId: string;
 };
 
@@ -43,6 +44,7 @@ export enum PendingItemStatus {
 
 export type PendingItem = {
   __typename: string;
+  itemId: string;
   url: string;
   status?: PendingItemStatus;
 };
@@ -202,6 +204,7 @@ export type PocketSave = {
   favoritedAt: Date | null;
   givenUrl: string;
   id: string;
+  resolvedId: string | null;
   status: keyof typeof PocketSaveStatus;
   suggestedTags?: Tag[];
   tags?: Tag[];
