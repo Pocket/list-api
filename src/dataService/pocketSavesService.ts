@@ -185,7 +185,7 @@ export class PocketSaveDataService {
       api_id_updated: this.apiId,
     };
 
-    return await this.writeToDatbabase(
+    return await this.writeToDatababase(
       updateValues,
       ids,
       'status',
@@ -212,7 +212,7 @@ export class PocketSaveDataService {
       time_updated: timeUpdate,
       api_id_updated: this.apiId,
     };
-    return await this.writeToDatbabase(
+    return await this.writeToDatababase(
       updateValues,
       ids,
       'favorite',
@@ -230,12 +230,12 @@ export class PocketSaveDataService {
    * @param value skip row if the value matches
    * @private
    */
-  private async writeToDatbabase(
+  private async writeToDatababase(
     updateValues: ListFavoriteUpdate | ListArchiveUpdate,
     ids: number[],
     checkField: 'status' | 'favorite',
     value: FavoriteStatus | PocketSaveStatus
-  ) {
+  ): Promise<{ updated: ListResult[]; missing: string[] }> {
     // Initialize in outer scope so we can access outside of the
     // try/catch block and transaction block
     let updated: RawListResult[] = [];

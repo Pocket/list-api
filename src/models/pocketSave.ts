@@ -66,9 +66,8 @@ export class PocketSaveModel {
    * @param ids itemIds associated to the saves to archive; must all be
    * valid or the operation will fail.
    * @param timestamp timestamp for when the bulk operation occurred
-   * @returns an array of updated saves and the missing ids (if any
-   * encountered; these arrays are mutually exclusive, so if one is
-   * populated, the other is empty)
+   * @returns SaveWriteMutationPayload the saves that were updated,
+   * and any errors that occurred
    */
   public async saveArchive(
     ids: string[],
@@ -80,11 +79,7 @@ export class PocketSaveModel {
       uniqueIds,
       timestamp
     );
-    const { save, resolvedErrors } = this.fetchSavesAndError(
-      missing,
-      updated,
-      path
-    );
+    const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     // TODO: Emit events
     // save.forEach((saveItem) => {
     //   this.context.emitItemEvent(EventType.ARCHIVE_ITEM, saveItem);
@@ -92,7 +87,7 @@ export class PocketSaveModel {
     // Hydrate errors path with current location
     // Resolved on saveArchive because it needs to be aware
     // of this path, not the path of the error resolver type
-    return { save, errors: resolvedErrors };
+    return payload;
   }
 
   /**
@@ -102,9 +97,8 @@ export class PocketSaveModel {
    * @param ids itemIds associated to the saves to archive; must all be
    * valid or the operation will fail.
    * @param timestamp timestamp for when the bulk operation occurred
-   * @returns an array of updated saves and the missing ids (if any
-   * encountered; these arrays are mutually exclusive, so if one is
-   * populated, the other is empty)
+   * @returns  SaveWriteMutationPayload the saves that were updated,
+   * and any errors that occurred
    */
   public async saveFavorite(
     ids: string[],
@@ -116,13 +110,9 @@ export class PocketSaveModel {
       uniqueIds,
       timestamp
     );
-    const { save, resolvedErrors } = this.fetchSavesAndError(
-      missing,
-      updated,
-      path
-    );
+    const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     //todo: emit event
-    return { save, errors: resolvedErrors };
+    return payload;
   }
 
   /**
@@ -130,13 +120,14 @@ export class PocketSaveModel {
    * @param missing missing savesId
    * @param updated updated saves
    * @param path mutation path
+   * @returns SaveWriteMutationPayload saves updated and any errors that occurred
    * @private
    */
-  private fetchSavesAndError(
+  private formatSaveWriteMutationPayload(
     missing: string[],
     updated: ListResult[],
     path: GraphQLResolveInfo['path']
-  ) {
+  ): SaveWriteMutationPayload {
     const errors =
       missing.length > 0
         ? missing.map((missingId) => this.notFoundPayload('id', missingId))
@@ -146,6 +137,6 @@ export class PocketSaveModel {
       ...error,
       path: this.context.models.baseError.path(path),
     }));
-    return { save, resolvedErrors };
+    return { save: save, errors: resolvedErrors };
   }
 }
