@@ -37,12 +37,25 @@ export type ListResult = {
   user_id: number;
 };
 
-export type ListArchiveUpdate = {
-  status: PocketSaveStatus.ARCHIVED;
+export type UpdateField = {
   time_updated: string; // Timestamp string
   api_id_updated: string;
+};
+
+export type ListArchiveUpdate = UpdateField & {
+  status: PocketSaveStatus.ARCHIVED;
   time_read: string; // Timestamp string
 };
+
+export type ListFavoriteUpdate = UpdateField & {
+  favorite: FavoriteStatus;
+  time_favorited: string; // Timestamp string
+};
+
+export enum FavoriteStatus {
+  FAVORITE = 1,
+  UNFAVORITE = 0,
+}
 
 /**
  * Make PocketSaveStatus enums
@@ -104,7 +117,6 @@ export class PocketSaveDataService {
     'title',
     'user_id',
   ];
-
   constructor(context: Pick<IContext, 'apiId' | 'dbClient' | 'userId'>) {
     this.apiId = context.apiId;
     this.db = context.dbClient;
@@ -172,6 +184,58 @@ export class PocketSaveDataService {
       time_updated: timeUpdate,
       api_id_updated: this.apiId,
     };
+
+    return await this.writeToDatababase(
+      updateValues,
+      ids,
+      'status',
+      PocketSaveStatus.ARCHIVED
+    );
+  }
+
+  /**
+   * Batch update to set status of saves in a user's list to favorited.
+   * Requires all IDs in the batch to be valid; otherwise will roll back
+   * transaction and return missing IDs, for use in NOT_FOUND response
+   * in business layer.
+   * If the row was already favorite, the method is a "no-op"
+   * (e.g. does not reset the time_favorited, time_updated, or api_id_updated values)
+   */
+  public async favoriteListRow(
+    ids: number[],
+    timestamp: Date
+  ): Promise<{ updated: ListResult[]; missing: string[] }> {
+    const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
+    const updateValues: ListFavoriteUpdate = {
+      favorite: FavoriteStatus.FAVORITE,
+      time_favorited: timeUpdate,
+      time_updated: timeUpdate,
+      api_id_updated: this.apiId,
+    };
+    return await this.writeToDatababase(
+      updateValues,
+      ids,
+      'favorite',
+      FavoriteStatus.FAVORITE
+    );
+  }
+
+  /**
+   * Writes the update to the database
+   * If the value is not found, throws a NOT_FOUND error
+   * Skips the row whose value is already set.
+   * @param updateValues fields to be updated in the database
+   * @param ids savesId to be updated
+   * @param checkField database field to check if the field is already set
+   * @param value skip row if the value matches
+   * @private
+   */
+  private async writeToDatababase(
+    updateValues: ListFavoriteUpdate | ListArchiveUpdate,
+    ids: number[],
+    checkField: 'status' | 'favorite',
+    value: FavoriteStatus | PocketSaveStatus
+  ): Promise<{ updated: ListResult[]; missing: string[] }> {
     // Initialize in outer scope so we can access outside of the
     // try/catch block and transaction block
     let updated: RawListResult[] = [];
@@ -183,8 +247,8 @@ export class PocketSaveDataService {
           .update(updateValues)
           .whereIn('item_id', ids)
           .andWhere('user_id', this.userId)
-          // Don't change any rows that are already archived
-          .andWhere('status', '!=', PocketSaveStatus.ARCHIVED);
+          // Don't change any rows that has same value
+          .andWhere(checkField, '!=', value);
 
         updated = await trx<RawListResult>('list')
           .select(this.selectCols)

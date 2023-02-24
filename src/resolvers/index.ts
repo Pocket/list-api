@@ -28,6 +28,7 @@ import {
   SaveWriteMutationPayload,
   SavedItem,
   Tag,
+  SaveMutationInput,
 } from '../types';
 import { IContext } from '../server/context';
 import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
@@ -116,11 +117,23 @@ const resolvers = {
     replaceSavedItemTags,
     saveArchive: async (
       _,
-      args: { id: string[]; timestamp: Date },
+      args: SaveMutationInput,
       context: IContext,
       info: GraphQLResolveInfo
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.pocketSave.saveArchive(
+        args.id,
+        args.timestamp,
+        info.path
+      );
+    },
+    saveFavorite: async (
+      _,
+      args: SaveMutationInput,
+      context: IContext,
+      info: GraphQLResolveInfo
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.pocketSave.saveFavorite(
         args.id,
         args.timestamp,
         info.path

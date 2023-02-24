@@ -25,6 +25,7 @@ describe('saveArchive mutation', function () {
           id
           archived
           archivedAt
+          updatedAt
         }
         errors {
           __typename
@@ -94,6 +95,7 @@ describe('saveArchive mutation', function () {
       id: '1',
       archived: true,
       archivedAt: testTimestamp,
+      updatedAt: testTimestamp,
     });
   });
 
@@ -102,6 +104,7 @@ describe('saveArchive mutation', function () {
     const variables = {
       id: ['123123'],
       timestamp: testTimestamp,
+      updatedAt: testTimestamp,
     };
 
     const res = await request(app)
@@ -138,11 +141,13 @@ describe('saveArchive mutation', function () {
           id: '0',
           archived: true,
           archivedAt: testTimestamp,
+          updatedAt: testTimestamp,
         },
         {
           id: '1',
           archived: true,
           archivedAt: testTimestamp,
+          updatedAt: testTimestamp,
         },
       ],
       errors: [],
