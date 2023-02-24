@@ -58,7 +58,7 @@ interface RemoteEntity {
 """
 Information about pagination in a connection.
 """
-type PageInfo {
+type PageInfo @shareable {
   """
   When paginating forwards, the cursor to continue.
   """
@@ -550,7 +550,7 @@ type PendingItem @key(fields: "url") {
 type Item @key(fields: "givenUrl") {
   "key field to identify the Item entity in the Parser service"
   givenUrl: Url!
-  itemId: ID! @shareable
+  itemId: String! @shareable
 
   #Note more properties exist here but are defined in another service.
 
