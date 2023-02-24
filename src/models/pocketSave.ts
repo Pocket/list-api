@@ -29,6 +29,7 @@ export class PocketSaveModel {
       favoritedAt: row.favorite === 1 ? row.time_favorited : null,
       givenUrl: row.given_url,
       id: row.item_id.toString(),
+      resolvedId: row.resolved_id.toString() ?? null,
       status: row.status,
       title: row.title,
       updatedAt: row.time_updated,

@@ -26,7 +26,7 @@ import {
   Item,
   PocketSave,
   SaveWriteMutationPayload,
-  SavedItem,
+  PendingItem,
   Tag,
   SaveMutationInput,
 } from '../types';
@@ -42,8 +42,8 @@ const resolvers = {
     },
   },
   ItemResult: {
-    __resolveType(savedItem: SavedItem) {
-      return parseInt(savedItem.resolvedId) ? 'Item' : 'PendingItem';
+    __resolveType(parent: PendingItem | Item) {
+      return parent.__typename;
     },
   },
   User: {
@@ -78,6 +78,9 @@ const resolvers = {
     },
     tags(parent: PocketSave, _args: any, context: IContext) {
       return context.models.tag.getBySaveId(parent.id);
+    },
+    item(parent: PocketSave, _args: any, context: IContext) {
+      return context.models.item.getBySave(parent);
     },
   },
   SavedItem: {

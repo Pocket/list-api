@@ -1,3 +1,7 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.0",
+        import: ["@key", "@shareable", "@tag"])
+
 """
 ISOString scalar - all datetimes fields are Typescript Date objects on this server &
 returned as ISO-8601 encoded date strings (e.g. ISOString scalars) to GraphQL clients.
@@ -106,7 +110,7 @@ input PaginationInput {
 }
 
 extend type CorpusItem @key(fields: "url") {
-  url: Url! @external
+  url: Url!
 
   """
   The user's saved item, from the Corpus Item, if the corpus item was saved to the user's saves
@@ -484,13 +488,13 @@ type SavedItemTagAssociation {
   tagId: ID!
 }
 
-extend type User @key(fields: "id") {
+type User @key(fields: "id") {
   #Note more properties exist here but are defined in another service.
 
   """
   User id, provided by the user service.
   """
-  id: ID! @external
+  id: ID!
 
   """
   Get a general paginated listing of all SavedItems for the user
@@ -538,13 +542,15 @@ type PendingItem @key(fields: "url") {
   URL of the item that the user gave for the SavedItem
   that is pending processing by parser
   """
+  itemId: ID!
   url: Url!
   status: PendingItemStatus
 }
 
-extend type Item @key(fields: "givenUrl") {
+type Item @key(fields: "givenUrl") {
   "key field to identify the Item entity in the Parser service"
-  givenUrl: Url! @external
+  givenUrl: Url!
+  itemId: ID! @shareable
 
   #Note more properties exist here but are defined in another service.
 
@@ -756,6 +762,13 @@ type PocketSave {
   The Tags associated with this PocketSave.
   """
   tags: [Tag!]
+
+  """
+  Link to the underlying Pocket Item for the URL. 
+  Temporary until resource field is added. Will hopefully
+  make it easier for clients to adopt.
+  """
+  item: ItemResult! @deprecated(reason: "use resource")
 
   # Not resolved on this subgraph.
   # """

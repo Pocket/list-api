@@ -47,12 +47,14 @@ export async function item(parent: SavedItem): Promise<Item | PendingItem> {
   if (parseInt(parent.resolvedId)) {
     return {
       __typename: 'Item',
+      itemId: parent.id,
       givenUrl: parent.url,
       resolvedId: parent.resolvedId,
     };
   }
   return {
     __typename: 'PendingItem',
+    itemId: parent.id,
     url: parent.url,
     status: PendingItemStatus.UNRESOLVED,
   };

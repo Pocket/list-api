@@ -38,6 +38,7 @@ describe('PocketSaveModel', () => {
         status: 'UNREAD',
         title: 'puppies',
         updatedAt: new Date('2012-08-13 15:32:05'),
+        resolvedId: '1',
       };
       expect(output).toStrictEqual(expected);
     });
@@ -72,6 +73,7 @@ describe('PocketSaveModel', () => {
         status: 'ARCHIVED',
         title: 'puppies',
         updatedAt: dateUpdated,
+        resolvedId: '1',
       };
       expect(output).toStrictEqual(expected);
     });

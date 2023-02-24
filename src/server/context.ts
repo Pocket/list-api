@@ -14,6 +14,7 @@ import { TagModel } from '../models';
 import * as Sentry from '@sentry/node';
 import { PocketSaveModel } from '../models/pocketSave';
 import { BaseErrorModel } from '../models/baseError';
+import { ItemModel } from '../models/item';
 
 export interface IContext {
   userId: string;
@@ -26,6 +27,7 @@ export interface IContext {
     tag: TagModel;
     pocketSave: PocketSaveModel;
     baseError: BaseErrorModel;
+    item: ItemModel;
   };
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
@@ -58,12 +60,14 @@ export class ContextManager implements IContext {
       ...createSavedItemDataLoaders(this),
     };
     this.models = {
+      item: new ItemModel(),
       tag: new TagModel(this),
       pocketSave: new PocketSaveModel(this),
       baseError: new BaseErrorModel(),
     };
   }
   models: {
+    item: ItemModel;
     tag: TagModel;
     pocketSave: PocketSaveModel;
     baseError: BaseErrorModel;

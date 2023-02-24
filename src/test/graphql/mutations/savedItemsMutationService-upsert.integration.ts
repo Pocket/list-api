@@ -210,9 +210,12 @@ describe('UpsertSavedItem Mutation', () => {
             id
             item {
               ... on Item {
+                __typename
                 givenUrl
               }
               ... on PendingItem {
+                __typename
+                itemId
                 url
               }
             }
@@ -229,6 +232,8 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data.id).to.equal('1');
       expect(data.item.givenUrl).is.undefined;
       expect(data.item.url).to.equal(givenUrl);
+      expect(data.item.itemId).to.equal('1');
+      expect(data.item.__typename).to.equal('PendingItem');
     });
 
     it('should updated time favourite and time updated if provided in input', async () => {
