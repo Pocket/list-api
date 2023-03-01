@@ -1,8 +1,4 @@
-import {
-  NotFoundInternal,
-  PocketSave,
-  SaveWriteMutationPayload,
-} from '../types';
+import { PocketSave, SaveWriteMutationPayload } from '../types';
 import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
 import { uniqueArray } from '../dataService/utils';
@@ -168,11 +164,12 @@ export class PocketSaveModel {
     updated: ListResult[],
     path: GraphQLResolveInfo['path']
   ): SaveWriteMutationPayload {
+    // prettier-ignore
     const errors =
       missing.length > 0
         ? missing.map((missingId) =>
-            this.context.models.notFound.message('id', missingId)
-          )
+          this.context.models.notFound.message('id', missingId)
+        )
         : [];
     const save = updated.map((row) => PocketSaveModel.transformListRow(row));
     const resolvedErrors = errors.map((error) => ({

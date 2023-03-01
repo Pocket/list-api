@@ -292,6 +292,7 @@ export class TagModel {
     missing: string[],
     path: GraphQLResolveInfo['path']
   ): SaveWriteMutationPayload['errors'] {
+    // prettier-ignore
     const errors =
       missing.length > 0
         ? missing.map((missingId) =>
