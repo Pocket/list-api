@@ -656,9 +656,14 @@ type Mutation {
   saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
   """
   Favorites PocketSaves
-  Fetches the list of Ids that we want to save.
+  Accepts a list of PocketSave Ids that we want to favorite.
   """
   saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  """
+  Unfavorites PocketSaves
+  Accepts a list of PocketSave Ids that we want to unfavorite.
+  """
+  saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
 }
 
 # """

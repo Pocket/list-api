@@ -185,7 +185,7 @@ export class PocketSaveDataService {
       api_id_updated: this.apiId,
     };
 
-    return await this.writeToDatababase(
+    return await this.writeToDatabase(
       updateValues,
       ids,
       'status',
@@ -212,11 +212,38 @@ export class PocketSaveDataService {
       time_updated: timeUpdate,
       api_id_updated: this.apiId,
     };
-    return await this.writeToDatababase(
+    return await this.writeToDatabase(
       updateValues,
       ids,
       'favorite',
       FavoriteStatus.FAVORITE
+    );
+  }
+
+  /**
+   * Batch update to set status of saves in a user's list to not favorited.
+   * Requires all IDs in the batch to be valid; otherwise will roll back
+   * transaction and return missing IDs, for use in NOT_FOUND response
+   * in business layer.
+   * If the row was already not favorited, the method is a "no-op"
+   * (e.g. does not reset the time_updated, or api_id_updated values)
+   */
+  public async unFavoriteListRow(
+    ids: number[],
+    timestamp: Date
+  ): Promise<{ updated: ListResult[]; missing: string[] }> {
+    const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
+    const updateValues: ListFavoriteUpdate = {
+      favorite: FavoriteStatus.UNFAVORITE,
+      time_favorited: null,
+      time_updated: timeUpdate,
+      api_id_updated: this.apiId,
+    };
+    return await this.writeToDatabase(
+      updateValues,
+      ids,
+      'favorite',
+      FavoriteStatus.UNFAVORITE
     );
   }
 
@@ -230,7 +257,7 @@ export class PocketSaveDataService {
    * @param value skip row if the value matches
    * @private
    */
-  private async writeToDatababase(
+  private async writeToDatabase(
     updateValues: ListFavoriteUpdate | ListArchiveUpdate,
     ids: number[],
     checkField: 'status' | 'favorite',

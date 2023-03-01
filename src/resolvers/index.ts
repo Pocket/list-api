@@ -142,6 +142,18 @@ const resolvers = {
         info.path
       );
     },
+    saveUnFavorite: async (
+      _,
+      args: SaveMutationInput,
+      context: IContext,
+      info: GraphQLResolveInfo
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.pocketSave.saveUnFavorite(
+        args.id,
+        args.timestamp,
+        info.path
+      );
+    },
   },
 };
 
