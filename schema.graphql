@@ -114,13 +114,13 @@ input SaveUpdateTagsInput {
   """
   Tags to remove, by ID
   """
-  removeTagIds: [ID!]!
+  removeTagIds: [ID!]! #@constraint(maxItems: 30)
   """
   Tags to add, by name text; if a Tag
   with the given name does not exist,
   one will be created.
   """
-  addTagNames: [String!]!
+  addTagNames: [String!]! #@constraint(maxItems: 30)
 }
 
 extend type CorpusItem @key(fields: "url") {

@@ -21,16 +21,34 @@ describe('saveBatchUpdateTags', () => {
       $input: [SaveUpdateTagsInput!]!
       $timestamp: ISOString!
     ) {
-      save {
-        tags {
-          name
-          _createdAt
+      saveBatchUpdateTags(input: $input, timestamp: $timestamp) {
+        save {
+          id
+          tags {
+            name
+          }
+        }
+        errors {
+          __typename
+          ... on BaseError {
+            path
+            message
+          }
         }
       }
-      errors {
-        __typename
-        path
-        message
+    }
+  `;
+
+  const GET_TAGS_FOR_SAVE = gql`
+    query getTagsSave($userId: ID!, $itemId: ID!) {
+      _entities(representations: { id: $userId, __typename: "User" }) {
+        ... on User {
+          saveById(id: $itemId) {
+            tags {
+              name
+            }
+          }
+        }
       }
     }
   `;
@@ -109,30 +127,16 @@ describe('saveBatchUpdateTags', () => {
         query: print(BATCH_UPDATE_TAGS),
         variables,
       });
-    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.errors).toBeUndefined();
     const expectedTags = [
-      {
-        name: 'tobio',
-        _createdAt: '2020-10-03T10:20:30.000Z',
-      },
-      {
-        name: 'shoyo',
-        _createdAt: '2020-10-03T10:20:30Z.000Z',
-      },
-      {
-        name: 'daichi',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
-      {
-        name: 'asahi',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
-      {
-        name: 'sugawara',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
+      { name: 'tobio' },
+      { name: 'shoyo' },
+      { name: 'daichi' },
+      { name: 'asahi' },
+      { name: 'sugawara' },
     ];
-    expect(res.body.data.saveBatchUpdateTags.save.tags).toIncludeSameMembers(
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
       expectedTags
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
@@ -156,21 +160,13 @@ describe('saveBatchUpdateTags', () => {
         variables,
       });
     const expectedTags = [
-      {
-        name: 'daichi',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
-      {
-        name: 'asahi',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
-      {
-        name: 'sugawara',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
+      { name: 'daichi' },
+      { name: 'asahi' },
+      { name: 'sugawara' },
     ];
-    expect(res.body.data.errors).toBeUndefined();
-    expect(res.body.data.saveBatchUpdateTags.save.tags).toIncludeSameMembers(
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
       expectedTags
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
@@ -195,8 +191,9 @@ describe('saveBatchUpdateTags', () => {
         query: print(BATCH_UPDATE_TAGS),
         variables,
       });
-    expect(res.body.data.errors).toBeUndefined();
-    expect(res.body.data.saveBatchUpdateTags.save.tags).toBeArrayOfSize(0);
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toBeArrayOfSize(0);
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
   });
   it('does not fail when adding a tag that already exists on a save, and updates _createdAt', async () => {
@@ -218,21 +215,13 @@ describe('saveBatchUpdateTags', () => {
         variables,
       });
     const expectedTags = [
-      {
-        name: 'tobio',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
-      {
-        name: 'shoyo',
-        _createdAt: '2020-10-03T10:20:30Z.000Z',
-      },
-      {
-        name: 'sugawara',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
+      { name: 'tobio' },
+      { name: 'shoyo' },
+      { name: 'sugawara' },
     ];
-    expect(res.body.data.errors).toBeUndefined();
-    expect(res.body.data.saveBatchUpdateTags.save.tags).toIncludeSameMembers(
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
       expectedTags
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
@@ -255,23 +244,15 @@ describe('saveBatchUpdateTags', () => {
         query: print(BATCH_UPDATE_TAGS),
         variables,
       });
-    const expectedTags = [
-      {
-        name: 'shoyo',
-        _createdAt: '2020-10-03T10:20:30Z.000Z',
-      },
-      {
-        name: 'sugawara',
-        _createdAt: '2023-02-23T20:23:00.000Z',
-      },
-    ];
-    expect(res.body.data.errors).toBeUndefined();
-    expect(res.body.data.saveBatchUpdateTags.save.tags).toIncludeSameMembers(
+    const expectedTags = [{ name: 'shoyo' }, { name: 'sugawara' }];
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
       expectedTags
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
   });
-  it('fails the entire batch and rolls back if encounter NOT_FOUND error', async () => {
+  it('does not throw error if deleting a tag that does not exist (no-op)', async () => {
     const removeTagId = TagModel.encodeId('oikawa');
     const variables = {
       userId: '1',
@@ -289,30 +270,186 @@ describe('saveBatchUpdateTags', () => {
         query: print(BATCH_UPDATE_TAGS),
         variables,
       });
-    // The original tags
     const expectedTags = [
-      {
-        name: 'tobio',
-        _createdAt: '2020-10-03T10:20:30.000Z',
-      },
-      {
-        name: 'shoyo',
-        _createdAt: '2020-10-03T10:20:30Z.000Z',
-      },
+      { name: 'tobio' },
+      { name: 'shoyo' },
+      { name: 'sugawara' },
     ];
-    expect(res.body.data.errors).toBeUndefined();
-    expect(res.body.data.saveBatchUpdateTags.save.tags).toIncludeSameMembers(
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
       expectedTags
     );
+  });
+  it('deletes and adds tags for more than one save', async () => {
+    const removeTagIds = ['shoyo', 'tobio'].map((tag) =>
+      TagModel.encodeId(tag)
+    );
+    const variables = {
+      userId: '1',
+      input: [
+        {
+          saveId: '1',
+          removeTagIds,
+          addTagNames: ['daichi', 'asahi', 'sugawara'],
+        },
+        {
+          saveId: '2',
+          removeTagIds: [],
+          addTagNames: ['osamu', 'atsumu'],
+        },
+      ],
+      timestamp: '2023-02-23T20:23:00.000Z',
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(BATCH_UPDATE_TAGS),
+        variables,
+      });
+    const expected = [
+      {
+        id: '1',
+        tags: expect.toIncludeSameMembers([
+          { name: 'daichi' },
+          { name: 'asahi' },
+          { name: 'sugawara' },
+        ]),
+      },
+      {
+        id: '2',
+        tags: expect.toIncludeSameMembers([
+          { name: 'osamu' },
+          { name: 'atsumu' },
+        ]),
+      },
+    ];
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save).toMatchObject(expected);
+  });
+  it('fails the entire batch and rolls back if encounter NOT_FOUND save', async () => {
+    const variables = {
+      userId: '1',
+      input: [
+        {
+          saveId: '1',
+          removeTagIds: [],
+          addTagNames: ['nishinoya'],
+        },
+        {
+          saveId: '3',
+          removeTagIds: [],
+          addTagNames: ['tanaka'],
+        },
+      ],
+      timestamp: '2023-02-23T20:23:00.000Z',
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(BATCH_UPDATE_TAGS),
+        variables,
+      });
     const expectedErrors = [
       {
         __typename: 'NotFound',
-        message: `entity identified by key=id, value=${removeTagId} was not found.`,
+        message: `Entity identified by key=saveId, value=3 was not found.`,
         path: 'saveBatchUpdateTags',
       },
     ];
+    expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.errors).toIncludeSameMembers(
       expectedErrors
     );
+    expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(0);
+
+    // Check to ensure data has not been mutated
+    const getTagVars = { userId: '1', itemId: '1' };
+    const tagData = await request(app)
+      .post(url)
+      .set(headers)
+      .send({ query: print(GET_TAGS_FOR_SAVE), variables: getTagVars });
+    const expectedTags = [{ name: 'tobio' }, { name: 'shoyo' }];
+    expect(tagData.body.data._entities[0].saveById.tags).toIncludeSameMembers(
+      expectedTags
+    );
   });
+  it('skips adding tags that already exist', async () => {
+    const variables = {
+      userId: '1',
+      input: [
+        {
+          saveId: '1',
+          removeTagIds: [],
+          addTagNames: ['tobio'],
+        },
+      ],
+      timestamp: '2023-02-23T20:23:00.000Z',
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(BATCH_UPDATE_TAGS),
+        variables,
+      });
+    const expectedTags = [{ name: 'tobio' }, { name: 'shoyo' }];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
+      expectedTags
+    );
+    const dbResult = await db('item_tags')
+      .select('tag', 'time_added', 'time_updated')
+      .where({ user_id: 1, item_id: 1 });
+    const expected = [
+      { tag: 'shoyo', time_added: date, time_updated: date },
+      { tag: 'tobio', time_added: date, time_updated: date },
+    ];
+    expect(dbResult).toIncludeSameMembers(expected);
+  });
+  it('sets appropriate timestamps in db', async () => {
+    const variables = {
+      userId: '1',
+      input: [
+        {
+          saveId: '1',
+          removeTagIds: [],
+          addTagNames: ['sugawara'],
+        },
+      ],
+      timestamp: '2023-02-23T20:23:00.000Z',
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(BATCH_UPDATE_TAGS),
+        variables,
+      });
+    const expectedTags = [
+      { name: 'tobio' },
+      { name: 'shoyo' },
+      { name: 'sugawara' },
+    ];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
+      expectedTags
+    );
+    const dbResult = await db('item_tags')
+      .select('tag', 'time_added', 'time_updated')
+      .where({ user_id: 1, item_id: 1 });
+    const expected = [
+      { tag: 'shoyo', time_added: date, time_updated: date },
+      { tag: 'tobio', time_added: date, time_updated: date },
+      {
+        tag: 'sugawara',
+        time_added: new Date('2023-02-23T20:23:00.000Z'),
+        time_updated: new Date('2023-02-23T20:23:00.000Z'),
+      },
+    ];
+    expect(dbResult).toIncludeSameMembers(expected);
+  });
+  it.todo('emits appropriate events');
 });

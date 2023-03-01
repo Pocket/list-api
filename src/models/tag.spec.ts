@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai';
-import { TagCreateInput } from '../types';
+import { TagSaveAssociation } from '../types';
 import deepEqualInAnyOrder from 'deep-equal-in-any-order';
 import * as tagModel from './tag';
 import { strings } from 'locutus/php';
@@ -75,7 +75,7 @@ describe('tag model', () => {
   });
   describe('deduplicateInput', () => {
     it('should remove duplicates', () => {
-      const inputData: TagCreateInput[] = [
+      const inputData: TagSaveAssociation[] = [
         { name: 'foam', savedItemId: '1' },
         { name: 'foam', savedItemId: '1' },
         { name: 'roller', savedItemId: '2' },
@@ -85,7 +85,7 @@ describe('tag model', () => {
       expect(deduplicated).to.deep.equalInAnyOrder(inputData.slice(1));
     });
     it('should keep values that differ by only 1 key/value', () => {
-      const inputData: TagCreateInput[] = [
+      const inputData: TagSaveAssociation[] = [
         { name: 'foam', savedItemId: '1' },
         { name: 'foamy', savedItemId: '1' },
       ];
@@ -94,7 +94,7 @@ describe('tag model', () => {
       expect(deduplicated).to.deep.equalInAnyOrder(inputData);
     });
   });
-  describe('sanitizeTagCreateInput', () => {
+  describe('sanitizeTagSaveAssociation', () => {
     afterEach(() => {
       jest.clearAllMocks();
     });

@@ -137,7 +137,7 @@ export enum SavedItemStatus {
   HIDDEN = 3,
 }
 
-export type TagCreateInput = {
+export type TagSaveAssociation = {
   name: string;
   savedItemId: string;
 };
@@ -238,4 +238,22 @@ export type SaveWriteMutationPayload = {
 export type SaveMutationInput = {
   id: string[];
   timestamp: Date;
+};
+
+export type SaveUpdateTagsInputGraphql = {
+  saveId: string;
+  removeTagIds: string[];
+  addTagNames: string[];
+};
+
+/**
+ * Input in a better format for doing bulk transactions. Group
+ * into array of creates and deletes.
+ * Transform the tagIds into "names", which corresponds to the
+ * item_tags.tag field in the database and is part of the primary key
+ * (which also includes user_id and item_id).
+ */
+export type SaveUpdateTagsInputDb = {
+  deletes: TagSaveAssociation[];
+  creates: TagSaveAssociation[];
 };

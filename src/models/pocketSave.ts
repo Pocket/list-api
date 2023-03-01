@@ -38,11 +38,6 @@ export class PocketSaveModel {
     return result;
   }
 
-  private notFoundPayload(key: string, value: string): NotFoundInternal {
-    const message = `Entity identified by key=${key}, value=${value} was not found.`;
-    return { message, __typename: 'NotFound' };
-  }
-
   /**
    * * Fetch a PocketSave by its ID
    * * @param id the ID of the PocketSave to retrieve
@@ -56,6 +51,23 @@ export class PocketSaveModel {
     }
     const pocketSave = PocketSaveModel.transformListRow(listRow);
     return pocketSave;
+  }
+
+  /**
+   * Fetch multiple Pocket Saves by ID. Unlike PocketSave.getById,
+   * will not return a not found error if unable to retrieve one
+   * of the IDs.
+   * This can be added if/when the bulk retrieval of pocketSave
+   * entities is a union type which includes NotFound.
+   * @param ids the IDs of the PocketSave to retrieve
+   * @returns the PocketSave entities that were found for the given ids
+   */
+  public async getManyById(ids: string[]): Promise<PocketSave[]> {
+    const listRows = await this.saveService.getListRowsById(ids);
+    const pocketSaves = listRows.map((row) =>
+      PocketSaveModel.transformListRow(row)
+    );
+    return pocketSaves;
   }
 
   /**
@@ -158,12 +170,14 @@ export class PocketSaveModel {
   ): SaveWriteMutationPayload {
     const errors =
       missing.length > 0
-        ? missing.map((missingId) => this.notFoundPayload('id', missingId))
+        ? missing.map((missingId) =>
+            this.context.models.notFound.message('id', missingId)
+          )
         : [];
     const save = updated.map((row) => PocketSaveModel.transformListRow(row));
     const resolvedErrors = errors.map((error) => ({
       ...error,
-      path: this.context.models.baseError.path(path),
+      path: this.context.models.notFound.path(path),
     }));
     return { save: save, errors: resolvedErrors };
   }

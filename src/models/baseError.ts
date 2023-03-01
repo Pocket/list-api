@@ -1,4 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql';
+import { NotFoundInternal } from '../types';
 
 /**
  * Class for handling shared methods in errors

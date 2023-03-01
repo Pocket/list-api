@@ -165,6 +165,13 @@ export class PocketSaveDataService {
     return PocketSaveDataService.convertListResult(query);
   }
 
+  public async getListRowsById(itemIds: string[]): Promise<ListResult[]> {
+    const query = await this.buildQuery()
+      .whereIn('item_id', itemIds)
+      .andWhere('user_id', this.userId);
+    return PocketSaveDataService.convertListResult(query);
+  }
+
   /**
    * Batch update to set status of saves in a user's list to ARCHIVED.
    * Requires all IDs in the batch to be valid; otherwise will roll back
@@ -308,5 +315,18 @@ export class PocketSaveDataService {
       updated: PocketSaveDataService.convertListResult(updated),
       missing,
     };
+  }
+  /**
+   * Check whether a set of item_ids exist in a user's saves.
+   * Returns any input IDs which were not found.
+   * @param ids
+   */
+  public async checkIdExists(ids: number[]): Promise<number[]> {
+    const extantIds: number[] = await this.db('list')
+      .select('item_id')
+      .whereIn('item_id', ids)
+      .andWhere('user_id', this.userId)
+      .pluck('item_id');
+    return setDifference(new Set(ids), new Set(extantIds));
   }
 }
