@@ -1,5 +1,6 @@
 {
   "extends": "@pocket-tools/tsconfig",
+  "esModuleInterop": true,
   "compilerOptions": {
     "outDir": "dist",
     "rootDirs": ["src", "lambda"]

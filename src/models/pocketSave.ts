@@ -95,9 +95,10 @@ export class PocketSaveModel {
    * bulk favorite the saves
    * no action performed if saves are already favorited
    * any error in the batch will rollback and fail the entire batch
-   * @param ids itemIds associated to the saves to archive; must all be
+   * @param ids itemIds associated to the saves to favorite; must all be
    * valid or the operation will fail.
    * @param timestamp timestamp for when the bulk operation occurred
+   * @param path GraphQL path for the operation
    * @returns  SaveWriteMutationPayload the saves that were updated,
    * and any errors that occurred
    */
@@ -108,6 +109,32 @@ export class PocketSaveModel {
   ): Promise<SaveWriteMutationPayload> {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.favoriteListRow(
+      uniqueIds,
+      timestamp
+    );
+    const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
+    //todo: emit event
+    return payload;
+  }
+
+  /**
+   * bulk unfavorite the saves
+   * no action performed if saves are already unfavorited
+   * any error in the batch will rollback and fail the entire batch
+   * @param ids itemIds associated to the saves to unfavorite; must all be
+   * valid or the operation will fail.
+   * @param timestamp timestamp for when the bulk operation occurred
+   * @param path GraphQL path for the operation
+   * @returns  SaveWriteMutationPayload the saves that were updated,
+   * and any errors that occurred
+   */
+  public async saveUnFavorite(
+    ids: string[],
+    timestamp: Date,
+    path: GraphQLResolveInfo['path']
+  ): Promise<SaveWriteMutationPayload> {
+    const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
+    const { updated, missing } = await this.saveService.unFavoriteListRow(
       uniqueIds,
       timestamp
     );
