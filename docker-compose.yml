@@ -53,6 +53,7 @@ services:
       - .env
     environment:
       - NODE_ENV=local
+      - TZ=US/Central
     entrypoint: ./.docker/scripts/local-start.sh
     depends_on:
       - mysql

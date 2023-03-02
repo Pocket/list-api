@@ -652,13 +652,18 @@ type Mutation {
   """
   replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
 
-  """Archives a Save"""
+  """Archives PocketSaves"""
   saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+
+  """Unarchives PocketSaves"""
+  saveUnArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+
   """
   Favorites PocketSaves
   Accepts a list of PocketSave Ids that we want to favorite.
   """
   saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+
   """
   Unfavorites PocketSaves
   Accepts a list of PocketSave Ids that we want to unfavorite.
