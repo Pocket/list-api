@@ -130,6 +130,18 @@ const resolvers = {
         info.path
       );
     },
+    saveUnArchive: async (
+      _,
+      args: SaveMutationInput,
+      context: IContext,
+      info: GraphQLResolveInfo
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.pocketSave.saveUnArchive(
+        args.id,
+        args.timestamp,
+        info.path
+      );
+    },
     saveFavorite: async (
       _,
       args: SaveMutationInput,
