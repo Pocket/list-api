@@ -249,9 +249,8 @@ export type SaveUpdateTagsInputGraphql = {
 /**
  * Input in a better format for doing bulk transactions. Group
  * into array of creates and deletes.
- * Transform the tagIds into "names", which corresponds to the
- * item_tags.tag field in the database and is part of the primary key
- * (which also includes user_id and item_id).
+ * Since tags currently do not have an ID field in the database,
+ * convert tag ids in delete input back to the tag name.
  */
 export type SaveUpdateTagsInputDb = {
   deletes: TagSaveAssociation[];
