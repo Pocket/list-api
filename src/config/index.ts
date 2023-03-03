@@ -132,6 +132,9 @@ export default {
       'list_shares',
     ],
   },
+  mutationInputLimits: {
+    batchUpdateTagNodesMax: 150,
+  },
   tracing: {
     host: process.env.OTLP_COLLECTOR_HOST || 'otlpcollector',
     graphQLDepth: 8,

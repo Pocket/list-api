@@ -686,6 +686,7 @@ type Mutation {
   """
   Batch update the Tags associated with a Save
   by adding new tags and deleting existing tags.
+  Maximum of 150 operations (adds/deletes) per request.
   """
   saveBatchUpdateTags(
     input: [SaveUpdateTagsInput!]! # @constraint(minItems: 1, maxItems: 30),

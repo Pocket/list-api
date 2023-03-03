@@ -265,7 +265,15 @@ export class TagModel {
     timestamp: Date,
     path: GraphQLResolveInfo['path']
   ): Promise<SaveWriteMutationPayload> {
+    const maxNodes = config.mutationInputLimits.batchUpdateTagNodesMax;
     const batchUpdate = this.formatBatchUpdateInput(input);
+    const requestedNodes =
+      batchUpdate.deletes.length + batchUpdate.creates.length;
+    if (requestedNodes > maxNodes) {
+      throw new UserInputError(
+        `Maximum number of operations exceeded (received=${requestedNodes}, max=${maxNodes})`
+      );
+    }
     const { updated, missing } = await this.tagService.batchUpdateTags(
       batchUpdate,
       timestamp

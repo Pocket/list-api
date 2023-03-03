@@ -451,5 +451,36 @@ describe('saveBatchUpdateTags', () => {
     ];
     expect(dbResult).toIncludeSameMembers(expected);
   });
+  it('throws a UserInput error if attempting to write more than 150 changes', async () => {
+    const input = Array.from(Array(6).keys()).map((i) => {
+      return {
+        saveId: '1',
+        removeTagIds: [],
+        addTagNames: Array.from(Array(30).keys()).map(
+          (j) => `dalmation_${i * 30 + j}`
+        ),
+      };
+    });
+    // Toss a delete in there just to be sure to cover
+    input[0].removeTagIds = ['shoyo'];
+    const variables = {
+      userId: '1',
+      input,
+      timestamp: '2023-02-23T20:23:00.000Z',
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(BATCH_UPDATE_TAGS),
+        variables,
+      });
+    expect(res.body.data).toBeNull();
+    expect(res.body.errors).toBeArrayOfSize(1);
+    expect(res.body.errors[0].extensions.code).toBe('BAD_USER_INPUT');
+    expect(res.body.errors[0].message).toStartWith(
+      'Maximum number of operations exceeded (received=181, max='
+    );
+  });
   it.todo('emits appropriate events');
 });
