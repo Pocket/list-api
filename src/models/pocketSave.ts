@@ -75,6 +75,7 @@ export class PocketSaveModel {
    * @param ids itemIds associated to the saves to archive; must all be
    * valid or the operation will fail.
    * @param timestamp timestamp for when the bulk operation occurred
+   * @param path GraphQL path for the operation
    * @returns SaveWriteMutationPayload the saves that were updated,
    * and any errors that occurred
    */
@@ -96,6 +97,34 @@ export class PocketSaveModel {
     // Hydrate errors path with current location
     // Resolved on saveArchive because it needs to be aware
     // of this path, not the path of the error resolver type
+    return payload;
+  }
+
+  /**
+   * Bulk update method for unarchiving saves; if the save is already
+   * unarchived, will be a no-op and no changes will occur.
+   * All IDs passed to this function must be valid; if any are not
+   * found in the user's saves, the entire operation will be rolled
+   * back and NotFound payload returned.
+   * @param ids itemIds associated to the saves to archive; must all be
+   * valid or the operation will fail.
+   * @param timestamp timestamp for when the bulk operation occurred
+   * @param path GraphQL path for the operation
+   * @returns SaveWriteMutationPayload the saves that were updated,
+   * and any errors that occurred
+   */
+  public async saveUnArchive(
+    ids: string[],
+    timestamp: Date,
+    path: GraphQLResolveInfo['path']
+  ): Promise<SaveWriteMutationPayload> {
+    const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
+    const { updated, missing } = await this.saveService.unArchiveListRow(
+      uniqueIds,
+      timestamp
+    );
+    const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
+    // TODO: Emit events
     return payload;
   }
 
