@@ -18,7 +18,6 @@ import { IContext } from '../server/context';
 import { SavedItemDataService, TagDataService } from '../dataService';
 import { NotFoundError, UserInputError } from '@pocket-tools/apollo-utils';
 import { addslashes } from 'locutus/php/strings';
-import { uniqueArray } from '../dataService/utils';
 import * as Sentry from '@sentry/node';
 import { GraphQLResolveInfo } from 'graphql';
 
