@@ -1,5 +1,9 @@
 import DataLoader from 'dataloader';
-import { SavedItemTagsInput, SavedItemTagsMap, TagCreateInput } from '../types';
+import {
+  SavedItemTagsInput,
+  SavedItemTagsMap,
+  TagSaveAssociation,
+} from '../types';
 
 /**
  * Returns a savedItemMap from the list of tags.
@@ -39,24 +43,24 @@ export function getSavedItemTagsMap(
 }
 
 /**
- * converts savedItemTagsMap to tagsCreateInput list
+ * converts savedItemTagsMap to TagSaveAssociations list
  * @param savedItemTagsMap
  */
-export function convertToTagCreateInputs(
+export function convertToTagSaveAssociations(
   savedItemTagsMap: SavedItemTagsMap
-): TagCreateInput[] {
-  const tagCreateInputs: TagCreateInput[] = [];
+): TagSaveAssociation[] {
+  const tagSaveAssociations: TagSaveAssociation[] = [];
   for (const savedItemId in savedItemTagsMap) {
     const tags = savedItemTagsMap[savedItemId];
     for (const tag of tags) {
-      tagCreateInputs.push({
+      tagSaveAssociations.push({
         name: tag,
         savedItemId: savedItemId,
       });
     }
   }
 
-  return tagCreateInputs;
+  return tagSaveAssociations;
 }
 
 /**

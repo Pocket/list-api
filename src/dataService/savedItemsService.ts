@@ -379,8 +379,11 @@ export class SavedItemDataService {
    * the list table, by item id.
    * @param itemIds The item IDS to update the `time_Updated` to now.
    */
-  public updateListItemMany(itemIds: string[]): Knex.QueryBuilder {
-    return this.listItemUpdateBuilder().whereIn('item_id', itemIds);
+  public updateListItemMany(
+    itemIds: string[],
+    timestamp?: Date
+  ): Knex.QueryBuilder {
+    return this.listItemUpdateBuilder(timestamp).whereIn('item_id', itemIds);
   }
 
   /**
@@ -415,10 +418,10 @@ export class SavedItemDataService {
    * Do not run this query as-is. Should only be used to compose other
    * queries. That's why it's private :)
    */
-  private listItemUpdateBuilder(): Knex.QueryBuilder {
+  private listItemUpdateBuilder(timestamp?: Date): Knex.QueryBuilder {
     return this.db('list')
       .update({
-        time_updated: SavedItemDataService.formatDate(new Date()),
+        time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),
         api_id_updated: this.apiId,
       })
       .andWhere('user_id', this.userId);

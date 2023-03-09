@@ -2,13 +2,16 @@ import {
   SavedItemTagUpdateInput,
   Tag,
   SavedItem,
-  TagCreateInput,
+  TagSaveAssociation,
   SaveTagNameConnection,
   DeleteSavedItemTagsInput,
   TagUpdateInput,
   SavedItemTagsInput,
   DeleteSaveTagResponse,
   PocketSave,
+  SaveUpdateTagsInputGraphql,
+  SaveUpdateTagsInputDb,
+  SaveWriteMutationPayload,
 } from '../types';
 import config from '../config';
 import { IContext } from '../server/context';
@@ -16,6 +19,7 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import { NotFoundError, UserInputError } from '@pocket-tools/apollo-utils';
 import { addslashes } from 'locutus/php/strings';
 import * as Sentry from '@sentry/node';
+import { GraphQLResolveInfo } from 'graphql';
 
 export class TagModel {
   private tagService: TagDataService;
@@ -77,7 +81,7 @@ export class TagModel {
   public async createTagSaveConnections(
     inputs: SavedItemTagsInput[]
   ): Promise<SavedItem[]> {
-    const creates: TagCreateInput[] = sanitizeTagCreateInput(
+    const creates: TagSaveAssociation[] = sanitizeTagSaveAssociation(
       inputs.flatMap((input) =>
         input.tags.map((name) => ({
           savedItemId: input.savedItemId,
@@ -96,13 +100,13 @@ export class TagModel {
   public updateTagSaveConnections(
     updates: SavedItemTagUpdateInput
   ): Promise<SavedItem> {
-    const creates: TagCreateInput[] = updates.tagIds.map((tagId) => {
+    const creates: TagSaveAssociation[] = updates.tagIds.map((tagId) => {
       return {
         name: TagModel.decodeId(tagId),
         savedItemId: updates.savedItemId,
       };
     });
-    const sanitized = sanitizeTagCreateInput(creates);
+    const sanitized = sanitizeTagSaveAssociation(creates);
     const sanitizedIds = sanitized.map(({ savedItemId }) => savedItemId);
     // Validate just in case
     const deleteFromSaveId = new Set(sanitizedIds);
@@ -116,8 +120,8 @@ export class TagModel {
    * Replace the tags associated with one or more saves in
    * in a single batch.
    */
-  public replaceTagSaveConnections(tags: TagCreateInput[]) {
-    const sanitizedInput = sanitizeTagCreateInput(tags);
+  public replaceTagSaveConnections(tags: TagSaveAssociation[]) {
+    const sanitizedInput = sanitizeTagSaveAssociation(tags);
     return this.tagService.replaceSavedItemTags(sanitizedInput);
   }
 
@@ -230,11 +234,12 @@ export class TagModel {
   public async replaceSaveTagConnections(
     replacements: SavedItemTagsInput[]
   ): Promise<SavedItem[]> {
-    const tagCreates: TagCreateInput[] = replacements.flatMap((replacement) =>
-      replacement.tags.map((tag) => ({
-        savedItemId: replacement.savedItemId,
-        name: sanitizeTagName(tag),
-      }))
+    const tagCreates: TagSaveAssociation[] = replacements.flatMap(
+      (replacement) =>
+        replacement.tags.map((tag) => ({
+          savedItemId: replacement.savedItemId,
+          name: sanitizeTagName(tag),
+        }))
     );
     return this.tagService.replaceSavedItemTags(tagCreates);
   }
@@ -243,6 +248,101 @@ export class TagModel {
   //   public getSuggestedTags() {}
   //   public getBySave() {}
   //   public removeTagSaveConnections {}
+
+  /**
+   * Bulk update method for creating and deleting tags associated to a Save.
+   * All SaveIds passed to this function must be valid; if any are not
+   * found in the user's saves, the entire operation will be rolled
+   * back and NotFound payload returned.
+   * If attempting to delete a tag that does not exist,
+   * the method is a "no-op" and will not result in an error.
+   * @param updates payload of deletes and creates for a given saveId
+   * @param timestamp timestamp for when the bulk operation occurred
+   * @returns the saves that were updated, and any errors that occurred
+   */
+  public async batchUpdateTagConnections(
+    input: SaveUpdateTagsInputGraphql[],
+    timestamp: Date,
+    path: GraphQLResolveInfo['path']
+  ): Promise<SaveWriteMutationPayload> {
+    const maxNodes = config.mutationInputLimits.batchUpdateTagNodesMax;
+    const batchUpdate = this.formatBatchUpdateInput(input);
+    const requestedNodes =
+      batchUpdate.deletes.length + batchUpdate.creates.length;
+    if (requestedNodes > maxNodes) {
+      throw new UserInputError(
+        `Maximum number of operations exceeded (received=${requestedNodes}, max=${maxNodes})`
+      );
+    }
+    const { updated, missing } = await this.tagService.batchUpdateTags(
+      batchUpdate,
+      timestamp
+    );
+    let save: PocketSave[] = [];
+    if (updated.length) {
+      const ids = updated.map((update) => update.toString());
+      save = await this.context.models.pocketSave.getManyById(ids);
+    }
+    const errors = this.formatSaveWriteMutationPayloadErrors(missing, path);
+    // TODO: emit relevant events
+    return { save, errors };
+  }
+  /**
+   * construct saves and errors types from the data services
+   * @param missing missing savesId
+   * @param updated updated saves
+   * @param path mutation path
+   * @returns SaveWriteMutationPayload saves updated and any errors that occurred
+   * @private
+   */
+  private formatSaveWriteMutationPayloadErrors(
+    missing: string[],
+    path: GraphQLResolveInfo['path']
+  ): SaveWriteMutationPayload['errors'] {
+    // prettier-ignore
+    const errors =
+      missing.length > 0
+        ? missing.map((missingId) =>
+          this.context.models.notFound.message('saveId', missingId)
+        )
+        : [];
+    const resolvedErrors = errors.map((error) => ({
+      ...error,
+      path: this.context.models.notFound.path(path),
+    }));
+    return resolvedErrors;
+  }
+
+  private formatBatchUpdateInput(
+    inputs: SaveUpdateTagsInputGraphql[]
+  ): SaveUpdateTagsInputDb {
+    // Explode input into itemId, tagName tuples for easier processing;
+    // also sanitize create inputs.
+    const updates: SaveUpdateTagsInputDb = inputs.reduce(
+      (updates, input) => {
+        const savedItemId = input.saveId;
+        const addTag = input.addTagNames.map((name) => ({
+          savedItemId: input.saveId,
+          name: sanitizeTagName(name),
+        }));
+        const removeTag = input.removeTagIds.map((id) => ({
+          savedItemId,
+          name: TagModel.decodeId(id),
+        }));
+        updates.creates.push(...addTag);
+        updates.deletes.push(...removeTag);
+        return updates;
+      },
+      {
+        deletes: new Array<TagSaveAssociation>(),
+        creates: new Array<TagSaveAssociation>(),
+      } as SaveUpdateTagsInputDb
+    );
+    // Finally deduplicate inputs when done exploding
+    updates.deletes = deduplicateTagInput(updates.deletes);
+    updates.creates = deduplicateTagInput(updates.creates);
+    return updates;
+  }
 }
 
 /**
@@ -264,7 +364,7 @@ export class TagModel {
  * @throws Error if cleaning results in an empty string
  */
 
-export function sanitizeTagName(name: string) {
+export function sanitizeTagName(name: string): string {
   const strippedTag = Array.from(
     name
       .replace(new RegExp('\uFFFD', 'g'), '?') // unicode replacement character
@@ -317,17 +417,17 @@ const validateTag = (tag: any): true => {
 
 /**
  * Deduplicate a batch of tags prior to inserting in the
- * database. Compares values for all keys of the TagCreateInput type.
+ * database. Compares values for all keys of the TagSaveAssociation type.
  * The keys aren't available until compile time, but if they get changed
  * the linter should remind the dev to update.
  * Best if this method is run after tags are 'cleaned'.
  */
 export function deduplicateTagInput(
-  tagInputs: TagCreateInput[]
-): TagCreateInput[] {
+  tagInputs: TagSaveAssociation[]
+): TagSaveAssociation[] {
   const deduplicated = new Map();
-  const tagKeys: Array<keyof TagCreateInput> = ['name', 'savedItemId'];
-  tagInputs.forEach((tagInput: TagCreateInput) => {
+  const tagKeys: Array<keyof TagSaveAssociation> = ['name', 'savedItemId'];
+  tagInputs.forEach((tagInput: TagSaveAssociation) => {
     // Combine all values of all tag input props into a single lookup key
     const lookupKey = tagKeys.reduce(
       (accumulator: string, currentKey) =>
@@ -344,9 +444,9 @@ export function deduplicateTagInput(
  * Convenience function.
  * TODO: Input constraints on schema?
  */
-const sanitizeTagCreateInput = (
-  tagInputs: TagCreateInput[]
-): TagCreateInput[] => {
+const sanitizeTagSaveAssociation = (
+  tagInputs: TagSaveAssociation[]
+): TagSaveAssociation[] => {
   const input = deduplicateTagInput(tagInputs).map(({ name, savedItemId }) => {
     return {
       name: sanitizeTagName(name),

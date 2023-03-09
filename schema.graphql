@@ -109,6 +109,20 @@ input PaginationInput {
   last: Int
 }
 
+input SaveUpdateTagsInput {
+  saveId: ID!
+  """
+  Tags to remove, by ID
+  """
+  removeTagIds: [ID!]! #@constraint(maxItems: 30)
+  """
+  Tags to add, by name text; if a Tag
+  with the given name does not exist,
+  one will be created.
+  """
+  addTagNames: [String!]! #@constraint(maxItems: 30)
+}
+
 extend type CorpusItem @key(fields: "url") {
   url: Url!
 
@@ -600,7 +614,7 @@ type Mutation {
   Will replace any existing Tag associations on the SavedItem.
   To remove all Tags from a SavedItem, use `updateSavedItemRemoveTags`.
   """
-  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem!
+  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem! @deprecated(reason: "use saveBatchUpdateTags")
 
   """
   Removes all Tag associations from a SavedItem. Returns the
@@ -608,7 +622,7 @@ type Mutation {
   Note that if this operation results in a Tag having no associations
   to a SavedItem, the Tag object will be deleted.
   """
-  updateSavedItemRemoveTags(savedItemId: ID): SavedItem!
+  updateSavedItemRemoveTags(savedItemId: ID): SavedItem! @deprecated(reason: "use saveBatchUpdateTags")
 
   """
   Deletes a SavedItem from the users list. Returns ID of the
@@ -650,7 +664,7 @@ type Mutation {
   Inputs a list of SavedItemTagsInput(ie. savedItemId and list of tag names)
   Returns the SavedItem for which the tags have been modified.
   """
-  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]! @deprecated(reason: "use saveBatchUpdateTags")
 
   """Archives PocketSaves"""
   saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
@@ -669,6 +683,15 @@ type Mutation {
   Accepts a list of PocketSave Ids that we want to unfavorite.
   """
   saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  """
+  Batch update the Tags associated with a Save
+  by adding new tags and deleting existing tags.
+  Maximum of 150 operations (adds/deletes) per request.
+  """
+  saveBatchUpdateTags(
+    input: [SaveUpdateTagsInput!]! # @constraint(minItems: 1, maxItems: 30),
+    timestamp: ISOString!
+  ): SaveWriteMutationPayload! @tag(name: "alpha")
 }
 
 # """

@@ -7,15 +7,17 @@ import {
   SavedItem,
   SaveTagNameConnection,
   Tag,
-  TagCreateInput,
+  TagSaveAssociation,
   TagEdge,
+  SaveUpdateTagsInputDb,
 } from '../types';
-import { mysqlTimeString } from './utils';
+import { mysqlTimeString, uniqueArray } from './utils';
 import config from '../config';
 import { UsersMetaService } from './usersMetaService';
 import { SavedItemDataService } from './savedItemsService';
 import { TagModel } from '../models';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
+import { PocketSaveDataService } from './pocketSavesService';
 
 /***
  * class that handles the read and write from `readitla-temp.item_tags` table.
@@ -28,6 +30,7 @@ export class TagDataService {
   private tagGroupQuery: Knex.QueryBuilder;
   private readonly savedItemService: SavedItemDataService;
   private readonly usersMetaService: UsersMetaService;
+  private readonly pocketSaveService: PocketSaveDataService;
 
   constructor(
     context: IContext,
@@ -40,6 +43,7 @@ export class TagDataService {
     this.apiId = context.apiId;
     this.savedItemService = savedItemDataService;
     this.usersMetaService = new UsersMetaService(context);
+    this.pocketSaveService = new PocketSaveDataService(context);
   }
 
   private getTagsByUserSubQuery(): any {
@@ -182,7 +186,7 @@ export class TagDataService {
    * is actually in the user's list (no foreign key constraint).
    * @param tagInputs
    */
-  public async insertTags(tagInputs: TagCreateInput[]): Promise<void> {
+  public async insertTags(tagInputs: TagSaveAssociation[]): Promise<void> {
     await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.insertTagAndUpdateSavedItem(tagInputs, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
@@ -190,23 +194,34 @@ export class TagDataService {
   }
 
   private async insertTagAndUpdateSavedItem(
-    tagInputs: TagCreateInput[],
-    trx: Knex.Transaction<any, any[]>
+    tagInputs: TagSaveAssociation[],
+    trx: Knex.Transaction<any, any[]>,
+    timestamp?: Date
   ) {
-    const timestamp = mysqlTimeString(new Date(), config.database.tz);
+    if (tagInputs.length === 0) {
+      return;
+    }
+    const updateTimestamp = mysqlTimeString(
+      timestamp ?? new Date(),
+      config.database.tz
+    );
     const inputData = tagInputs.map((tagInput) => {
       return {
         user_id: parseInt(this.userId),
         item_id: parseInt(tagInput.savedItemId),
         tag: tagInput.name,
-        time_added: timestamp,
-        time_updated: timestamp,
+        time_added: updateTimestamp,
+        time_updated: updateTimestamp,
         api_id: parseInt(this.apiId),
       };
     });
     await trx('item_tags').insert(inputData).onConflict().ignore();
-    const itemIds = tagInputs.map((element) => element.savedItemId);
-    await this.savedItemService.updateListItemMany(itemIds).transacting(trx);
+    const itemIds = uniqueArray(
+      tagInputs.map((element) => element.savedItemId)
+    );
+    await this.savedItemService
+      .updateListItemMany(itemIds, timestamp)
+      .transacting(trx);
   }
 
   /**
@@ -298,7 +313,7 @@ export class TagDataService {
    * todo: make a check if savedItemId exist before deleting.
    */
   public async updateSavedItemTags(
-    inserts: TagCreateInput[]
+    inserts: TagSaveAssociation[]
   ): Promise<SavedItem> {
     // No FK constraints so check in data service layer
     const exists =
@@ -340,10 +355,10 @@ export class TagDataService {
 
   /**
    * Replaces all tags associated with a given savedItem id
-   * @param tagsInputs : list of tagCreateInput
+   * @param tagsInputs : list of TagSaveAssociation
    */
   public async replaceSavedItemTags(
-    tagInputs: TagCreateInput[]
+    tagInputs: TagSaveAssociation[]
   ): Promise<SavedItem[]> {
     const savedItemIds = tagInputs.map((input) => input.savedItemId);
 
@@ -362,6 +377,44 @@ export class TagDataService {
     );
   }
 
+  /**
+   * Bulk update method for creating and deleting tags associated to a Save.
+   * All SaveIds passed to this function must be valid; if any are not
+   * found in the user's saves, the entire operation will be rolled
+   * back and NotFound payload returned.
+   * If attempting to delete a tag that does not exist,
+   * the method is a "no-op" and will not result in an error.
+   * @param updates payload of deletes and creates for a given saveId
+   * @param timestamp timestamp for when the bulk operation occurred
+   * @returns object containing the saveIds that were updated and any
+   * that were missing; these arrays are mutually exclusive (so if one
+   * has any values, the other will be empty).
+   */
+  public async batchUpdateTags(
+    updates: SaveUpdateTagsInputDb,
+    timestamp: Date
+  ): Promise<{ updated: number[]; missing: string[] }> {
+    // First check if the save exists -- no need to initialize
+    // transaction yet
+    const { deletes, creates } = updates;
+    const saveIds = uniqueArray(
+      [...deletes, ...creates].map((req) => parseInt(req.savedItemId))
+    );
+    const missing = await this.pocketSaveService.checkIdExists(saveIds);
+    // Exit if there are any missing Saves, with the missing ids returned
+    if (missing.length) {
+      return { updated: [], missing: missing.map((id) => id.toString()) };
+    }
+    // Otherwise we can proceed with the write
+    // We won't throw error if trying to delete a nonexistent tag (no-op)
+    await this.db.transaction(async (trx) => {
+      await this.deleteTagsByNameAndItemId(deletes).transacting(trx);
+      await this.insertTagAndUpdateSavedItem(creates, trx, timestamp);
+      await this.usersMetaService.logTagMutation(timestamp, trx);
+    });
+    return { updated: saveIds, missing: [] };
+  }
+
   private deleteTagsByItemId(itemId: string): Knex.QueryBuilder {
     return this.db('item_tags')
       .where({ user_id: this.userId, item_id: itemId })
@@ -372,5 +425,17 @@ export class TagDataService {
     return this.db('item_tags')
       .where({ user_id: this.userId, tag: tagName })
       .del();
+  }
+
+  /** Query builder for deleting item_tags rows by PK tuples */
+  private deleteTagsByNameAndItemId(
+    association: TagSaveAssociation[]
+  ): Knex.QueryBuilder {
+    const tuples = association.map(({ savedItemId, name }) => {
+      return [parseInt(savedItemId), name, this.userId];
+    });
+    return this.db('item_tags')
+      .del()
+      .whereIn(['item_id', 'tag', 'user_id'], tuples);
   }
 }
