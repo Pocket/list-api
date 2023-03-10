@@ -20,21 +20,29 @@ describe('getPocketSaveByItemId', () => {
   let url: string;
 
   const GET_POCKET_SAVE = gql`
-    query getPocketSave($userId: ID!, $itemId: ID!) {
+    query getPocketSave($userId: ID!, $itemIds: [ID!]!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
-          saveById(id: $itemId) {
-            archived
-            archivedAt
-            createdAt
-            deletedAt
-            favorite
-            favoritedAt
-            givenUrl
-            id
-            status
-            title
-            updatedAt
+          saveById(ids: $itemIds) {
+            ... on PocketSave {
+              __typename
+              archived
+              archivedAt
+              createdAt
+              deletedAt
+              favorite
+              favoritedAt
+              givenUrl
+              id
+              status
+              title
+              updatedAt
+            }
+            ... on NotFound {
+              __typename
+              message
+              id
+            }
           }
         }
       }
@@ -98,10 +106,10 @@ describe('getPocketSaveByItemId', () => {
     ]);
   });
 
-  it('should return a pocket save with all appropriate fields', async () => {
+  it('should return a single pocket save with all appropriate fields', async () => {
     const variables = {
       userId: '1',
-      itemId: '55',
+      itemIds: ['55'],
     };
 
     const res = await request(app)
@@ -111,28 +119,30 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables,
       });
-    expect(res.body.data?._entities[0].saveById.archived).toBe(false);
-    expect(res.body.data?._entities[0].saveById.archivedAt).toBe(null);
-    expect(res.body.data?._entities[0].saveById.createdAt).toBe(
+    expect(res.body.data?._entities[0].saveById[0].archived).toBe(false);
+    expect(res.body.data?._entities[0].saveById[0].archivedAt).toBe(null);
+    expect(res.body.data?._entities[0].saveById[0].createdAt).toBe(
       date1.toISOString()
     );
-    expect(res.body.data?._entities[0].saveById.deletedAt).toBe(null);
-    expect(res.body.data?._entities[0].saveById.favorite).toBe(false);
-    expect(res.body.data?._entities[0].saveById.favoritedAt).toBe(null);
-    expect(res.body.data?._entities[0].saveById.givenUrl).toBe(
+    expect(res.body.data?._entities[0].saveById[0].deletedAt).toBe(null);
+    expect(res.body.data?._entities[0].saveById[0].favorite).toBe(false);
+    expect(res.body.data?._entities[0].saveById[0].favoritedAt).toBe(null);
+    expect(res.body.data?._entities[0].saveById[0].givenUrl).toBe(
       'http://www.ideashower.com/'
     );
-    expect(res.body.data?._entities[0].saveById.id).toBe('55');
-    expect(res.body.data?._entities[0].saveById.status).toBe('UNREAD');
-    expect(res.body.data?._entities[0].saveById.title).toBe('the Idea Shower');
-    expect(res.body.data?._entities[0].saveById.updatedAt).toBe(
+    expect(res.body.data?._entities[0].saveById[0].id).toBe('55');
+    expect(res.body.data?._entities[0].saveById[0].status).toBe('UNREAD');
+    expect(res.body.data?._entities[0].saveById[0].title).toBe(
+      'the Idea Shower'
+    );
+    expect(res.body.data?._entities[0].saveById[0].updatedAt).toBe(
       date4.toISOString()
     );
   });
-  it('should return null if no item is found for the user', async () => {
+  it('should return multiple pocket saves with all appropriate fields', async () => {
     const variables = {
       userId: '1',
-      itemId: '10',
+      itemIds: ['55', '987'],
     };
     const res = await request(app)
       .post(url)
@@ -141,16 +151,39 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables,
       });
-    expect(res.body.data?._entities[0].saveById).toBe(null);
-    expect(res.body.errors[0].message).toBe(
-      `Error - Not Found: Saved Item with ID=${variables.itemId} does not exist.`
-    );
-    expect(res.body.errors[0].extensions.code).toBe('NOT_FOUND');
+    expect(res.body.data?._entities[0].saveById).toContainEqual({
+      __typename: 'PocketSave',
+      archived: false,
+      archivedAt: null,
+      createdAt: date1.toISOString(),
+      deletedAt: null,
+      favorite: false,
+      favoritedAt: null,
+      givenUrl: 'http://www.ideashower.com/',
+      id: '55',
+      status: 'UNREAD',
+      title: 'the Idea Shower',
+      updatedAt: date4.toISOString(),
+    });
+    expect(res.body.data?._entities[0].saveById).toContainEqual({
+      __typename: 'PocketSave',
+      archived: false,
+      archivedAt: null,
+      createdAt: date5.toISOString(),
+      deletedAt: date5.toISOString(),
+      favorite: true,
+      favoritedAt: null,
+      givenUrl: 'http://irctc.co.in/',
+      id: '987',
+      status: 'DELETED',
+      title: '',
+      updatedAt: date5.toISOString(),
+    });
   });
-  it('should have deletedAt field if item is deleted', async () => {
+  it('should return error as data if no item is found', async () => {
     const variables = {
       userId: '1',
-      itemId: '987',
+      itemIds: ['10'],
     };
     const res = await request(app)
       .post(url)
@@ -159,18 +192,70 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables,
       });
-    expect(res.body.data?._entities[0].saveById.deletedAt).toBe(
+    expect(res.body.data?._entities[0].saveById[0]).toEqual({
+      __typename: 'NotFound',
+      message: 'Entity identified by key=id, value=10 was not found.',
+      id: '10',
+    });
+    expect(res.body.errors).toBe(undefined);
+  });
+  it('should return error as data for not found item & data for found item', async () => {
+    const variables = {
+      userId: '1',
+      itemIds: ['10', '55'],
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables,
+      });
+    expect(res.body.data?._entities[0].saveById).toContainEqual({
+      __typename: 'PocketSave',
+      archived: false,
+      archivedAt: null,
+      createdAt: date1.toISOString(),
+      deletedAt: null,
+      favorite: false,
+      favoritedAt: null,
+      givenUrl: 'http://www.ideashower.com/',
+      id: '55',
+      status: 'UNREAD',
+      title: 'the Idea Shower',
+      updatedAt: date4.toISOString(),
+    });
+    expect(res.body.data?._entities[0].saveById).toContainEqual({
+      __typename: 'NotFound',
+      message: 'Entity identified by key=id, value=10 was not found.',
+      id: '10',
+    });
+    expect(res.body.errors).toBe(undefined);
+  });
+  it('should have deletedAt field if an item is deleted', async () => {
+    const variables = {
+      userId: '1',
+      itemIds: ['987'],
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE),
+        variables,
+      });
+    expect(res.body.data?._entities[0].saveById[0].deletedAt).toBe(
       date5.toISOString()
     );
   });
   it('should resolve archived properly', async () => {
     const archivedVars = {
       userId: '1',
-      itemId: '551',
+      itemIds: ['551'],
     };
     const nonArchivedVars = {
       userId: '1',
-      itemId: '55',
+      itemIds: ['55'],
     };
     const archivedRes = await request(app)
       .post(url)
@@ -186,14 +271,14 @@ describe('getPocketSaveByItemId', () => {
         query: print(GET_POCKET_SAVE),
         variables: nonArchivedVars,
       });
-    expect(archivedRes.body.data?._entities[0].saveById.archived).toBe(true);
-    expect(archivedRes.body.data?._entities[0].saveById.archivedAt).toBe(
+    expect(archivedRes.body.data?._entities[0].saveById[0].archived).toBe(true);
+    expect(archivedRes.body.data?._entities[0].saveById[0].archivedAt).toBe(
       date5.toISOString()
     );
-    expect(nonArchivedRes.body.data?._entities[0].saveById.archived).toBe(
+    expect(nonArchivedRes.body.data?._entities[0].saveById[0].archived).toBe(
       false
     );
-    expect(nonArchivedRes.body.data?._entities[0].saveById.archivedAt).toBe(
+    expect(nonArchivedRes.body.data?._entities[0].saveById[0].archivedAt).toBe(
       null
     );
   });

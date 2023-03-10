@@ -1,8 +1,7 @@
-import { PocketSave, SaveWriteMutationPayload } from '../types';
+import { PocketSave, SaveByIdResult, SaveWriteMutationPayload } from '../types';
 import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
 import { uniqueArray } from '../dataService/utils';
-import { NotFoundError } from '@pocket-tools/apollo-utils';
 import { GraphQLResolveInfo } from 'graphql';
 
 export class PocketSaveModel {
@@ -17,6 +16,7 @@ export class PocketSaveModel {
    */
   static transformListRow(row: ListResult): PocketSave {
     const result: PocketSave = {
+      __typename: 'PocketSave',
       archived: row.status === 'ARCHIVED' ? true : false,
       archivedAt: row.status === 'ARCHIVED' ? row.time_read : null,
       createdAt: row.time_added,
@@ -35,18 +35,22 @@ export class PocketSaveModel {
   }
 
   /**
-   * * Fetch a PocketSave by its ID
-   * * @param id the ID of the PocketSave to retrieve
-   * @throws NotFoundError if the PocketSave does not exist
-   * @returns the PocketSave entity
+   * * Fetch PocketSave(s) by ID(s)
+   * * @param ids the IDs of the PocketSaves to retrieve
+   * @returns array of SaveByIdResult union type (PocketSaves and/or NotFound errors)
    */
-  public async getById(id: string): Promise<PocketSave> {
-    const listRow = await this.saveService.getListRowById(id);
-    if (listRow === undefined || listRow === null) {
-      throw new NotFoundError(`Saved Item with ID=${id} does not exist.`);
-    }
-    const pocketSave = PocketSaveModel.transformListRow(listRow);
-    return pocketSave;
+  public async getById(ids: string[]): Promise<SaveByIdResult[]> {
+    const listRows = await this.saveService.getListRowsById(ids);
+    const pocketSaves = listRows.map((row) =>
+      PocketSaveModel.transformListRow(row)
+    );
+    const missingIds = ids.filter(
+      (id) => !pocketSaves.some((obj) => obj.id === id)
+    );
+    const missingErrors = missingIds.map((id) =>
+      this.context.models.notFound.extendedMessage('id', id)
+    );
+    return [].concat(pocketSaves, missingErrors);
   }
 
   /**

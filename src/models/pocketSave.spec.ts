@@ -27,6 +27,7 @@ describe('PocketSaveModel', () => {
       };
       const output = PocketSaveModel.transformListRow(input);
       const expected: PocketSave = {
+        __typename: 'PocketSave',
         archived: false,
         archivedAt: null,
         createdAt: new Date('2008-10-21 13:57:01'),
@@ -62,6 +63,7 @@ describe('PocketSaveModel', () => {
       };
       const output = PocketSaveModel.transformListRow(input);
       const expected: PocketSave = {
+        __typename: 'PocketSave',
         archived: true,
         archivedAt: dateRead,
         createdAt: dateAdded,

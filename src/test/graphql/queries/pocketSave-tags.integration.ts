@@ -16,14 +16,16 @@ describe('pocketSave.tags', () => {
   let url: string;
 
   const GET_POCKET_SAVE_TAGS = gql`
-    query saveById($userId: ID!, $itemId: ID!) {
+    query saveById($userId: ID!, $itemIds: [ID!]!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
-          saveById(id: $itemId) {
-            tags {
-              name
-              id
-              _deletedAt
+          saveById(ids: $itemIds) {
+            ... on PocketSave {
+              tags {
+                name
+                id
+                _deletedAt
+              }
             }
           }
         }
@@ -90,7 +92,7 @@ describe('pocketSave.tags', () => {
   it('resolves one or more tags on a save', async () => {
     const variables = {
       userId: '1',
-      itemId: '1',
+      itemIds: ['1'],
     };
 
     const res = await request(app)
@@ -101,7 +103,7 @@ describe('pocketSave.tags', () => {
         variables,
       });
     expect(res.body.errors).toBeUndefined();
-    const tags = res.body.data?._entities[0].saveById.tags;
+    const tags = res.body.data?._entities[0].saveById[0].tags;
     const expectedTags = [
       // for id, just check that we have a string with at least one character
       // this test doesn't care so much about the specific generated id
@@ -116,7 +118,7 @@ describe('pocketSave.tags', () => {
   it('returns an empty array if no tags on a save, with no errors', async () => {
     const variables = {
       userId: '1',
-      itemId: '2',
+      itemIds: ['2'],
     };
 
     const res = await request(app)
@@ -127,7 +129,7 @@ describe('pocketSave.tags', () => {
         variables,
       });
     expect(res.body.errors).toBeUndefined();
-    const tags = res.body.data?._entities[0].saveById.tags;
+    const tags = res.body.data?._entities[0].saveById[0].tags;
     expect(tags).not.toBeUndefined();
     expect(tags).toBeArrayOfSize(0);
   });

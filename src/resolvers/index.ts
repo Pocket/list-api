@@ -24,12 +24,14 @@ import { tagsSavedItems } from './tag';
 import {
   BaseError,
   Item,
-  PocketSave,
-  SaveWriteMutationPayload,
+  NotFound,
   PendingItem,
-  Tag,
+  PocketSave,
+  SaveByIdResult,
   SaveMutationInput,
   SaveUpdateTagsInputGraphql,
+  SaveWriteMutationPayload,
+  Tag,
 } from '../types';
 import { IContext } from '../server/context';
 import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
@@ -47,9 +49,18 @@ const resolvers = {
       return parent.__typename;
     },
   },
+  SaveByIdResult: {
+    __resolveType(parent: PocketSave | NotFound) {
+      return parent.__typename;
+    },
+  },
   User: {
-    saveById(_parent: any, args: any, context: IContext): Promise<PocketSave> {
-      return context.models.pocketSave.getById(args.id);
+    saveById(
+      _parent: any,
+      args: any,
+      context: IContext
+    ): Promise<SaveByIdResult[]> {
+      return context.models.pocketSave.getById(args.ids);
     },
     savedItemById,
     savedItems,
