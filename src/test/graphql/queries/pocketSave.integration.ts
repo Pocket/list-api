@@ -41,7 +41,8 @@ describe('getPocketSaveByItemId', () => {
             ... on NotFound {
               __typename
               message
-              id
+              key
+              value
             }
           }
         }
@@ -195,7 +196,8 @@ describe('getPocketSaveByItemId', () => {
     expect(res.body.data?._entities[0].saveById[0]).toEqual({
       __typename: 'NotFound',
       message: 'Entity identified by key=id, value=10 was not found.',
-      id: '10',
+      key: 'id',
+      value: '10',
     });
     expect(res.body.errors).toBe(undefined);
   });
@@ -228,7 +230,8 @@ describe('getPocketSaveByItemId', () => {
     expect(res.body.data?._entities[0].saveById).toContainEqual({
       __typename: 'NotFound',
       message: 'Entity identified by key=id, value=10 was not found.',
-      id: '10',
+      key: 'id',
+      value: '10',
     });
     expect(res.body.errors).toBe(undefined);
   });

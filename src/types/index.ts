@@ -232,7 +232,8 @@ export interface NotFoundInternal extends BaseErrorInternal {
 }
 
 export interface NotFound extends NotFoundInternal {
-  id: string;
+  key?: string;
+  value?: string;
 }
 
 export type SaveWriteMutationPayload = {

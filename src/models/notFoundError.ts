@@ -1,14 +1,12 @@
 import { BaseErrorModel } from './baseError';
-import { NotFound, NotFoundInternal } from '../types';
+import { NotFound } from '../types';
 
 export class NotFoundErrorModel extends BaseErrorModel {
-  public message(key: string, value: string): NotFoundInternal {
+  public message(key: string, value: string, includeKV = false): NotFound {
     const message = `Entity identified by key=${key}, value=${value} was not found.`;
+    if (includeKV) {
+      return { message, __typename: 'NotFound', key: key, value: value };
+    }
     return { message, __typename: 'NotFound' };
-  }
-
-  public extendedMessage(key: string, value: string): NotFound {
-    const message = `Entity identified by key=${key}, value=${value} was not found.`;
-    return { message, __typename: 'NotFound', id: value };
   }
 }
