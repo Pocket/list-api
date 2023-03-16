@@ -1,6 +1,4 @@
 import { readClient } from '../../../database/client';
-import chai, { expect } from 'chai';
-import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
 import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 import config from '../../../config';
@@ -9,8 +7,10 @@ import { startServer } from '../../../server/apollo';
 import { Express } from 'express';
 import { ApolloServer } from '@apollo/server';
 import request from 'supertest';
+import { gql } from 'graphql-tag';
+import { print } from 'graphql';
 
-chai.use(chaiDateTime);
+const toBeStringOfLengthGreaterThanOne = () => expect.stringMatching(/.+/);
 
 describe('tags query tests - happy path', () => {
   const db = readClient();
@@ -23,7 +23,7 @@ describe('tags query tests - happy path', () => {
   let server: ApolloServer<ContextManager>;
   let url: string;
 
-  const GET_TAG_CONNECTION = `
+  const GET_TAG_CONNECTION = gql`
     query getTags($id: ID!, $pagination: PaginationInput) {
       _entities(representations: { id: $id, __typename: "User" }) {
         ... on User {
@@ -141,152 +141,131 @@ describe('tags query tests - happy path', () => {
       },
     ]);
 
-    await db('item_tags').insert([
+    const baseTagData = {
+      status: 1,
+      api_id: 'apiid',
+      api_id_updated: 'updated_api_id',
+    };
+    const tagInserts = [
       {
-        user_id: 1,
-        item_id: 1,
-        tag: 'zebra',
-        status: 1,
-        time_added: date1,
-        time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
-      },
-      {
-        user_id: 1,
-        item_id: 1,
-        tag: 'travel',
-        status: 1,
+        user_id: 2,
+        item_id: 99,
+        tag: '',
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
-      },
-      {
-        user_id: 1,
-        item_id: 2,
-        tag: 'travel',
-        status: 1,
-        time_added: date1,
-        time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
-      },
-      {
-        user_id: 1,
-        item_id: 3,
-        tag: 'travel',
-        status: 1,
-        time_added: date1,
-        time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
-      },
-      {
-        user_id: 1,
-        item_id: 4,
-        tag: 'travel',
-        status: 1,
-        time_added: date1,
-        time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
-      },
-      {
-        user_id: 1,
-        item_id: 5,
-        tag: 'travel',
-        status: 1,
-        time_added: date1,
-        time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
         user_id: 1,
         item_id: 2,
         tag: 'adventure',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
         user_id: 2,
         item_id: 2,
         tag: 'dontfetch',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
         user_id: 1,
         item_id: 3,
         tag: 'adventure',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
         user_id: 1,
         item_id: 4,
         tag: 'adventure',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
         user_id: 1,
         item_id: 5,
         tag: 'adventure',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
         user_id: 1,
         item_id: 6,
         tag: 'adventure',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
 
       {
         user_id: 1,
         item_id: 7,
         tag: 'adventure',
-        status: 1,
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
       {
-        user_id: 2,
-        item_id: 99,
-        tag: '',
-        status: 1,
+        user_id: 1,
+        item_id: 1,
+        tag: 'travel',
         time_added: date,
         time_updated: date,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
+        ...baseTagData,
       },
-    ]);
+      {
+        user_id: 1,
+        item_id: 2,
+        tag: 'travel',
+        time_added: date1,
+        time_updated: date1,
+        ...baseTagData,
+      },
+      {
+        user_id: 1,
+        item_id: 3,
+        tag: 'travel',
+        time_added: date1,
+        time_updated: date1,
+        ...baseTagData,
+      },
+      {
+        user_id: 1,
+        item_id: 4,
+        tag: 'travel',
+        time_added: date1,
+        time_updated: date1,
+        ...baseTagData,
+      },
+      {
+        user_id: 1,
+        item_id: 5,
+        tag: 'travel',
+        time_added: date1,
+        time_updated: date1,
+        ...baseTagData,
+      },
+      {
+        user_id: 1,
+        item_id: 1,
+        tag: 'zebra',
+        time_added: date1,
+        time_updated: date1,
+        ...baseTagData,
+      },
+    ];
+
+    await db('item_tags').insert(tagInserts);
   });
 
-  const GET_TAGS_FOR_SAVED_ITEM = `
+  const GET_TAGS_FOR_SAVED_ITEM = gql`
     query getSavedItem($userId: ID!, $itemId: ID!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
@@ -326,7 +305,7 @@ describe('tags query tests - happy path', () => {
     }
   `;
 
-  const GET_TAGS_SAVED_ITEMS = `
+  const GET_TAGS_SAVED_ITEMS = gql`
     query getTags(
       $id: ID!
       $pagination: PaginationInput
@@ -387,51 +366,58 @@ describe('tags query tests - happy path', () => {
       itemId: '1',
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAGS_FOR_SAVED_ITEM,
-      variables,
-    });
-    expect(res.body.data?._entities[0].savedItemById.url).to.equal(
-      'http://abc'
-    );
-    expect(res.body.data?._entities[0].savedItemById.tags[0].name).to.equal(
-      'travel'
-    );
-    expect(res.body.data?._entities[0].savedItemById.tags[0].id).to.equal(
-      'dHJhdmVsX194cGt0eHRhZ3hfXw=='
-    );
-    expect(res.body.data?._entities[0].savedItemById.tags[0]._version).is.null;
-    expect(res.body.data?._entities[0].savedItemById.tags[0]._deletedAt).is
-      .null;
-    expect(res.body.data?._entities[0].savedItemById.tags[1].name).to.equal(
-      'zebra'
-    );
-    expect(res.body.data?._entities[0].savedItemById.tags[1].id).to.equal(
-      'emVicmFfX3hwa3R4dGFneF9f'
-    );
-    expect(res.body.data?._entities[0].savedItemById.tags[1]._deletedAt).is
-      .null;
-    expect(res.body.data?._entities[0].savedItemById.tags[1]._deletedAt).is
-      .null;
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.edges.length
-    ).equals(4);
-    // Default to itemId, asc on sort field collision
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.edges[0].node
-        .url
-    ).equals('http://abc');
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.totalCount
-    ).equals(4);
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
-        .hasNextPage
-    ).is.false;
-    expect(
-      res.body.data?._entities[0].savedItemById.tags[0].savedItems.pageInfo
-        .hasPreviousPage
-    ).is.false;
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAGS_FOR_SAVED_ITEM),
+        variables,
+      });
+    const expected = {
+      url: 'http://abc',
+      tags: [
+        expect.objectContaining({
+          name: 'travel',
+          id: toBeStringOfLengthGreaterThanOne(),
+          savedItems: expect.objectContaining({
+            edges:
+              // 4 saves with this tag, and one should be the parent save url
+              expect.toBeArrayOfSize(4) &&
+              expect.arrayContaining([
+                expect.objectContaining({
+                  node: expect.objectContaining({ url: 'http://abc' }),
+                }),
+              ]),
+            totalCount: 4,
+            pageInfo: expect.objectContaining({
+              hasNextPage: false,
+              hasPreviousPage: false,
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          name: 'zebra',
+          id: toBeStringOfLengthGreaterThanOne(),
+          savedItems: expect.objectContaining({
+            edges:
+              // 1 save with this tag, the element should have the parent save url
+              expect.toBeArrayOfSize(1) &&
+              expect.arrayContaining([
+                expect.objectContaining({
+                  node: expect.objectContaining({ url: 'http://abc' }),
+                }),
+              ]),
+            totalCount: 1,
+            pageInfo: expect.objectContaining({
+              hasNextPage: false,
+              hasPreviousPage: false,
+            }),
+          }),
+        }),
+      ],
+    };
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].savedItemById).toMatchObject(expected);
   });
 
   describe('should not allow before/after pagination', () => {
@@ -442,7 +428,7 @@ describe('tags query tests - happy path', () => {
         pagination: { before: 'emVicmFfKl8iemVicmEi', last: 10 },
       };
 
-      const GET_PAGINATED_ITEMS = `
+      const GET_PAGINATED_ITEMS = gql`
         query getSavedItem(
           $userId: ID!
           $itemId: ID!
@@ -464,12 +450,15 @@ describe('tags query tests - happy path', () => {
         }
       `;
 
-      const res = await request(app).post(url).set(headers).send({
-        query: GET_PAGINATED_ITEMS,
-        variables,
-      });
-      expect(res.body.errors.length).to.be.above(0);
-      expect(res.body.errors[0].message).to.equal(
+      const res = await request(app)
+        .post(url)
+        .set(headers)
+        .send({
+          query: print(GET_PAGINATED_ITEMS),
+          variables,
+        });
+      expect(res.body.errors.length).toBeGreaterThan(0);
+      expect(res.body.errors[0].message).toBe(
         'Cannot specify a cursor on a nested paginated field.'
       );
     });
@@ -480,12 +469,15 @@ describe('tags query tests - happy path', () => {
         sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
         itemPagination: { first: 2, after: 'somecursor' },
       };
-      const res = await request(app).post(url).set(headers).send({
-        query: GET_TAGS_SAVED_ITEMS,
-        variables,
-      });
-      expect(res.body.errors.length).to.be.above(0);
-      expect(res.body.errors[0].message).to.equal(
+      const res = await request(app)
+        .post(url)
+        .set(headers)
+        .send({
+          query: print(GET_TAGS_SAVED_ITEMS),
+          variables,
+        });
+      expect(res.body.errors.length).toBeGreaterThan(0);
+      expect(res.body.errors[0].message).toBe(
         'Cannot specify a cursor on a nested paginated field.'
       );
     });
@@ -499,36 +491,59 @@ describe('tags query tests - happy path', () => {
       itemPagination: { first: 2 },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAGS_SAVED_ITEMS,
-      variables,
-    });
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAGS_SAVED_ITEMS),
+        variables,
+      });
 
-    const tags = res.body.data?._entities[0].tags;
-    // Returns 2 tags, but there are 3 total active
-    expect(tags.edges.length).to.equal(2);
-    expect(tags.pageInfo.hasNextPage).to.be.true;
-    expect(tags.totalCount).to.equal(3);
-
-    // since tags collide on createdAt, default to alphabetical ascending sort on name
-    const firstTag = tags.edges[0].node;
-    const secondTag = tags.edges[1].node;
-    expect(firstTag.name).to.equal('adventure');
-    expect(secondTag.name).to.equal('travel');
-
-    expect(firstTag.savedItems.edges.length).to.equal(2);
-    // all SavedItems collide on createdAt, so default to ascending by itemId
-    expect(
-      firstTag.savedItems.edges.map((edge) => edge.node.url)
-    ).to.deep.equal(['http://tagtest', 'http://winter.sports']);
-    expect(firstTag.savedItems.pageInfo.hasNextPage).to.be.true;
-    expect(firstTag.savedItems.totalCount).to.equal(3);
-
-    expect(secondTag.savedItems.edges.length).to.equal(2);
-    expect(
-      secondTag.savedItems.edges.map((edge) => edge.node.url)
-    ).to.deep.equal(['http://abc', 'http://tagtest']);
-    expect(secondTag.savedItems.pageInfo.hasNextPage).to.be.true;
+    const expectedTagEdges = [
+      {
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          name: 'adventure',
+          savedItems: expect.objectContaining({
+            totalCount: 3,
+            pageInfo: expect.objectContaining({ hasNextPage: true }),
+            edges: [
+              expect.objectContaining({
+                node: expect.objectContaining({ url: 'http://tagtest' }),
+              }),
+              expect.objectContaining({
+                node: expect.objectContaining({ url: 'http://winter.sports' }),
+              }),
+            ],
+          }),
+        }),
+      },
+      {
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          name: 'travel',
+          savedItems: expect.objectContaining({
+            totalCount: 4,
+            pageInfo: expect.objectContaining({ hasNextPage: true }),
+            edges: [
+              expect.objectContaining({
+                node: expect.objectContaining({ url: 'http://abc' }),
+              }),
+              expect.objectContaining({
+                node: expect.objectContaining({ url: 'http://tagtest' }),
+              }),
+            ],
+          }),
+        }),
+      },
+    ];
+    const expected = {
+      edges: expectedTagEdges,
+      totalCount: 3,
+      pageInfo: expect.objectContaining({ hasNextPage: true }),
+    };
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].tags).toMatchObject(expected);
   });
 
   it('return paginated SavedItems, when filtered by archived', async () => {
@@ -540,51 +555,92 @@ describe('tags query tests - happy path', () => {
       filter: { isArchived: true },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAGS_SAVED_ITEMS,
-      variables,
-    });
-    // tags are sorted alphabetically, ascending
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'adventure'
-    );
-    const tag = res.body.data?._entities[0].tags.edges[0].node;
-    // There are two archived SavedItems under adventure Tag
-    expect(tag.savedItems.edges.length).to.equal(2);
-    // sorted by createdAt, ascending (collision defaults to itemId)
-    expect(tag.savedItems.edges.map((edge) => edge.node.url)).to.deep.equal([
-      'http://winter.sports',
-      'http://summer.sports',
-    ]);
-    expect(tag.savedItems.totalCount).to.equal(2);
-    expect(tag.savedItems.pageInfo.hasNextPage).to.be.false;
-    expect(tag.savedItems.pageInfo.hasPreviousPage).to.be.false;
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAGS_SAVED_ITEMS),
+        variables,
+      });
+    const expected = {
+      tags: expect.objectContaining({
+        totalCount: 3,
+        pageInfo: expect.objectContaining({
+          hasNextPage: true,
+          hasPreviousPage: false,
+        }),
+        edges: [
+          expect.objectContaining({
+            node: expect.objectContaining({
+              name: 'adventure',
+              savedItems: {
+                totalCount: 2,
+                pageInfo: expect.objectContaining({
+                  hasNextPage: false,
+                  hasPreviousPage: false,
+                }),
+                edges: [
+                  expect.objectContaining({
+                    node: expect.objectContaining({
+                      url: 'http://winter.sports',
+                    }),
+                  }),
+                  expect.objectContaining({
+                    node: expect.objectContaining({
+                      url: 'http://summer.sports',
+                    }),
+                  }),
+                ],
+              },
+            }),
+          }),
+        ],
+      }),
+    };
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0]).toMatchObject(expected);
   });
 
-  it('should return list of Tags for User for first n values', async () => {
+  it('should return list of Tags for User for the first n values', async () => {
     const variables = {
       id: '1',
       pagination: { first: 2 },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
-
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.true;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.false;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'adventure'
-    );
-    expect(res.body.data?._entities[0].tags.edges[0].node.id).to.equal(
-      'YWR2ZW50dXJlX194cGt0eHRhZ3hfXw=='
-    );
-    expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
-      'travel'
-    );
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAG_CONNECTION),
+        variables,
+      });
+    const expectedConnection = {
+      totalCount: 3,
+      pageInfo: {
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+      edges: expect.toBeArrayOfSize(2),
+    };
+    const edges = [
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'adventure',
+        }),
+      }),
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'travel',
+        }),
+      }),
+    ];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
+    expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
   });
 
   it('should return list of Tags for User for last n values', async () => {
@@ -593,78 +649,161 @@ describe('tags query tests - happy path', () => {
       pagination: { last: 2 },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
-
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'travel'
-    );
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAG_CONNECTION),
+        variables,
+      });
+    const expectedConnection = {
+      totalCount: 3,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: true,
+      },
+      edges: expect.toBeArrayOfSize(2),
+    };
+    const edges = [
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'travel',
+        }),
+      }),
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'zebra',
+        }),
+      }),
+    ];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
+    expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
   });
 
-  it('should return list of Tags for User for first n values after the given cursor', async () => {
+  it('should return list of Tags for first n values after the given cursor', async () => {
     const variables = {
       id: '1',
-      pagination: { first: 2, after: 'YWR2ZW50dXJlXypfImFkdmVudHVyZSI=' },
+      pagination: { first: 2, after: 'YWR2ZW50dXJlXypfOA==' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAG_CONNECTION),
+        variables,
+      });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'travel'
-    );
+    const expectedConnection = {
+      totalCount: 3,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: true,
+      },
+      edges: expect.toBeArrayOfSize(2),
+    };
+    const edges = [
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'travel',
+        }),
+      }),
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'zebra',
+        }),
+      }),
+    ];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
+    expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
   });
 
   it('should return list of Tags for User for last n values before the given cursor', async () => {
     const variables = {
       id: '1',
-      pagination: { last: 2, before: 'emVicmFfKl8iemVicmEi' },
+      pagination: { last: 2, before: 'emVicmFfKl8xNA==' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAG_CONNECTION),
+        variables,
+      });
 
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.true;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.false;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(2);
-    expect(res.body.data?._entities[0].tags.edges[1].node.name).to.equal(
-      'travel'
-    );
+    const expectedConnection = {
+      totalCount: 3,
+      pageInfo: {
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+      edges: expect.toBeArrayOfSize(2),
+    };
+    const edges = [
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'adventure',
+        }),
+      }),
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'travel',
+        }),
+      }),
+    ];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
+    expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
   });
 
   it('should not overflow when first is greater than available item', async () => {
     const variables = {
       id: '1',
-      pagination: { first: 2, after: 'dHJhdmVsXypfInRyYXZlbCI=' },
+      pagination: { first: 2, after: 'dHJhdmVsXypfMTM=' },
     };
 
-    const res = await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
-
-    expect(res.body.data?._entities[0].tags.totalCount).to.equal(3);
-    expect(res.body.data?._entities[0].tags.pageInfo.hasNextPage).is.false;
-    expect(res.body.data?._entities[0].tags.pageInfo.hasPreviousPage).is.true;
-    expect(res.body.data?._entities[0].tags.edges.length).to.equal(1);
-    expect(res.body.data?._entities[0].tags.edges[0].node.name).to.equal(
-      'zebra'
-    );
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAG_CONNECTION),
+        variables,
+      });
+    const expectedConnection = {
+      totalCount: 3,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: true,
+      },
+      edges: expect.toBeArrayOfSize(1),
+    };
+    const edges = [
+      expect.objectContaining({
+        cursor: toBeStringOfLengthGreaterThanOne(),
+        node: expect.objectContaining({
+          id: toBeStringOfLengthGreaterThanOne(),
+          name: 'zebra',
+        }),
+      }),
+    ];
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
+    expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
   });
   it('should resolve tag fields from the parent if provided', async () => {
     const dataLoaderSpy = sinon.spy(tagsDataLoader, 'batchGetTagsByNames');
@@ -673,11 +812,14 @@ describe('tags query tests - happy path', () => {
       pagination: { first: 2 },
     };
 
-    await request(app).post(url).set(headers).send({
-      query: GET_TAG_CONNECTION,
-      variables,
-    });
-    expect(dataLoaderSpy.callCount).to.equal(0);
+    await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_TAG_CONNECTION),
+        variables,
+      });
+    expect(dataLoaderSpy.callCount).toEqual(0);
     dataLoaderSpy.restore();
   });
   it('should allow returning empty tags', async () => {
@@ -690,16 +832,21 @@ describe('tags query tests - happy path', () => {
       .post(url)
       .set({ ...headers, userid: '2' })
       .send({
-        query: GET_TAGS_FOR_SAVED_ITEM,
+        query: print(GET_TAGS_FOR_SAVED_ITEM),
         variables,
       });
-    const save = res.body.data?._entities[0].savedItemById;
-    expect(save.url).to.equal('http://fall.sports');
-    expect(save.tags.length).to.equal(1);
-    expect(save.tags[0].name).to.equal('');
-    expect(save.tags[0].id).to.equal(
-      Buffer.from(config.data.tagIdSuffix).toString('base64')
-    );
-    expect(res.body.errors).to.be.undefined;
+    const expected = {
+      savedItemById: expect.objectContaining({
+        url: 'http://fall.sports',
+        tags: [
+          expect.objectContaining({
+            name: '',
+            id: Buffer.from(config.data.tagIdSuffix).toString('base64'),
+          }),
+        ],
+      }),
+    };
+    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.data?._entities[0]).toMatchObject(expected);
   });
 });

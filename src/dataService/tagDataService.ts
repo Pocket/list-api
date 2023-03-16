@@ -51,11 +51,12 @@ export class TagDataService {
       .select(
         'tag as name',
         'tag',
+        this.db.raw('MAX(id) as _cursor'),
+        // TODO: Risky - this could be a HUGE array for certain users (e.g. IFTT auto-taggers)
         this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
         this.db.raw('NULL as _deletedAt'),
         this.db.raw('NULL as _version')
         //TODO: add version and deletedAt feature to tag
-        //tagId need to return primary key id, when tag entity table is implemented in db.
       )
       .where({ user_id: parseInt(this.userId) })
       .groupBy('tag');
@@ -64,11 +65,7 @@ export class TagDataService {
   private getItemsByTagsAndUser(): any {
     return this.db
       .select('*')
-      .from(this.getTagsByUserSubQuery().as('subQuery_tags'))
-      .orderBy('tag');
-    // need a stable sort for pagination; this is not client-configurable
-    //note: time added and time updated are mostly null in the database.
-    //so set them as optional field.
+      .from(this.getTagsByUserSubQuery().as('subQuery_tags'));
   }
 
   /**
@@ -160,7 +157,7 @@ export class TagDataService {
         last: pagination?.last,
         before: pagination?.before,
         after: pagination?.after,
-        orderBy: 'tag',
+        orderBy: '_cursor',
         orderDirection: 'ASC',
       },
       {

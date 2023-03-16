@@ -42,7 +42,9 @@ CREATE TABLE `item_tags` (
   `api_id` mediumint(8) unsigned DEFAULT NULL,
   `time_updated` datetime DEFAULT NULL,
   `api_id_updated` mediumint(8) unsigned DEFAULT NULL,
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (`user_id`,`item_id`,`tag`),
+  UNIQUE KEY `id` (`id`),
   KEY `tag` (`tag`(15),`item_id`),
   KEY `userStatusTime` (`user_id`,`status`,`time_updated`),
   KEY `idx_time_added` (`time_added`),
@@ -197,4 +199,3 @@ CREATE TABLE `list_shares` (
   `item_id` int(10) unsigned NOT NULL,
   PRIMARY KEY (`user_id`,`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
