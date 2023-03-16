@@ -29,6 +29,7 @@ import {
   PendingItem,
   Tag,
   SaveMutationInput,
+  SaveUpdateTagsInputGraphql,
 } from '../types';
 import { IContext } from '../server/context';
 import { PocketDefaultScalars } from '@pocket-tools/apollo-utils';
@@ -162,6 +163,18 @@ const resolvers = {
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.pocketSave.saveUnFavorite(
         args.id,
+        args.timestamp,
+        info.path
+      );
+    },
+    saveBatchUpdateTags: async (
+      _,
+      args: { input: SaveUpdateTagsInputGraphql[]; timestamp: Date },
+      context: IContext,
+      info: GraphQLResolveInfo
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.tag.batchUpdateTagConnections(
+        args.input,
         args.timestamp,
         info.path
       );

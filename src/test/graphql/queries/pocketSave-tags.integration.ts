@@ -100,7 +100,7 @@ describe('pocketSave.tags', () => {
         query: print(GET_POCKET_SAVE_TAGS),
         variables,
       });
-    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.errors).toBeUndefined();
     const tags = res.body.data?._entities[0].saveById.tags;
     const expectedTags = [
       // for id, just check that we have a string with at least one character
@@ -126,7 +126,7 @@ describe('pocketSave.tags', () => {
         query: print(GET_POCKET_SAVE_TAGS),
         variables,
       });
-    expect(res.body.data.errors).toBeUndefined();
+    expect(res.body.errors).toBeUndefined();
     const tags = res.body.data?._entities[0].saveById.tags;
     expect(tags).not.toBeUndefined();
     expect(tags).toBeArrayOfSize(0);
