@@ -15,21 +15,23 @@ describe('PocketSave.Item', () => {
   let url: string;
 
   const GET_ITEM_POCKET_SAVE = gql`
-    query getPocketSave($userId: ID!, $itemId: ID!) {
+    query getPocketSave($userId: ID!, $itemIds: [ID!]!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
-          saveById(id: $itemId) {
-            item {
-              ... on PendingItem {
-                itemId
-                url
-                status
-                __typename
-              }
-              ... on Item {
-                itemId
-                givenUrl
-                __typename
+          saveById(ids: $itemIds) {
+            ... on PocketSave {
+              item {
+                ... on PendingItem {
+                  itemId
+                  url
+                  status
+                  __typename
+                }
+                ... on Item {
+                  itemId
+                  givenUrl
+                  __typename
+                }
               }
             }
           }
@@ -82,7 +84,7 @@ describe('PocketSave.Item', () => {
   it('returns a PendingItem if resolvedId is 0', async () => {
     const variables = {
       userId: '1',
-      itemId: '22',
+      itemIds: ['22'],
     };
 
     const res = await request(app)
@@ -99,12 +101,12 @@ describe('PocketSave.Item', () => {
       __typename: 'PendingItem',
     };
     expect(res.body.errors).toBeUndefined();
-    expect(res.body.data._entities[0].saveById.item).toStrictEqual(expected);
+    expect(res.body.data._entities[0].saveById[0].item).toStrictEqual(expected);
   });
   it('returns an Item if resolvedId is nonzero integer', async () => {
     const variables = {
       userId: '1',
-      itemId: '55',
+      itemIds: ['55'],
     };
 
     const res = await request(app)
@@ -120,6 +122,6 @@ describe('PocketSave.Item', () => {
       __typename: 'Item',
     };
     expect(res.body.errors).toBeUndefined();
-    expect(res.body.data._entities[0].saveById.item).toStrictEqual(expected);
+    expect(res.body.data._entities[0].saveById[0].item).toStrictEqual(expected);
   });
 });

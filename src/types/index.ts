@@ -196,6 +196,7 @@ export enum PocketSaveStatus {
 }
 
 export type PocketSave = {
+  __typename: string;
   archived: boolean;
   archivedAt: Date | null;
   createdAt: Date;
@@ -230,6 +231,11 @@ export interface NotFoundInternal extends BaseErrorInternal {
   __typename: 'NotFound';
 }
 
+export interface NotFound extends NotFoundInternal {
+  key?: string;
+  value?: string;
+}
+
 export type SaveWriteMutationPayload = {
   save: PocketSave[];
   errors: BaseError[];
@@ -256,3 +262,5 @@ export type SaveUpdateTagsInputDb = {
   deletes: TagSaveAssociation[];
   creates: TagSaveAssociation[];
 };
+
+export type SaveByIdResult = NotFound | PocketSave;

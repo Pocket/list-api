@@ -154,17 +154,9 @@ export class PocketSaveDataService {
   }
 
   /**
-   * Fetch a List Table Row By ID (user id x item_id)
-   * @param itemId the pocketSave ID to fetch
+   * Fetch List Table Rows By IDs (user id x item_id)
+   * @param itemIds the pocketSave IDs to fetch
    */
-  public async getListRowById(itemId: string): Promise<ListResult> {
-    const query = await this.buildQuery()
-      .where('user_id', this.userId)
-      .andWhere('item_id', itemId)
-      .first();
-    return PocketSaveDataService.convertListResult(query);
-  }
-
   public async getListRowsById(itemIds: string[]): Promise<ListResult[]> {
     const query = await this.buildQuery()
       .whereIn('item_id', itemIds)

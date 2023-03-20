@@ -40,12 +40,14 @@ describe('saveBatchUpdateTags', () => {
   `;
 
   const GET_TAGS_FOR_SAVE = gql`
-    query getTagsSave($userId: ID!, $itemId: ID!) {
+    query getTagsSave($userId: ID!, $itemIds: [ID!]!) {
       _entities(representations: { id: $userId, __typename: "User" }) {
         ... on User {
-          saveById(id: $itemId) {
-            tags {
-              name
+          saveById(ids: $itemIds) {
+            ... on PocketSave {
+              tags {
+                name
+              }
             }
           }
         }
@@ -366,15 +368,15 @@ describe('saveBatchUpdateTags', () => {
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(0);
 
     // Check to ensure data has not been mutated
-    const getTagVars = { userId: '1', itemId: '1' };
+    const getTagVars = { userId: '1', itemIds: ['1'] };
     const tagData = await request(app)
       .post(url)
       .set(headers)
       .send({ query: print(GET_TAGS_FOR_SAVE), variables: getTagVars });
     const expectedTags = [{ name: 'tobio' }, { name: 'shoyo' }];
-    expect(tagData.body.data._entities[0].saveById.tags).toIncludeSameMembers(
-      expectedTags
-    );
+    expect(
+      tagData.body.data._entities[0].saveById[0].tags
+    ).toIncludeSameMembers(expectedTags);
   });
   it('skips adding tags that already exist', async () => {
     const variables = {

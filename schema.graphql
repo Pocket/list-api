@@ -19,6 +19,8 @@ type SyncConflict implements BaseError {
 type NotFound implements BaseError {
   path: String!
   message: String!
+  key: String
+  value: String
 }
 
 interface BaseError {
@@ -527,13 +529,17 @@ type User @key(fields: "id") {
   """
   Get a SavedItem by its id
   """
-  savedItemById(id: ID!): SavedItem
+  savedItemById(id: ID!): SavedItem @deprecated(reason: "Use saveById instead")
 
   """
-  Get a PocketSave by its id
+  Get a PocketSave(s) by its id(s)
   """
-  saveById(id: ID!): PocketSave
+  saveById(ids: [ID!]!): [SaveByIdResult!]! # @constraint(maxItems: 30)
 }
+"""
+Union type for saveById - retrieving either PocketSaves or NotFound errors
+"""
+union SaveByIdResult = PocketSave | NotFound
 
 """
 Union type for items that may or may not be processed
