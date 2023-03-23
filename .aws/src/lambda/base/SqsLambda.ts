@@ -1,12 +1,11 @@
-import { Resource } from 'cdktf';
+import { DataAwsSsmParameter } from '@cdktf/provider-aws/lib/data-aws-ssm-parameter';
+import { LAMBDA_RUNTIMES } from '@pocket-tools/terraform-modules';
+import { PocketPagerDuty } from '@pocket-tools/terraform-modules';
+import { PocketSQSWithLambdaTarget } from '@pocket-tools/terraform-modules';
+import { PocketVersionedLambdaProps } from '@pocket-tools/terraform-modules';
+import { PocketVPC } from '@pocket-tools/terraform-modules';
 import { Construct } from 'constructs';
 import { config as stackConfig } from '../../config';
-import { PocketVPC } from '@pocket-tools/terraform-modules';
-import { PocketSQSWithLambdaTarget } from '@pocket-tools/terraform-modules';
-import { LAMBDA_RUNTIMES } from '@pocket-tools/terraform-modules';
-import { ssm } from '@cdktf/provider-aws';
-import { PocketPagerDuty } from '@pocket-tools/terraform-modules';
-import { PocketVersionedLambdaProps } from '@pocket-tools/terraform-modules';
 
 export interface SqsLambdaProps {
   vpc: PocketVPC;
@@ -16,7 +15,7 @@ export interface SqsLambdaProps {
   reservedConcurrencyLimit?: number;
 }
 
-export class SqsLambda extends Resource {
+export class SqsLambda extends Construct {
   public readonly lambda: PocketSQSWithLambdaTarget;
 
   constructor(scope: Construct, private name: string, config: SqsLambdaProps) {
@@ -63,11 +62,11 @@ export class SqsLambda extends Resource {
   }
 
   private getEnvVariableValues() {
-    const sentryDsn = new ssm.DataAwsSsmParameter(this, 'sentry-dsn', {
+    const sentryDsn = new DataAwsSsmParameter(this, 'sentry-dsn', {
       name: `/${stackConfig.name}/${stackConfig.environment}/SENTRY_DSN`,
     });
 
-    const serviceHash = new ssm.DataAwsSsmParameter(this, 'service-hash', {
+    const serviceHash = new DataAwsSsmParameter(this, 'service-hash', {
       name: `${stackConfig.circleCIPrefix}/SERVICE_HASH`,
     });
 

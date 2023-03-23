@@ -1,11 +1,10 @@
-import { Resource } from 'cdktf';
-import { Construct } from 'constructs';
+import { SqsQueue } from '@cdktf/provider-aws/lib/sqs-queue';
 import { ApplicationSqsSnsTopicSubscription } from '@pocket-tools/terraform-modules';
-import { sqs } from '@cdktf/provider-aws';
+import { Construct } from 'constructs';
 import { SqsLambda, SqsLambdaProps } from './base/SqsLambda';
 import { config as stackConfig } from '../config';
 
-export class EventLambda extends Resource {
+export class EventLambda extends Construct {
   constructor(
     scope: Construct,
     private name: string,
@@ -27,7 +26,7 @@ export class EventLambda extends Resource {
         snsTopicArn: `arn:aws:sns:${config.vpc.region}:${config.vpc.accountId}:${stackConfig.lambda.snsTopicName.userEvents}`,
         sqsQueue: lambda.sqsQueueResource,
         tags: stackConfig.tags,
-        dependsOn: [lambda.sqsQueueResource as sqs.SqsQueue],
+        dependsOn: [lambda.sqsQueueResource as SqsQueue],
       }
     );
   }
