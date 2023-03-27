@@ -190,15 +190,6 @@ const resolvers = {
         info.path
       );
     },
-    saveUpsert: (
-      _,
-      args,
-      context: IContext,
-      info: GraphQLResolveInfo
-    ): null => {
-      //TODO @Herraj --> implementation in a follow up PR
-      return null;
-    },
   },
 };
 
