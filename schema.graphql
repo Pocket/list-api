@@ -1,6 +1,8 @@
 extend schema
-  @link(url: "https://specs.apollo.dev/federation/v2.0",
-        import: ["@key", "@shareable", "@tag"])
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.0"
+    import: ["@key", "@shareable", "@tag"]
+  )
 
 """
 ISOString scalar - all datetimes fields are Typescript Date objects on this server &
@@ -27,7 +29,6 @@ interface BaseError {
   path: String!
   message: String!
 }
-
 
 """
 Interface that all state based entities must implement
@@ -205,7 +206,7 @@ enum SavedItemStatus {
 """
 Represents a Tag that a User has created for their list
 """
-type Tag  {
+type Tag {
   """
   The actual tag string the user created for their list
   """
@@ -249,6 +250,25 @@ input SavedItemUpsertInput {
   """
   timestamp: Int
 }
+
+"""
+Input field for upserting a Save. Used by saveUpsert mutation
+"""
+input SaveUpsertInput {
+  """
+  The url to create/update the SavedItem with. (the url to save to the list)
+  """
+  url: String!
+  """
+  Optional, title of the SavedItem
+  """
+  title: String
+  """
+  Optional, create/update the SavedItem as a favorited item
+  """
+  isFavorite: Boolean
+}
+
 """
 A SavedItem can be one of these content types
 """
@@ -546,12 +566,14 @@ Union type for items that may or may not be processed
 """
 union ItemResult = PendingItem | Item
 
-"""All types in this union should implement BaseError, for client fallback"""
+"""
+All types in this union should implement BaseError, for client fallback
+"""
 union TagMutationError = NotFound | SyncConflict # hypothetically others in the future...
-
-"""All types in this union should implement BaseError, for client fallback"""
+"""
+All types in this union should implement BaseError, for client fallback
+"""
 union SaveMutationError = NotFound | SyncConflict # hypothetically others in the future
-
 enum PendingItemStatus {
   RESOLVED
   UNRESOLVED
@@ -620,7 +642,8 @@ type Mutation {
   Will replace any existing Tag associations on the SavedItem.
   To remove all Tags from a SavedItem, use `updateSavedItemRemoveTags`.
   """
-  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem! @deprecated(reason: "use saveBatchUpdateTags")
+  updateSavedItemTags(input: SavedItemTagUpdateInput!): SavedItem!
+    @deprecated(reason: "use saveBatchUpdateTags")
 
   """
   Removes all Tag associations from a SavedItem. Returns the
@@ -628,7 +651,8 @@ type Mutation {
   Note that if this operation results in a Tag having no associations
   to a SavedItem, the Tag object will be deleted.
   """
-  updateSavedItemRemoveTags(savedItemId: ID): SavedItem! @deprecated(reason: "use saveBatchUpdateTags")
+  updateSavedItemRemoveTags(savedItemId: ID): SavedItem!
+    @deprecated(reason: "use saveBatchUpdateTags")
 
   """
   Deletes a SavedItem from the users list. Returns ID of the
@@ -670,25 +694,34 @@ type Mutation {
   Inputs a list of SavedItemTagsInput(ie. savedItemId and list of tag names)
   Returns the SavedItem for which the tags have been modified.
   """
-  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]! @deprecated(reason: "use saveBatchUpdateTags")
+  replaceSavedItemTags(input: [SavedItemTagsInput!]!): [SavedItem!]!
+    @deprecated(reason: "use saveBatchUpdateTags")
 
-  """Archives PocketSaves"""
-  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  """
+  Archives PocketSaves
+  """
+  saveArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+    @tag(name: "alpha")
 
-  """Unarchives PocketSaves"""
-  saveUnArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  """
+  Unarchives PocketSaves
+  """
+  saveUnArchive(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+    @tag(name: "alpha")
 
   """
   Favorites PocketSaves
   Accepts a list of PocketSave Ids that we want to favorite.
   """
-  saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  saveFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+    @tag(name: "alpha")
 
   """
   Unfavorites PocketSaves
   Accepts a list of PocketSave Ids that we want to unfavorite.
   """
-  saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload @tag(name: "alpha")
+  saveUnFavorite(id: [ID!]!, timestamp: ISOString!): SaveWriteMutationPayload
+    @tag(name: "alpha")
   """
   Batch update the Tags associated with a Save
   by adding new tags and deleting existing tags.
@@ -696,6 +729,16 @@ type Mutation {
   """
   saveBatchUpdateTags(
     input: [SaveUpdateTagsInput!]! # @constraint(minItems: 1, maxItems: 30),
+    timestamp: ISOString!
+  ): SaveWriteMutationPayload! @tag(name: "alpha")
+
+  """
+  Creates a new Save; if the Save already exists (either in List or Archive), "re-add" it.
+  "Re-adding" unarchives and undeletes the Save as applicable, and refreshes the "createdAt"
+  timestamp.
+  """
+  saveUpsert(
+    input: [SaveUpsertInput!]! # @constraint(minItems: 1, maxItems: 30),
     timestamp: ISOString!
   ): SaveWriteMutationPayload! @tag(name: "alpha")
 }
@@ -803,7 +846,7 @@ type PocketSave {
   tags: [Tag!]
 
   """
-  Link to the underlying Pocket Item for the URL. 
+  Link to the underlying Pocket Item for the URL.
   Temporary until resource field is added. Will hopefully
   make it easier for clients to adopt.
   """
@@ -838,7 +881,6 @@ type PocketSave {
   updatedAt: ISOString
 }
 
-
 """
 Payload for mutations that create or update Saves
 """
@@ -863,7 +905,6 @@ type SaveDeleteMutationPayload {
   """
   errors: [SaveMutationError!]!
 }
-
 
 """
 Payload for mutations that create or update Tags
