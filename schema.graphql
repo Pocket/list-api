@@ -233,7 +233,7 @@ type Tag  {
   _deletedAt: Int
 }
 """
-Input field for upserting a SavedItem
+Input field for upserting a Save. Used by saveUpsert mutation
 """
 input SavedItemUpsertInput {
   """
@@ -249,6 +249,25 @@ input SavedItemUpsertInput {
   """
   timestamp: Int
 }
+
+"""
+Input field for upserting a SavedItem
+"""
+input SaveUpsertInput {
+  """
+  The url to create/update the SavedItem with. (the url to save to the list)
+  """
+  url: String!
+  """
+  Optional, create/update the SavedItem as a favorited item
+  """
+  isFavorite: Boolean
+  """
+  Optional, time that request was submitted by client epoch/unix time
+  """
+  timestamp: Int
+}
+
 """
 A SavedItem can be one of these content types
 """
@@ -698,6 +717,16 @@ type Mutation {
     input: [SaveUpdateTagsInput!]! # @constraint(minItems: 1, maxItems: 30),
     timestamp: ISOString!
   ): SaveWriteMutationPayload! @tag(name: "alpha")
+
+  """
+  Creates a new Save; if the Save already exists (either in List or Archive), "re-add" it.
+  "Re-adding" unarchives and undeletes the Save as applicable, and refreshes the "createdAt"
+  timestamp.
+  """
+  saveUpsert(
+  input: [SaveUpsertInput!]! # @constraint(minItems: 1, maxItems: 30),
+  timestamp: ISOString!
+): SaveWriteMutationPayload! @tag(name: "alpha")
 }
 
 # """
