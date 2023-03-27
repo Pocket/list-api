@@ -233,7 +233,7 @@ type Tag  {
   _deletedAt: Int
 }
 """
-Input field for upserting a Save. Used by saveUpsert mutation
+Input field for upserting a SavedItem
 """
 input SavedItemUpsertInput {
   """
@@ -251,7 +251,7 @@ input SavedItemUpsertInput {
 }
 
 """
-Input field for upserting a SavedItem
+Input field for upserting a Save. Used by saveUpsert mutation
 """
 input SaveUpsertInput {
   """
