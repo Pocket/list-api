@@ -31,6 +31,7 @@ import {
   SaveMutationInput,
   SaveUpdateTagsInputGraphql,
   SaveWriteMutationPayload,
+  SaveUpsertMutationInput,
   Tag,
 } from '../types';
 import { IContext } from '../server/context';
@@ -190,14 +191,13 @@ const resolvers = {
         info.path
       );
     },
-    saveUpsert: (
+    saveUpsert: async (
       _,
-      args,
+      args: SaveUpsertMutationInput,
       context: IContext,
       info: GraphQLResolveInfo
-    ): null => {
-      //TODO @Herraj --> implementation in a follow up PR
-      return null;
+    ): Promise<SaveWriteMutationPayload> => {
+      return await context.models.pocketSave.saveUpsert(args, info.path);
     },
   },
 };

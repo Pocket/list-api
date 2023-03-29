@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 import { IContext } from '../server/context';
 import { mysqlDateConvert, mysqlTimeString, setDifference } from './utils';
-import { PocketSaveStatus } from '../types';
+import { PocketSaveStatus, SaveMutationInput } from '../types';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import config from '../config';
 
@@ -245,6 +245,14 @@ export class PocketSaveDataService {
       'favorite',
       FavoriteStatus.FAVORITE
     );
+  }
+
+  //TODO define saveUpsert function here to write to DB
+  public async saveUpsert(
+    input: SaveMutationInput,
+    timestamp: Date
+  ): Promise<{ updated: ListResult[]; missing: string[] }> {
+    return null;
   }
 
   /**

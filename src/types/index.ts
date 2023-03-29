@@ -264,3 +264,14 @@ export type SaveUpdateTagsInputDb = {
 };
 
 export type SaveByIdResult = NotFound | PocketSave;
+
+interface SaveUpsertInput {
+  url: string;
+  title?: string;
+  isFavorite?: boolean;
+}
+
+export type SaveUpsertMutationInput = {
+  saveUpsertInput: SaveUpsertInput[];
+  timestamp: Date;
+};

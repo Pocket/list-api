@@ -1,4 +1,9 @@
-import { PocketSave, SaveByIdResult, SaveWriteMutationPayload } from '../types';
+import {
+  PocketSave,
+  SaveByIdResult,
+  SaveUpsertMutationInput,
+  SaveWriteMutationPayload,
+} from '../types';
 import { IContext } from '../server/context';
 import { ListResult, PocketSaveDataService } from '../dataService';
 import { uniqueArray } from '../dataService/utils';
@@ -156,6 +161,23 @@ export class PocketSaveModel {
     const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     //todo: emit event
     return payload;
+  }
+
+  //TODO define saveUpsert function
+  public async saveUpsert(
+    input: SaveUpsertMutationInput,
+    path: GraphQLResolveInfo['path']
+  ): Promise<SaveWriteMutationPayload> {
+    const { url, isFavorite, title, timestamp } = input;
+
+    // do business logic
+    console.log(url, isFavorite, title, timestamp);
+
+    // call the saveService function
+
+    // const { updated, missing } = await this.saveService.saveUpsert(input);
+
+    return null;
   }
 
   /**
