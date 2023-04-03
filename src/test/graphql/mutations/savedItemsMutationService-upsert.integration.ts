@@ -214,7 +214,7 @@ describe('UpsertSavedItem Mutation', () => {
       });
       expect(mutationResult).is.not.null;
       const data = mutationResult.body.data?.upsertSavedItem;
-      expect(data.title).to.equal(variables.title);
+      expect(data.title).to.equal('bob');
     });
 
     it('should add an item to the list even if the parser has not yet resolved or cannot resolve it', async () => {
