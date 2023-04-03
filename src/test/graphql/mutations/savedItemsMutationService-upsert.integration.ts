@@ -148,7 +148,7 @@ describe('UpsertSavedItem Mutation', () => {
       );
     });
 
-    it.skip('should add a valid item and return savedItem', async () => {
+    it.only('should add a valid item and return savedItem', async () => {
       const variables = {
         url: 'http://getpocket.com',
       };
@@ -198,7 +198,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data.favoritedAt).is.null;
     });
 
-    it.only('should return user provided title on the returned savedItem', async () => {
+    it.skip('should return user provided title on the returned savedItem', async () => {
       const variables = {
         url: 'http://testing-title.com',
         title: 'test-user-title',
