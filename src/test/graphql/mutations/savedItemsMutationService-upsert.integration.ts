@@ -131,6 +131,10 @@ describe('UpsertSavedItem Mutation', () => {
           url: 'http://write-client.com',
           itemId: 50,
         },
+        {
+          url: 'http://testing-title.com',
+          itemId: 19,
+        },
       ];
       mockRequestData.forEach(({ url, itemId }) =>
         mockParserGetItemRequest(url, {
@@ -196,7 +200,7 @@ describe('UpsertSavedItem Mutation', () => {
 
     it.only('should return user provided title on the returned savedItem', async () => {
       const variables = {
-        url: 'http://getpocket.com',
+        url: 'http://testing-title.com',
         title: 'test-user-title',
       };
 

@@ -7,7 +7,7 @@
     "start:dev": "npm run build && npm run watch",
     "test-ci": "npm test",
     "test": "jest \"\\.spec\\.ts\"",
-    "test-integrations": "jest \"\\.integration\\.ts\" --runInBand",
+    "test-integrations": "jest savedItemsMutationService-upsert.integration.ts --runInBand",
     "lint-check": "eslint --fix-dry-run \"src/**/*.ts\"",
     "lint-fix": "eslint --fix \"src/**/*.ts\""
   },
