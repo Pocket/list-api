@@ -89,6 +89,7 @@ export class SavedItemDataService {
       'item_id AS id',
       'resolved_id AS resolvedId', // for determining if an item is pending
       'favorite as isFavorite',
+      'title',
       this.db.raw(
         'CASE WHEN favorite = 1 THEN UNIX_TIMESTAMP(time_favorited) ELSE null END as favoritedAt '
       ),

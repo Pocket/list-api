@@ -145,6 +145,10 @@ type SavedItem implements RemoteEntity @key(fields: "id") @key(fields: "url") {
   """
   url: String!
   """
+  The title for user saved item. Set by the user and if not, set by the parser
+  """
+  title: String
+  """
   Helper property to indicate if the SavedItem is favorited
   """
   isFavorite: Boolean!
@@ -249,6 +253,10 @@ input SavedItemUpsertInput {
   Optional, time that request was submitted by client epoch/unix time
   """
   timestamp: Int
+  """
+  Optional, title of the SavedItem
+  """
+  title: String
 }
 
 """

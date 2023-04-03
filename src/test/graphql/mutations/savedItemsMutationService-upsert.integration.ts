@@ -154,6 +154,7 @@ describe('UpsertSavedItem Mutation', () => {
           upsertSavedItem(input: { url: $url }) {
             id
             url
+            title
             _createdAt
             _updatedAt
             favoritedAt
@@ -181,6 +182,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(mutationResult).is.not.null;
       const data = mutationResult.body.data?.upsertSavedItem;
       expect(data.id).to.equal('8');
+      expect(data.title).to.equal(variables.url); // in the mockParserGetItemRequest call in the beforeAll, we are returning title as the url
       expect(data.url).to.equal(variables.url);
       expect(data.isFavorite).is.false;
       expect(data.isArchived).is.false;
@@ -190,6 +192,29 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data.tags[0].name).equals('zebra');
       expect(data.archivedAt).is.null;
       expect(data.favoritedAt).is.null;
+    });
+
+    it('should return user provided title on the returned savedItem', async () => {
+      const variables = {
+        url: 'http://getpocket.com',
+        title: 'test-user-title',
+      };
+
+      const ADD_AN_ITEM = `
+        mutation addAnItem($url: String!, $title: String) {
+          upsertSavedItem(input: { url: $url, title: $title }) {
+            title
+          }
+        }
+      `;
+
+      const mutationResult = await request(app).post(url).set(headers).send({
+        query: ADD_AN_ITEM,
+        variables,
+      });
+      expect(mutationResult).is.not.null;
+      const data = mutationResult.body.data?.upsertSavedItem;
+      expect(data.title).to.equal(variables.title);
     });
 
     it('should add an item to the list even if the parser has not yet resolved or cannot resolve it', async () => {
