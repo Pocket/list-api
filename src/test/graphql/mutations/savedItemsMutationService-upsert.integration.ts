@@ -194,7 +194,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data.favoritedAt).is.null;
     });
 
-    it.only('should return user provided title on the returned savedItem', async () => {
+    it('should return user provided title on the returned savedItem', async () => {
       const variables = {
         url: 'http://getpocket.com',
         title: 'test-user-title',
@@ -214,7 +214,7 @@ describe('UpsertSavedItem Mutation', () => {
       });
       expect(mutationResult).is.not.null;
       const data = mutationResult.body.data?.upsertSavedItem;
-      expect(data.title).to.equal('bob');
+      expect(data.title).to.equal(variables.title);
     });
 
     it('should add an item to the list even if the parser has not yet resolved or cannot resolve it', async () => {
@@ -471,7 +471,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(permLibQueueBody.timeAdded).equals('2021-10-06 03:22:00');
       expect(permLibQueueBody.resolvedId).equals(25);
     });
-    describe.skip(' - on existing savedItem: ', () => {
+    describe(' - on existing savedItem: ', () => {
       const ADD_AN_ITEM = `
         mutation addAnItem(
           $url: String!
@@ -650,7 +650,7 @@ describe('UpsertSavedItem Mutation', () => {
       });
     });
   });
-  describe.skip('sad path', function () {
+  describe('sad path', function () {
     it('should return error for invalid url', async () => {
       mockParserGetItemRequest('abcde1234', {
         item: {
