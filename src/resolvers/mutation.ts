@@ -35,10 +35,16 @@ export async function upsertSavedItem(
   const savedItemDataService = new SavedItemDataService(context);
 
   try {
-    const item = await ParserCaller.getOrCreateItem(savedItemUpsertInput.url);
+    //TODO do we need the resolved id @Herraj
+    let item = await ParserCaller.getOrCreateItem(savedItemUpsertInput.url);
     const existingItem = await savedItemDataService.getSavedItemById(
       item.itemId.toString()
     );
+
+    // if title is provided in the mutation input then use that and not the one received by the parser call
+    if (savedItemUpsertInput.title) {
+      item = { ...item, title: savedItemUpsertInput.title };
+    }
     // Keep track of whether the request was originally to favorite an item,
     // and whether it's a new favorite or item was favorited already
     const shouldSendFavoriteEvent =

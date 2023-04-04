@@ -52,6 +52,7 @@ export type PendingItem = {
 export type SavedItem = RemoteEntity & {
   resolvedId: string;
   url: string;
+  title?: string;
   isFavorite: boolean;
   status: keyof typeof SavedItemStatus;
   favoritedAt?: number;
@@ -125,6 +126,7 @@ export type SavedItemUpsertInput = {
   url: string;
   isFavorite?: boolean;
   timestamp?: number;
+  title?: string;
 };
 
 /**
