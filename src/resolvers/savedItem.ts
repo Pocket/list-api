@@ -8,20 +8,6 @@ import { IContext } from '../server/context';
  * @param args
  * @param context
  */
-export async function tags(
-  parent: SavedItem,
-  args,
-  context: IContext
-): Promise<Tag[]> {
-  return await context.models.tag.getBySaveId(parent.id);
-}
-
-/**
- * Get paginated saved item tags
- * @param parent
- * @param args
- * @param context
- */
 export async function suggestedTags(
   parent: SavedItem,
   args,

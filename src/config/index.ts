@@ -16,31 +16,6 @@ export default {
     environment: process.env.NODE_ENV || 'development',
     depthLimit: 8,
   },
-  events: {
-    source: serviceName, // TODO - ok to change from 'backend-php'?
-    version: '0.0.2', // TODO - version currently in documentation
-  },
-  data: {
-    // A suffix that ensures the tag ID is never an empty string,
-    // because there are empty tag strings in the DB
-    tagIdSuffix: '__xpktxtagx__',
-  },
-  awsEnvironments,
-  snowplow: {
-    endpoint: process.env.SNOWPLOW_ENDPOINT || 'localhost:9090',
-    httpProtocol: snowplowHttpProtocol,
-    bufferSize: 1,
-    retries: 3,
-    appId: 'pocket-backend-list-api',
-    events: EventType,
-    schemas: {
-      listItemUpdate: 'iglu:com.pocket/list_item_update/jsonschema/1-0-1',
-      listItem: 'iglu:com.pocket/list_item/jsonschema/1-0-1',
-      content: 'iglu:com.pocket/content/jsonschema/1-0-0',
-      user: 'iglu:com.pocket/user/jsonschema/1-0-0',
-      apiUser: 'iglu:com.pocket/api_user/jsonschema/1-0-0',
-    },
-  },
   aws: {
     region: process.env.AWS_REGION || 'us-east-1',
     endpoint: localAwsEndpoint,
@@ -86,6 +61,25 @@ export default {
       batchSize: 10,
     },
   },
+  awsEnvironments,
+  batchDelete: {
+    deleteDelayInMilliSec: 500,
+    tablesWithPii: ['item_tags', 'list', 'item_attribution'],
+    tablesWithUserIdAlone: [
+      'list_meta',
+      'items_scroll',
+      'item_ads',
+      'item_time_spent',
+      'item_currently_reading',
+      'list_extras',
+      'list_shares',
+    ],
+  },
+  data: {
+    // A suffix that ensures the tag ID is never an empty string,
+    // because there are empty tag strings in the DB
+    tagIdSuffix: '__xpktxtagx__',
+  },
   database: {
     // contains tables for user, list, tags, annotations, etc.
     read: {
@@ -103,37 +97,47 @@ export default {
     dbName: process.env.DATABASE || 'readitla_ril-tmp',
     tz: process.env.DATABASE_TZ || 'US/Central',
   },
+  dataloaderDefaults: {
+    // TBD: batchScheduleFn: (callback) => setTimeout(callback, 10) // every 10 ms
+    maxBatchSize: 1000,
+  },
+  events: {
+    source: serviceName, // TODO - ok to change from 'backend-php'?
+    version: '0.0.2', // TODO - version currently in documentation
+  },
+  mutationInputLimits: {
+    batchUpdateTagNodesMax: 150,
+  },
+  pagination: {
+    defaultPageSize: 30,
+    maxPageSize: 100,
+  },
+  parserDomain: process.env.PARSER_DOMAIN || 'https://parse-sir.local',
+  parserRetries: 3,
+  parserVersion: process.env.PARSER_VERSION || 'v3beta',
+  queueDelete: {
+    queryLimit: 1000,
+    itemIdChunkSize: 250,
+  },
   sentry: {
     dsn: process.env.SENTRY_DSN || '',
     release: process.env.GIT_SHA || '',
     environment: process.env.NODE_ENV || 'development',
   },
-  parserDomain: process.env.PARSER_DOMAIN || 'https://parse-sir.local',
-  parserVersion: process.env.PARSER_VERSION || 'v3beta',
-  parserRetries: 3,
-  pagination: {
-    defaultPageSize: 30,
-    maxPageSize: 100,
-  },
-  queueDelete: {
-    queryLimit: 1000,
-    itemIdChunkSize: 250,
-  },
-  batchDelete: {
-    deleteDelayInMilliSec: 500,
-    tablesWithPii: ['item_tags', 'list', 'item_attribution'],
-    tablesWithUserIdAlone: [
-      'list_meta',
-      'items_scroll',
-      'item_ads',
-      'item_time_spent',
-      'item_currently_reading',
-      'list_extras',
-      'list_shares',
-    ],
-  },
-  mutationInputLimits: {
-    batchUpdateTagNodesMax: 150,
+  snowplow: {
+    endpoint: process.env.SNOWPLOW_ENDPOINT || 'localhost:9090',
+    httpProtocol: snowplowHttpProtocol,
+    bufferSize: 1,
+    retries: 3,
+    appId: 'pocket-backend-list-api',
+    events: EventType,
+    schemas: {
+      listItemUpdate: 'iglu:com.pocket/list_item_update/jsonschema/1-0-1',
+      listItem: 'iglu:com.pocket/list_item/jsonschema/1-0-1',
+      content: 'iglu:com.pocket/content/jsonschema/1-0-0',
+      user: 'iglu:com.pocket/user/jsonschema/1-0-0',
+      apiUser: 'iglu:com.pocket/api_user/jsonschema/1-0-0',
+    },
   },
   tracing: {
     host: process.env.OTLP_COLLECTOR_HOST || 'otlpcollector',
