@@ -95,6 +95,31 @@ export class TagDataService {
   }
 
   /**
+   * For a given item_id, retrieves tags
+   * and list of itemIds associated with it.
+   * @param itemId
+   */
+  public async batchGetTagsByUserItems(itemIds: string[]): Promise<Tag[]> {
+    const subQueryName = 'subQuery_tags';
+    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
+
+    const getTagsForItemQuery = this.db('item_tags')
+      .select(`${subQueryName}.*`)
+      .where({
+        user_id: parseInt(this.userId),
+      })
+      .whereIn('item_id', itemIds);
+
+    const result = await getTagsForItemQuery
+      .join(getItemIdsForEveryTag, function () {
+        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
+      })
+      .distinct();
+
+    return result.map(TagModel.toGraphqlEntity);
+  }
+
+  /**
    Returns the latest 3 tags used by the Pocket User
    TODO: DataLoader
    */

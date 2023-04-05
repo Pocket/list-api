@@ -1,6 +1,5 @@
 import { readClient } from '../../../database/client';
 import sinon from 'sinon';
-import * as tagsDataLoader from '../../../dataLoader/tagsDataLoader';
 import config from '../../../config';
 import { ContextManager } from '../../../server/context';
 import { startServer } from '../../../server/apollo';
@@ -9,10 +8,16 @@ import { ApolloServer } from '@apollo/server';
 import request from 'supertest';
 import { gql } from 'graphql-tag';
 import { print } from 'graphql';
+import { TagDataService } from '../../../dataService';
 
 const toBeStringOfLengthGreaterThanOne = () => expect.stringMatching(/.+/);
 
 describe('tags query tests - happy path', () => {
+  // proxy for testing we're using dataloader => batch queries
+  const dbBatchSpy = sinon.spy(
+    TagDataService.prototype,
+    'batchGetTagsByUserItems'
+  );
   const db = readClient();
   const headers = { userid: '1', premium: 'true' };
   const date = new Date('2020-10-03T10:20:30.000Z');
@@ -52,8 +57,11 @@ describe('tags query tests - happy path', () => {
 
   afterAll(async () => {
     await db.destroy();
+    sinon.restore();
     await server.stop();
   });
+
+  afterEach(() => sinon.resetHistory());
 
   beforeAll(async () => {
     ({ app, server, url } = await startServer(0));
@@ -365,7 +373,6 @@ describe('tags query tests - happy path', () => {
       userId: '1',
       itemId: '1',
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -418,6 +425,7 @@ describe('tags query tests - happy path', () => {
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].savedItemById).toMatchObject(expected);
+    expect(dbBatchSpy.callCount).toEqual(1);
   });
 
   describe('should not allow before/after pagination', () => {
@@ -427,7 +435,6 @@ describe('tags query tests - happy path', () => {
         itemId: '1',
         pagination: { before: 'emVicmFfKl8iemVicmEi', last: 10 },
       };
-
       const GET_PAGINATED_ITEMS = gql`
         query getSavedItem(
           $userId: ID!
@@ -461,7 +468,9 @@ describe('tags query tests - happy path', () => {
       expect(res.body.errors[0].message).toBe(
         'Cannot specify a cursor on a nested paginated field.'
       );
+      expect(dbBatchSpy.callCount).toEqual(1);
     });
+
     it('under paginated Tags', async () => {
       const variables = {
         id: '1',
@@ -480,6 +489,9 @@ describe('tags query tests - happy path', () => {
       expect(res.body.errors[0].message).toBe(
         'Cannot specify a cursor on a nested paginated field.'
       );
+      // dataloader (and dependent DB functions)
+      // shouldn't be called upon error at client level
+      expect(dbBatchSpy.callCount).toEqual(0);
     });
   });
 
@@ -490,7 +502,6 @@ describe('tags query tests - happy path', () => {
       sort: { sortBy: 'CREATED_AT', sortOrder: 'ASC' },
       itemPagination: { first: 2 },
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -498,7 +509,6 @@ describe('tags query tests - happy path', () => {
         query: print(GET_TAGS_SAVED_ITEMS),
         variables,
       });
-
     const expectedTagEdges = [
       {
         cursor: toBeStringOfLengthGreaterThanOne(),
@@ -544,6 +554,8 @@ describe('tags query tests - happy path', () => {
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].tags).toMatchObject(expected);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
 
   it('return paginated SavedItems, when filtered by archived', async () => {
@@ -599,6 +611,8 @@ describe('tags query tests - happy path', () => {
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0]).toMatchObject(expected);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
 
   it('should return list of Tags for User for the first n values', async () => {
@@ -606,7 +620,6 @@ describe('tags query tests - happy path', () => {
       id: '1',
       pagination: { first: 2 },
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -641,6 +654,8 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
     expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
 
   it('should return list of Tags for User for last n values', async () => {
@@ -648,7 +663,6 @@ describe('tags query tests - happy path', () => {
       id: '1',
       pagination: { last: 2 },
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -683,6 +697,8 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
     expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
 
   it('should return list of Tags for first n values after the given cursor', async () => {
@@ -690,7 +706,6 @@ describe('tags query tests - happy path', () => {
       id: '1',
       pagination: { first: 2, after: 'YWR2ZW50dXJlXypfOA==' },
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -698,7 +713,6 @@ describe('tags query tests - happy path', () => {
         query: print(GET_TAG_CONNECTION),
         variables,
       });
-
     const expectedConnection = {
       totalCount: 3,
       pageInfo: {
@@ -726,6 +740,8 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
     expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
 
   it('should return list of Tags for User for last n values before the given cursor', async () => {
@@ -733,7 +749,6 @@ describe('tags query tests - happy path', () => {
       id: '1',
       pagination: { last: 2, before: 'emVicmFfKl8xNA==' },
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -741,7 +756,6 @@ describe('tags query tests - happy path', () => {
         query: print(GET_TAG_CONNECTION),
         variables,
       });
-
     const expectedConnection = {
       totalCount: 3,
       pageInfo: {
@@ -769,6 +783,8 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
     expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
 
   it('should not overflow when first is greater than available item', async () => {
@@ -776,7 +792,6 @@ describe('tags query tests - happy path', () => {
       id: '1',
       pagination: { first: 2, after: 'dHJhdmVsXypfMTM=' },
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -804,14 +819,15 @@ describe('tags query tests - happy path', () => {
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].tags).toMatchObject(expectedConnection);
     expect(res.body.data?._entities[0].tags.edges).toStrictEqual(edges);
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
+
   it('should resolve tag fields from the parent if provided', async () => {
-    const dataLoaderSpy = sinon.spy(tagsDataLoader, 'batchGetTagsByNames');
     const variables = {
       id: '1',
       pagination: { first: 2 },
     };
-
     await request(app)
       .post(url)
       .set(headers)
@@ -819,15 +835,15 @@ describe('tags query tests - happy path', () => {
         query: print(GET_TAG_CONNECTION),
         variables,
       });
-    expect(dataLoaderSpy.callCount).toEqual(0);
-    dataLoaderSpy.restore();
+    // tags (paginated) on a User parent hasn't been setup with dataloaders yet
+    expect(dbBatchSpy.callCount).toEqual(0);
   });
+
   it('should allow returning empty tags', async () => {
     const variables = {
       userId: '2',
       itemId: '99',
     };
-
     const res = await request(app)
       .post(url)
       .set({ ...headers, userid: '2' })
@@ -848,5 +864,6 @@ describe('tags query tests - happy path', () => {
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0]).toMatchObject(expected);
+    expect(dbBatchSpy.callCount).toEqual(1);
   });
 });
