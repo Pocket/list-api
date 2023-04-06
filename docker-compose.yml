@@ -32,7 +32,7 @@ services:
       - HOSTNAME_EXTERNAL=localstack
 
   otlpcollector:
-    image: amazon/aws-otel-collector@sha256:d8ab0eef5074f1244570bcbab8c8318acc50e80d087cff8405c68d1e649787dd
+    image: amazon/aws-otel-collector@sha256:e7e91e804fc16b40a0dcf4049366b1e5904db788896fe017c6bf5a830a2da330
     command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=debug
     env_file:
       - .docker/local.env
