@@ -59,7 +59,8 @@ jobs:
     docker:
       - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
     steps:
-      - checkout
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: install rover
           command: |
@@ -70,14 +71,14 @@ jobs:
             echo 'export PATH=$HOME/.rover/bin:$PATH' >> $BASH_ENV
       - run:
           name: check service
-          command: rover subgraph check pocket-client-api@current --schema ./dist/schema-generated.graphql --name=list
+          command: rover subgraph check pocket-client-api@current --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --name=list
       - when:
           condition:
             equal: [main, << pipeline.git.branch >>]
           steps:
             - run:
                 name: push service
-                command: rover subgraph publish pocket-client-api@current --schema ./dist/schema-generated.graphql --routing-url https://list-api.readitlater.com/ --name=list
+                command: rover subgraph publish pocket-client-api@current --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --routing-url https://list-api.readitlater.com/ --name=list
   build:
     docker:
       - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
