@@ -1,8 +1,12 @@
 extend schema
-  @link(
-    url: "https://specs.apollo.dev/federation/v2.0"
-    import: ["@key", "@shareable", "@tag"]
-  )
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/federation/v2.3",
+        import: ["@key", "@composeDirective", "@tag", "@shareable"])
+  # The link directive is required to federate @constraint
+  # It doesn't actually have to be a real spec, but it would be good
+  # to write one and replace this.
+  @link(url: "https://myspecs.dev/myDirective/v1.0", import: ["@constraint"])
+  @composeDirective(name:"@constraint")
 
 """
 ISOString scalar - all datetimes fields are Typescript Date objects on this server &
@@ -117,16 +121,16 @@ input SaveUpdateTagsInput {
   """
   Tags to remove, by ID
   """
-  removeTagIds: [ID!]! #@constraint(maxItems: 30)
+  removeTagIds: [ID!]! @constraint(maxItems: 30)
   """
   Tags to add, by name text; if a Tag
   with the given name does not exist,
   one will be created.
   """
-  addTagNames: [String!]! #@constraint(maxItems: 30)
+  addTagNames: [String!]! @constraint(maxItems: 30)
 }
 
-extend type CorpusItem @key(fields: "url") {
+type CorpusItem @key(fields: "url") {
   url: Url!
 
   """
@@ -562,7 +566,7 @@ type User @key(fields: "id") {
   """
   Get a PocketSave(s) by its id(s)
   """
-  saveById(ids: [ID!]!): [SaveByIdResult!]! # @constraint(maxItems: 30)
+  saveById(ids: [ID!]!): [SaveByIdResult!]!  @constraint(maxItems: 30)
 }
 """
 Union type for saveById - retrieving either PocketSaves or NotFound errors
@@ -736,7 +740,7 @@ type Mutation {
   Maximum of 150 operations (adds/deletes) per request.
   """
   saveBatchUpdateTags(
-    input: [SaveUpdateTagsInput!]! # @constraint(minItems: 1, maxItems: 30),
+    input: [SaveUpdateTagsInput!]!  @constraint(minItems: 1, maxItems: 30),
     timestamp: ISOString!
   ): SaveWriteMutationPayload! @tag(name: "alpha")
 
@@ -746,7 +750,7 @@ type Mutation {
   timestamp.
   """
   saveUpsert(
-    input: [SaveUpsertInput!]! # @constraint(minItems: 1, maxItems: 30),
+    input: [SaveUpsertInput!]!  @constraint(minItems: 1, maxItems: 30),
     timestamp: ISOString!
   ): SaveWriteMutationPayload! @tag(name: "alpha")
 }

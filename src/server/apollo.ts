@@ -4,7 +4,6 @@ import http from 'http';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { buildSubgraphSchema } from '@apollo/subgraph';
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
 import {
   ApolloServerPluginLandingPageDisabled,
@@ -25,9 +24,9 @@ import queueDeleteRouter from './routes/queueDelete';
 import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
 import { EventEmitter } from 'events';
 import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
-import { typeDefs } from './typeDefs';
-import { resolvers } from '../resolvers';
 import { Knex } from 'knex';
+import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive/apollo4';
+import { schema } from './schema';
 
 /**
  * Stopgap method to set global db connection in context,
@@ -92,7 +91,7 @@ export async function startServer(port: number) {
   };
 
   const server = new ApolloServer<ContextManager>({
-    schema: buildSubgraphSchema({ typeDefs, resolvers }),
+    schema,
     plugins: [
       sentryPlugin,
       process.env.NODE_ENV === 'production'
@@ -100,6 +99,7 @@ export async function startServer(port: number) {
         : ApolloServerPluginLandingPageGraphQLPlayground(),
       ApolloServerPluginUsageReportingDisabled(),
       ApolloServerPluginDrainHttpServer({ httpServer }),
+      createApollo4QueryValidationPlugin({ schema }),
     ],
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
     introspection: process.env.NODE_ENV !== 'production',
