@@ -59,6 +59,7 @@ jobs:
     docker:
       - image: cimg/base:2023.04
     steps:
+      - checkout
       - attach_workspace:
           at: /tmp/workspace
       - run:
