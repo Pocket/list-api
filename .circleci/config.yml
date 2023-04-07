@@ -57,7 +57,7 @@ only_dev: &only_dev
 jobs:
   apollo:
     docker:
-      - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
+      - image: cimg/base:2023.04
     steps:
       - attach_workspace:
           at: /tmp/workspace
