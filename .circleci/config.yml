@@ -57,7 +57,7 @@ only_dev: &only_dev
 jobs:
   apollo:
     docker:
-      - image: cimg/base:2023.04
+      - image: cimg/base:2023.04@sha256:3460d41b9ad6276b9df0e54e3c22e5e28310ad832cc4627a178de5f7097da82d
     steps:
       - checkout
       - attach_workspace:
