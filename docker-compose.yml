@@ -32,7 +32,7 @@ services:
       - HOSTNAME_EXTERNAL=localstack
 
   otlpcollector:
-    image: amazon/aws-otel-collector@sha256:e7e91e804fc16b40a0dcf4049366b1e5904db788896fe017c6bf5a830a2da330
+    image: amazon/aws-otel-collector@sha256:a94db15e754ce67149d67c0a6f366bec3fa93b59626757a1436d3fb833f7cafc
     command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=debug
     env_file:
       - .docker/local.env
@@ -41,7 +41,7 @@ services:
       - '4138:4138'
 
   app:
-    image: node:16@sha256:051b68ed341fee26f4c08b15815ac4bff6a5351c68e7b33c66912677cc4be7ac
+    image: node:16@sha256:d70de5be007866473408af5cc39f6039d990d8d4f72ae13438b0b4f83b904b31
     platform: linux/amd64
     working_dir: /app
     ports:
