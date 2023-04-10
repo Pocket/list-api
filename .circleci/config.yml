@@ -57,27 +57,36 @@ only_dev: &only_dev
 jobs:
   apollo:
     docker:
-      - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
+      - image: cimg/base:2023.04
     steps:
       - checkout
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: install rover
           command: |
             # download and install Rover
-            curl -sSL https://rover.apollo.dev/nix/v0.1.0 | sh
+            curl -sSL https://rover.apollo.dev/nix/v0.11.1 | sh
 
             # This allows the PATH changes to persist to the next `run` step
             echo 'export PATH=$HOME/.rover/bin:$PATH' >> $BASH_ENV
       - run:
           name: check service
-          command: rover subgraph check pocket-client-api@current --schema ./schema.graphql --name=list
+          command: rover subgraph check pocket-client-api@current --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --name=list
       - when:
           condition:
             equal: [main, << pipeline.git.branch >>]
           steps:
             - run:
                 name: push service
-                command: rover subgraph publish pocket-client-api@current --schema ./schema.graphql --routing-url https://list-api.readitlater.com/ --name=list
+                command: rover subgraph publish pocket-client-api@current --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --routing-url https://list-api.readitlater.com/ --name=list
+      - when:
+          condition:
+            equal: [dev, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: push service (dev)
+                command: rover subgraph publish pocket-client-api@development --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --routing-url https://list-api.getpocket.dev/ --name=list
   build:
     docker:
       - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
@@ -98,7 +107,7 @@ jobs:
       - backstage-entity-validator/validate:
           path: catalog-info.yaml
       - run:
-          name:
+          name: build code and generate composed schema
           command: |
             export NODE_ENV=production
             npm run build
@@ -107,7 +116,7 @@ jobs:
           name: Setup workspace
           command: |
             mkdir -p /tmp/workspace/app_prod
-            cp -r ./node_modules package.json Dockerfile schema.graphql ./dist /tmp/workspace/app_prod
+            cp -r ./node_modules package.json Dockerfile ./dist /tmp/workspace/app_prod
       # Persist built files to workspace
       - persist_to_workspace:
           root: /tmp/workspace
@@ -206,10 +215,12 @@ workflows:
           context: pocket
           name: test_integrations
 
-      - apollo
-
       - build:
           context: pocket
+
+      - apollo:
+          requires:
+            - build
 
       # Try building the ECS docker image on each branch
       - pocket/docker_build:
@@ -360,10 +371,12 @@ workflows:
           # complete.
           config-path: .circleci/continue-config.yml
 
-      - apollo
-
       - build:
           context: pocket
+
+      - apollo:
+          requires:
+            - build
 
       # Try building the ECS docker image on each branch
       - pocket/docker_build:
