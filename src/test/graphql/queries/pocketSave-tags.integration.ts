@@ -77,6 +77,12 @@ describe('pocketSave.tags', () => {
         resolved_id: 2,
         given_url: 'http://def',
       },
+      {
+        ...listDatabase,
+        item_id: 3,
+        resolved_id: 3,
+        given_url: 'http://ijk',
+      },
     ]);
     await db('item_tags').insert([
       {
@@ -88,6 +94,11 @@ describe('pocketSave.tags', () => {
         ...tagsDatabase,
         item_id: 1,
         tag: 'shoyo',
+      },
+      {
+        ...tagsDatabase,
+        item_id: 3,
+        tag: 'tobio',
       },
     ]);
   });
@@ -145,5 +156,43 @@ describe('pocketSave.tags', () => {
     const tags = res.body.data?._entities[0].saveById[0].tags;
     expect(tags).not.toBeUndefined();
     expect(tags).toBeArrayOfSize(0);
+  });
+
+  it('works for multiple items, homogenous tag count, and repeat tags', async () => {
+    const variables = {
+      userId: '1',
+      itemIds: ['1', '2', '3'],
+    };
+
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(GET_POCKET_SAVE_TAGS),
+        variables,
+      });
+    expect(dbBatchSpy.callCount).toEqual(1);
+    expect(res.body.errors).toBeUndefined();
+    const expected = [
+      {
+        tags: expect.toIncludeSameMembers([
+          { name: 'tobio', _deletedAt: null, id: expect.stringMatching(/.+/) },
+          { name: 'shoyo', _deletedAt: null, id: expect.stringMatching(/.+/) },
+        ]),
+      },
+      {
+        tags: expect.toBeArrayOfSize(0),
+      },
+      {
+        tags: expect.toIncludeSameMembers([
+          {
+            name: 'tobio',
+            _deletedAt: null,
+            id: expect.stringMatching(/.+/),
+          },
+        ]),
+      },
+    ];
+    expect(res.body.data._entities[0].saveById).toEqual(expected);
   });
 });
