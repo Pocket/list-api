@@ -38,14 +38,25 @@ export async function tagsSavedItems(
       );
     }
   }
-  // Use filter to retrieve the SavedItems
-  const tagFilter: SavedItemsFilter = {
-    ...args.filter,
-    tagNames: [parent.name],
-  };
-  return savedItemDataService.getSavedItems(
-    tagFilter,
-    args.sort,
-    args.pagination
-  );
+  // Now get result
+  // If the IDs are on the parent, use them
+  if (parent.savedItems != null) {
+    return savedItemDataService.getSavedItems(
+      args.filter,
+      args.sort,
+      args.pagination,
+      parent.savedItems
+    );
+  } else {
+    // Use filter to retrieve the SavedItems if IDs are not on the parent
+    const tagFilter: SavedItemsFilter = {
+      ...args.filter,
+      tagNames: [parent.name],
+    };
+    return savedItemDataService.getSavedItems(
+      tagFilter,
+      args.sort,
+      args.pagination
+    );
+  }
 }
