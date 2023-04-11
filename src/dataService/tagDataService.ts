@@ -100,11 +100,22 @@ export class TagDataService {
    * @param itemId
    */
   public async batchGetTagsByUserItems(itemIds: string[]): Promise<Tag[]> {
-    const getTagsByItemIds = this.getTagsByUserSubQuery().whereIn(
-      'item_id',
-      itemIds
-    );
-    const result = await getTagsByItemIds;
+    const subQueryName = 'subQuery_tags';
+    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
+
+    const getTagsForItemQuery = this.db('item_tags')
+      .select(`${subQueryName}.*`)
+      .where({
+        user_id: parseInt(this.userId),
+      })
+      .whereIn('item_id', itemIds);
+
+    const result = await getTagsForItemQuery
+      .join(getItemIdsForEveryTag, function () {
+        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
+      })
+      .distinct();
+
     return result.map(TagModel.toGraphqlEntity);
   }
 
