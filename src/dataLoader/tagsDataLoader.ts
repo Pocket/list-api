@@ -25,18 +25,18 @@ export function createTagDataLoaders(
   context: IContext
 ): Pick<IContext['dataLoaders'], 'tagsById' | 'tagsByName' | 'tagsByItemId'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
-    const savedItemdService = new SavedItemDataService(context);
+    const savedItemDataService = new SavedItemDataService(context);
     const tags = await batchGetTagsByIds(
-      new TagDataService(context, savedItemdService),
+      new TagDataService(context, savedItemDataService),
       ids
     );
     tags.forEach((tag) => byNameLoader.prime(tag.name, tag));
     return tags;
   });
   const byNameLoader = new DataLoader(async (names: string[]) => {
-    const savedItemdService = new SavedItemDataService(context);
+    const savedItemDataService = new SavedItemDataService(context);
     const tags = await batchGetTagsByNames(
-      new TagDataService(context, savedItemdService),
+      new TagDataService(context, savedItemDataService),
       names
     );
     tags.forEach((tag) => byIdLoader.prime(tag.id, tag));
@@ -44,14 +44,15 @@ export function createTagDataLoaders(
   });
   const byItemIdLoader = new DataLoader(
     async (itemIds: string[]) => {
-      const savedItemdService = new SavedItemDataService(context);
+      const savedItemDataService = new SavedItemDataService(context);
       const tags = await batchGetTagsByItemIds(
-        new TagDataService(context, savedItemdService),
+        new TagDataService(context, savedItemDataService),
         itemIds
       );
       return tags;
     },
     {
+      cache: false,
       maxBatchSize: config.dataloaderDefaults.maxBatchSize,
     }
   );
