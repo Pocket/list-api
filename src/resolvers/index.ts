@@ -1,9 +1,5 @@
 import { savedItemById, savedItems, tags as userTags } from './user';
-import {
-  item,
-  tags as savedItemTags,
-  suggestedTags as savedItemSuggestedTags,
-} from './savedItem';
+import { item, suggestedTags as savedItemSuggestedTags } from './savedItem';
 import {
   createSavedItemTags,
   deleteSavedItem,
@@ -31,6 +27,7 @@ import {
   SaveMutationInput,
   SaveUpdateTagsInputGraphql,
   SaveWriteMutationPayload,
+  SavedItem,
   Tag,
 } from '../types';
 import { IContext } from '../server/context';
@@ -88,15 +85,19 @@ const resolvers = {
     suggestedTags(parent: PocketSave, _args: any, context: IContext) {
       return context.models.tag.getSuggestedBySaveId(parent);
     },
-    tags(parent: PocketSave, _args: any, context: IContext) {
-      return context.models.tag.getBySaveId(parent.id);
+    // using dataloader here for tags to avoid n+1 problem
+    // e.g. avoid new db connection & query per item for tags
+    tags(parent: PocketSave, _args: any, context: IContext): Promise<Tag[]> {
+      return context.dataLoaders.tagsByItemId.load(parent.id);
     },
     item(parent: PocketSave, _args: any, context: IContext) {
       return context.models.item.getBySave(parent);
     },
   },
   SavedItem: {
-    tags: savedItemTags,
+    tags(parent: SavedItem, _args: any, context: IContext): Promise<Tag[]> {
+      return context.dataLoaders.tagsByItemId.load(parent.id);
+    },
     suggestedTags: savedItemSuggestedTags,
     item,
     __resolveReference: async (savedItem, context: IContext) => {

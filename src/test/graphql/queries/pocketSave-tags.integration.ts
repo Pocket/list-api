@@ -1,13 +1,20 @@
 import { readClient } from '../../../database/client';
-import { ContextManager } from '../../../server/context';
 import { startServer } from '../../../server/apollo';
-import { Express } from 'express';
+import { ContextManager } from '../../../server/context';
 import { ApolloServer } from '@apollo/server';
-import request from 'supertest';
+import { Express } from 'express';
 import { gql } from 'graphql-tag';
 import { print } from 'graphql';
+import request from 'supertest';
+import sinon from 'sinon';
+import { TagDataService } from '../../../dataService';
 
 describe('pocketSave.tags', () => {
+  // proxy for testing we're using dataloader => batch queries
+  const dbBatchSpy = sinon.spy(
+    TagDataService.prototype,
+    'batchGetTagsByUserItems'
+  );
   const db = readClient();
   const headers = { userid: '1' };
   const date = new Date('2020-10-03 10:20:30');
@@ -33,16 +40,11 @@ describe('pocketSave.tags', () => {
     }
   `;
 
-  afterAll(async () => {
-    await db.destroy();
-    await server.stop();
-  });
-
   beforeAll(async () => {
     ({ app, server, url } = await startServer(0));
     await db('list').truncate();
     await db('item_tags').truncate();
-    const listDataBase = {
+    const listDatabase = {
       user_id: 1,
       title: 'mytitle',
       time_added: date,
@@ -54,7 +56,7 @@ describe('pocketSave.tags', () => {
       favorite: 0,
       api_id_updated: 'apiid',
     };
-    const tagsDataBase = {
+    const tagsDatabase = {
       user_id: 1,
       status: 1,
       time_added: date,
@@ -64,13 +66,13 @@ describe('pocketSave.tags', () => {
     };
     await db('list').insert([
       {
-        ...listDataBase,
+        ...listDatabase,
         item_id: 1,
         resolved_id: 1,
         given_url: 'http://abc',
       },
       {
-        ...listDataBase,
+        ...listDatabase,
         item_id: 2,
         resolved_id: 2,
         given_url: 'http://def',
@@ -78,23 +80,31 @@ describe('pocketSave.tags', () => {
     ]);
     await db('item_tags').insert([
       {
-        ...tagsDataBase,
+        ...tagsDatabase,
         item_id: 1,
         tag: 'tobio',
       },
       {
-        ...tagsDataBase,
+        ...tagsDatabase,
         item_id: 1,
         tag: 'shoyo',
       },
     ]);
   });
+
+  afterAll(async () => {
+    await db.destroy();
+    sinon.restore();
+    await server.stop();
+  });
+
+  afterEach(() => sinon.resetHistory());
+
   it('resolves one or more tags on a save', async () => {
     const variables = {
       userId: '1',
       itemIds: ['1'],
     };
-
     const res = await request(app)
       .post(url)
       .set(headers)
@@ -102,6 +112,7 @@ describe('pocketSave.tags', () => {
         query: print(GET_POCKET_SAVE_TAGS),
         variables,
       });
+    expect(dbBatchSpy.callCount).toEqual(1);
     expect(res.body.errors).toBeUndefined();
     const tags = res.body.data?._entities[0].saveById[0].tags;
     const expectedTags = [
@@ -115,6 +126,7 @@ describe('pocketSave.tags', () => {
     expect(tags).toBeArrayOfSize(2);
     expect(tags).toIncludeSameMembers(expectedTags);
   });
+
   it('returns an empty array if no tags on a save, with no errors', async () => {
     const variables = {
       userId: '1',
@@ -128,6 +140,7 @@ describe('pocketSave.tags', () => {
         query: print(GET_POCKET_SAVE_TAGS),
         variables,
       });
+    expect(dbBatchSpy.callCount).toEqual(1);
     expect(res.body.errors).toBeUndefined();
     const tags = res.body.data?._entities[0].saveById[0].tags;
     expect(tags).not.toBeUndefined();

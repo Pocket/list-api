@@ -35,6 +35,7 @@ export interface IContext {
     savedItemsByUrl: DataLoader<string, SavedItem>;
     tagsById: DataLoader<string, Tag>;
     tagsByName: DataLoader<string, Tag>;
+    tagsByItemId: DataLoader<string, Tag[]>;
   };
 
   emitItemEvent(
