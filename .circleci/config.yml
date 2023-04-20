@@ -131,6 +131,9 @@ jobs:
           root: /tmp/workspace
           paths:
             - app_prod
+      - slack/notify:
+          event: pass
+          template: success_tagged_deploy_1
 
   test_integrations:
     description: Run integration tests against external services, e.g. MySQL
