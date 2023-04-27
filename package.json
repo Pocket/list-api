@@ -31,7 +31,7 @@
     "@opentelemetry/instrumentation-http": "0.34.0",
     "@opentelemetry/instrumentation-knex": "0.31.1",
     "@opentelemetry/instrumentation-mysql": "0.32.0",
-    "@opentelemetry/instrumentation-mysql2": "0.33.1",
+    "@opentelemetry/instrumentation-mysql2": "0.33.2",
     "@opentelemetry/instrumentation-net": "0.31.1",
     "@opentelemetry/propagator-aws-xray": "1.1.1",
     "@opentelemetry/resource-detector-aws": "1.2.2",
