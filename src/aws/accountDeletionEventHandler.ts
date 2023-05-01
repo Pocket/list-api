@@ -1,46 +1,31 @@
 import EventEmitter from 'events';
-import * as Sentry from '@sentry/node';
-import {
-  EventBridgeClient,
-  PutEventsCommand,
-  PutEventsCommandOutput,
-} from '@aws-sdk/client-eventbridge';
+import { PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import config from '../config';
-import { processEventPayloadFromMessage } from './eventConfig';
 import { IEventHandler } from './IEventHandler';
 import { EventBridgeEventType } from './eventTypes';
 import { BatchDeleteMessage } from './batchDeleteHandler';
+import { EventBridgeBase } from './eventBridgeBase';
 import { eventBridgeClient } from './eventBridgeClient';
+import { AccountDeleteEventBusPayload } from './eventTypes';
 
 /**
  * This class MUST be initialized using the EventBusHandler.init() method.
  * This is done to ensure event handlers adhere to the EventHandlerInterface.
  */
-export class AccountDeletionEventHandler implements IEventHandler {
-  private client: EventBridgeClient;
+export class AccountDeletionEventHandler
+  extends EventBridgeBase
+  implements IEventHandler
+{
+  constructor() {
+    super(eventBridgeClient);
+  }
 
   init(emitter: EventEmitter) {
-    this.client = eventBridgeClient;
-
     emitter.on(
       EventBridgeEventType.ACCOUNT_DELETION_COMPLETED,
       async (data: BatchDeleteMessage) => {
-        let eventPayload = undefined;
-        try {
-          eventPayload = processEventPayloadFromMessage(data);
-          await this.sendEvent(eventPayload);
-        } catch (error) {
-          const failedEventError = new Error(
-            `Failed to send event '${
-              eventPayload.eventType
-            }' to event bus. Event Body:\n ${JSON.stringify(eventPayload)}`
-          );
-          // Don't halt program, but capture the failure in Sentry and Cloudwatch
-          Sentry.addBreadcrumb(failedEventError);
-          Sentry.captureException(error);
-          console.log(failedEventError);
-          console.log(error);
-        }
+        const eventPayload = this.processEventPayloadFromMessage(data);
+        await this.sendEvent(eventPayload);
       }
     );
 
@@ -65,18 +50,21 @@ export class AccountDeletionEventHandler implements IEventHandler {
         },
       ],
     });
-    const output: PutEventsCommandOutput = await this.client.send(
-      putEventCommand
-    );
-    if (output.FailedEntryCount) {
-      const failedEventError = new Error(
-        `Failed to send event '${
-          eventPayload.eventType
-        }' to event bus. Event Body:\n ${JSON.stringify(eventPayload)}`
-      );
-      // Don't halt program, but capture the failure in Sentry and Cloudwatch
-      Sentry.captureException(failedEventError);
-      console.log(failedEventError);
-    }
+    await this.putEvents(putEventCommand);
+  }
+
+  /**
+   * Convert batch SQS message to account complete event payload
+   */
+  processEventPayloadFromMessage(data): AccountDeleteEventBusPayload {
+    return {
+      userId: data.userId.toString(),
+      email: data.email,
+      isPremium: data.isPremium,
+      version: '1.0.0',
+      service: 'list',
+      timestamp: Math.round(new Date().getTime() / 1000),
+      eventType: EventBridgeEventType.ACCOUNT_DELETION_COMPLETED,
+    };
   }
 }
