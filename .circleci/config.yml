@@ -156,7 +156,7 @@ jobs:
           password: $DOCKERHUB_PASSWORD
         environment:
           DEBUG: 1
-          SERVICES: kinesis,firehose,sqs
+          SERVICES: kinesis,firehose,sqs,events
           DATA_DIR: /tmp/localstack/data
           EXTRA_CORS_ALLOWED_HEADERS: Content-Disposition, Content-Type, x-amz-acl
           EXTRA_CORS_EXPOSE_HEADERS: ETag

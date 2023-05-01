@@ -98,7 +98,7 @@ describe('AccountDeleteCompletion Error handler', () => {
     const sendCommand = clientStub.getCall(0).args[0].input as any;
     expect(sendCommand).toHaveProperty('Entries');
     expect(sendCommand.Entries[0]).toMatchObject({
-      Source: config.aws.eventBus.eventBridge.source,
+      Source: config.aws.eventBus.accountDeletionEvent.source,
       EventBusName: config.aws.eventBus.name,
       DetailType: eventType,
     });

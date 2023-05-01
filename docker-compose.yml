@@ -20,12 +20,12 @@ services:
     ports:
       - '4566:4566'
     volumes:
-      - ./.docker/localstack:/docker-entrypoint-initaws.d
+      - /etc/localstack/init/ready.d
     environment:
       - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY}
       - DEBUG=1
-      - SERVICES=kinesis,firehose,sqs
-      - DATA_DIR=/tmp/localstack/data
+      - SERVICES=kinesis,firehose,sqs,events
+      - PERSISTENCE=1
       - DOCKER_HOST=unix:///var/run/docker.sock
       - EXTRA_CORS_ALLOWED_HEADERS=Content-Disposition, Content-Type, x-amz-acl
       - EXTRA_CORS_EXPOSE_HEADERS=ETag

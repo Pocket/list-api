@@ -10,6 +10,7 @@ import { processEventPayloadFromMessage } from './eventConfig';
 import { IEventHandler } from './IEventHandler';
 import { EventBridgeEventType } from './eventTypes';
 import { BatchDeleteMessage } from './batchDeleteHandler';
+import { eventBridgeClient } from './eventBridgeClient';
 
 /**
  * This class MUST be initialized using the EventBusHandler.init() method.
@@ -19,9 +20,7 @@ export class AccountDeletionEventHandler implements IEventHandler {
   private client: EventBridgeClient;
 
   init(emitter: EventEmitter) {
-    this.client = new EventBridgeClient({
-      region: config.aws.region,
-    });
+    this.client = eventBridgeClient;
 
     emitter.on(
       EventBridgeEventType.ACCOUNT_DELETION_COMPLETED,
@@ -61,7 +60,7 @@ export class AccountDeletionEventHandler implements IEventHandler {
         {
           EventBusName: config.aws.eventBus.name,
           Detail: JSON.stringify(eventPayload),
-          Source: config.aws.eventBus.eventBridge.source,
+          Source: config.aws.eventBus.accountDeletionEvent.source,
           DetailType: eventPayload.eventType,
         },
       ],

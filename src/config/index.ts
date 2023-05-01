@@ -31,7 +31,7 @@ export default {
     eventBus: {
       name:
         process.env.EVENT_BUS_NAME || 'PocketEventBridge-Dev-Shared-Event-Bus',
-      eventBridge: { source: 'user-events' },
+      accountDeletionEvent: { source: 'user-events' },
     },
     sqs: {
       publisherQueue: {
