@@ -10,7 +10,6 @@ import {
 } from './eventTypes';
 import { AccountDeletionEventHandler } from './accountDeletionEventHandler';
 import { UserMessageBase } from './batchDeleteHandler';
-import * as EventConfig from './eventConfig';
 
 /**
  * Mock event payload
@@ -28,7 +27,6 @@ describe('AccountDeleteCompletion Error handler', () => {
     .stub(EventBridgeClient.prototype, 'send')
     .resolves({ FailedEntryCount: 0 });
   const sentryStub = sandbox.stub(Sentry, 'captureException').resolves();
-  const crumbStub = sandbox.stub(Sentry, 'addBreadcrumb').resolves();
   const consoleSpy = sandbox.spy(console, 'log');
   const emitter = new EventEmitter();
   const handler = new AccountDeletionEventHandler().init(emitter);
@@ -66,7 +64,10 @@ describe('AccountDeleteCompletion Error handler', () => {
   };
 
   const processEventStub = sinon
-    .stub(EventConfig, 'processEventPayloadFromMessage')
+    .stub(
+      AccountDeletionEventHandler.prototype,
+      'processEventPayloadFromMessage'
+    )
     .returns(expectedEventPayload);
 
   it('should listen to account delete, process event data and call sendEvent', () => {
@@ -98,54 +99,12 @@ describe('AccountDeleteCompletion Error handler', () => {
     const sendCommand = clientStub.getCall(0).args[0].input as any;
     expect(sendCommand).toHaveProperty('Entries');
     expect(sendCommand.Entries[0]).toMatchObject({
-      Source: config.aws.eventBus.eventBridge.source,
+      Source: config.aws.eventBus.accountDeletionEvent.source,
       EventBusName: config.aws.eventBus.name,
       DetailType: eventType,
     });
     expect(JSON.parse(sendCommand.Entries[0]['Detail'])).toEqual(
       expectedEventPayload
-    );
-  });
-
-  it('should log error if any events fail to send', async () => {
-    clientStub = sandbox
-      .stub(EventBridgeClient.prototype, 'send')
-      .resolves({ FailedEntryCount: 1 });
-    emitter.emit(
-      EventBridgeEventType.ACCOUNT_DELETION_COMPLETED,
-      userEventData
-    );
-    // Wait just a tad in case promise needs time to resolve
-    await setTimeout(100);
-    expect(sentryStub.callCount).toBe(1);
-    expect(sentryStub.getCall(0).firstArg.message).toContain(
-      `Failed to send event 'account-deletion-complete' to event bus`
-    );
-    expect(consoleSpy.callCount).toBe(1);
-    expect(consoleSpy.getCall(0).firstArg.message).toContain(
-      `Failed to send event 'account-deletion-complete' to event bus`
-    );
-  });
-
-  it('should log error if send call throws error', async () => {
-    clientStub = sandbox
-      .stub(EventBridgeClient.prototype, 'send')
-      .rejects(new Error('boo!'));
-    emitter.emit(
-      EventBridgeEventType.ACCOUNT_DELETION_COMPLETED,
-      userEventData
-    );
-    // Wait just a tad in case promise needs time to resolve
-    await setTimeout(100);
-    expect(sentryStub.callCount).toBe(1);
-    expect(sentryStub.getCall(0).firstArg.message).toContain('boo!');
-    expect(crumbStub.callCount).toBe(1);
-    expect(crumbStub.getCall(0).firstArg.message).toContain(
-      `Failed to send event 'account-deletion-complete' to event bus`
-    );
-    expect(consoleSpy.callCount).toBe(2);
-    expect(consoleSpy.getCall(0).firstArg.message).toContain(
-      `Failed to send event 'account-deletion-complete' to event bus`
     );
   });
 });

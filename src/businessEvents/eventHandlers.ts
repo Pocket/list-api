@@ -6,6 +6,8 @@ import { SnowplowHandler } from './snowplowHandler';
 import { tracker } from '../snowplow/tracker';
 import config from '../config';
 import { transformers } from './sqs/transformers';
+import { EventType } from './types';
+import { EventBridgeHandler } from './eventBridgeHandler';
 
 export type ItemEventHandlerFn = (emitter: ItemsEventEmitter) => void;
 
@@ -44,4 +46,12 @@ export function snowplowEventHandler(emitter: ItemsEventEmitter): void {
     config.snowplow.events
   ) as string[];
   new SnowplowHandler(emitter, tracker, snowplowEventsToListen);
+}
+
+export function eventBridgeEventHandler(emitter: ItemsEventEmitter): void {
+  const eventsToListen = Object.keys(EventType);
+  new EventBridgeHandler(
+    emitter,
+    eventsToListen as Array<keyof typeof EventType>
+  );
 }

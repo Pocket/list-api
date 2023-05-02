@@ -14,6 +14,7 @@ import config from '../config';
 import { ContextManager } from './context';
 import { readClient, writeClient } from '../database/client';
 import {
+  eventBridgeEventHandler,
   initItemEventHandlers,
   itemsEventEmitter,
   snowplowEventHandler,
@@ -78,6 +79,7 @@ export async function startServer(port: number) {
     sqsEventHandler,
     snowplowEventHandler,
     initAccountDeletionCompleteEvents,
+    eventBridgeEventHandler,
   ]);
 
   // Inject initialized event emittter to create context factory function
