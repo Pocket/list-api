@@ -1,6 +1,5 @@
 import { AccountDeletionCompleteEventEmitter } from './accountDeletionEventEmitter';
 import { AccountDeletionEventHandler } from './accountDeletionEventHandler';
-import { eventBridgeClient } from './eventBridgeClient';
 
 export type BaseEventBusPayload = {
   timestamp: number;
