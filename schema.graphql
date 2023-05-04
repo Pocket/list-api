@@ -586,6 +586,11 @@ union TagMutationError = NotFound | SyncConflict # hypothetically others in the 
 All types in this union should implement BaseError, for client fallback
 """
 union SaveMutationError = NotFound | SyncConflict # hypothetically others in the future
+"""
+All types in this union should implement BaseError, for client fallback
+"""
+union SavedItemMutationError = NotFound | SyncConflict # hypothetically others in the future
+
 enum PendingItemStatus {
   RESOLVED
   UNRESOLVED
@@ -908,6 +913,20 @@ type SaveWriteMutationPayload {
 }
 
 """
+Payload for mutations that create or update SavedItems
+"""
+type SavedItemWriteMutationPayload {
+  """
+  The mutated SavedItem objects; empty if the mutation did not succeed.
+  """
+  savedItem: [SavedItem!]!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [SavedItemMutationError!]!
+}
+
+"""
 Payload for mutations that delete Saves
 """
 type SaveDeleteMutationPayload {
@@ -916,6 +935,17 @@ type SaveDeleteMutationPayload {
   Any errors associated with the mutation. Empty if the mutation was succesful.
   """
   errors: [SaveMutationError!]!
+}
+
+"""
+Payload for mutations that delete Saves
+"""
+type SavedItemDeleteMutationPayload {
+  success: Boolean!
+  """
+  Any errors associated with the mutation. Empty if the mutation was succesful.
+  """
+  errors: [SavedItemMutationError!]!
 }
 
 """
