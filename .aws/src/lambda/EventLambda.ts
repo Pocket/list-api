@@ -12,22 +12,9 @@ export class EventLambda extends Construct {
   ) {
     super(scope, name.toLowerCase());
 
-    const sqsLambda = new SqsLambda(this, 'Sqs-Event-Consumer', {
+    new SqsLambda(this, 'Sqs-Event-Consumer', {
       vpc: config.vpc,
       batchSize: 10,
     });
-    const lambda = sqsLambda.lambda;
-
-    new ApplicationSqsSnsTopicSubscription(
-      this,
-      'user-events-sns-subscription',
-      {
-        name: stackConfig.prefix,
-        snsTopicArn: `arn:aws:sns:${config.vpc.region}:${config.vpc.accountId}:${stackConfig.lambda.snsTopicName.userEvents}`,
-        sqsQueue: lambda.sqsQueueResource,
-        tags: stackConfig.tags,
-        dependsOn: [lambda.sqsQueueResource as SqsQueue],
-      }
-    );
   }
 }
