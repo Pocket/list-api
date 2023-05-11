@@ -115,29 +115,15 @@ export async function startServer(port: number) {
     production: [
       ApolloServerPluginLandingPageDisabled(),
       ApolloServerPluginInlineTrace({
-        includeErrors: {
-          transform: (err) => {
-            const userErrorCodes = [
-              'UNAUTHENTICATED',
-              'BAD_USER_INPUT',
-              'NOT_FOUND',
-            ];
-            // JS doesn't like using includes/indexOf methods with unknown,
-            // but equality check is ok
-            const isUserError = (code: string) => code === err.extensions.code;
-            // Return `null` to avoid reporting user-driven errors
-            if (userErrorCodes.some(isUserError)) {
-              return null;
-            }
-            // All other errors will be reported.
-            return err;
-          },
-        },
+        includeErrors: { unmodified: true },
       }),
     ],
   };
 
-  const plugins = [...defaultPlugins, ...pluginsConfig[process.env.NODE_ENV]];
+  const plugins = [
+    ...defaultPlugins,
+    ...(pluginsConfig[process.env.NODE_ENV] ?? []),
+  ];
 
   const server = new ApolloServer<ContextManager>({
     schema,
