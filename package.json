@@ -13,7 +13,7 @@
     "lint-fix": "eslint --fix \"src/**/*.ts\""
   },
   "dependencies": {
-    "@apollo/server": "4.3.0",
+    "@apollo/server": "4.7.1",
     "@apollo/server-plugin-landing-page-graphql-playground": "4.0.0",
     "@apollo/subgraph": "2.3.2",
     "@aws-sdk/client-eventbridge": "3.92.0",
@@ -38,7 +38,7 @@
     "@opentelemetry/sdk-node": "0.34.0",
     "@opentelemetry/sdk-trace-node": "1.8.0",
     "@pocket-tools/apollo-cursor-pagination": "1.0.3",
-    "@pocket-tools/apollo-utils": "3.2.0",
+    "@pocket-tools/apollo-utils": "3.3.1",
     "@pocket-tools/backend-benchmarking": "1.1.0",
     "@sentry/node": "7.8.1",
     "@sentry/tracing": "7.8.1",

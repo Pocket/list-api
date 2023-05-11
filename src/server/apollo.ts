@@ -2,13 +2,15 @@ import * as Sentry from '@sentry/node';
 import express from 'express';
 import http from 'http';
 import { expressMiddleware } from '@apollo/server/express4';
-import { ApolloServer } from '@apollo/server';
+import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
 import {
+  ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginLandingPageDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from '@apollo/server/plugin/disabled';
+import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
 import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
 import config from '../config';
 import { ContextManager } from './context';
@@ -92,17 +94,54 @@ export async function startServer(port: number) {
     });
   };
 
+  // Set up plugins depending on environment
+  // Default plugins regardless
+  const defaultPlugins = [
+    sentryPlugin,
+    ApolloServerPluginUsageReportingDisabled(),
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    createApollo4QueryValidationPlugin({ schema }),
+  ];
+  // Environment-specific plugins map
+  const pluginsConfig: Record<
+    'test' | 'production' | 'development',
+    ApolloServerPlugin[]
+  > = {
+    test: [ApolloServerPluginInlineTraceDisabled()],
+    development: [
+      ApolloServerPluginLandingPageGraphQLPlayground(),
+      ApolloServerPluginInlineTrace({ includeErrors: { unmodified: true } }),
+    ],
+    production: [
+      ApolloServerPluginLandingPageDisabled(),
+      ApolloServerPluginInlineTrace({
+        includeErrors: {
+          transform: (err) => {
+            const userErrorCodes = [
+              'UNAUTHENTICATED',
+              'BAD_USER_INPUT',
+              'NOT_FOUND',
+            ];
+            // JS doesn't like using includes/indexOf methods with unknown,
+            // but equality check is ok
+            const isUserError = (code: string) => code === err.extensions.code;
+            // Return `null` to avoid reporting user-driven errors
+            if (userErrorCodes.some(isUserError)) {
+              return null;
+            }
+            // All other errors will be reported.
+            return err;
+          },
+        },
+      }),
+    ],
+  };
+
+  const plugins = [...defaultPlugins, ...pluginsConfig[process.env.NODE_ENV]];
+
   const server = new ApolloServer<ContextManager>({
     schema,
-    plugins: [
-      sentryPlugin,
-      process.env.NODE_ENV === 'production'
-        ? ApolloServerPluginLandingPageDisabled()
-        : ApolloServerPluginLandingPageGraphQLPlayground(),
-      ApolloServerPluginUsageReportingDisabled(),
-      ApolloServerPluginDrainHttpServer({ httpServer }),
-      createApollo4QueryValidationPlugin({ schema }),
-    ],
+    plugins,
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
     introspection: process.env.NODE_ENV !== 'production',
   });
