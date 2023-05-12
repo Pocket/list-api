@@ -12,6 +12,7 @@ import {
   SaveUpdateTagsInputGraphql,
   SaveUpdateTagsInputDb,
   SaveWriteMutationPayload,
+  SavedItemTagInput,
 } from '../types';
 import config from '../config';
 import { IContext } from '../server/context';
@@ -20,10 +21,12 @@ import { NotFoundError, UserInputError } from '@pocket-tools/apollo-utils';
 import { addslashes } from 'locutus/php/strings';
 import * as Sentry from '@sentry/node';
 import { GraphQLResolveInfo } from 'graphql';
+import { ParserCaller } from '../externalCaller/parserCaller';
 
 export class TagModel {
   private tagService: TagDataService;
   private saveService: SavedItemDataService;
+  private parserCaller: ParserCaller;
   constructor(public readonly context: IContext) {
     this.saveService = new SavedItemDataService(this.context);
     this.tagService = new TagDataService(this.context, this.saveService);
@@ -92,6 +95,33 @@ export class TagModel {
     await this.tagService.insertTags(creates);
     const saveIds = creates.map((_) => _.savedItemId);
     return this.saveService.batchGetSavedItemsByGivenIds(saveIds);
+  }
+
+  /**
+   * Associate one or more tags to a save, by URL.
+   * @param input The list of tags to add to a SavedItem (identified by URL)
+   * @throws NotFoundError if the SavedItem does not exist in the user's saves
+   * @returns The updated SavedItem entity
+   */
+  public async createSavedItemTagConnections(
+    input: SavedItemTagInput,
+    timestamp: Date
+  ): Promise<SavedItem> {
+    const { givenUrl, tagNames } = input;
+    const savedItemId = await ParserCaller.getItemIdFromUrl(givenUrl);
+    if (savedItemId == null) {
+      throw new NotFoundError(
+        `SavedItem with givenUrl='${givenUrl}' does not exist.`
+      );
+    }
+    const creates: TagSaveAssociation[] = sanitizeTagSaveAssociation(
+      tagNames.map((name) => ({
+        savedItemId,
+        name,
+      }))
+    );
+    await this.tagService.insertTags(creates, timestamp);
+    return this.saveService.getSavedItemById(savedItemId);
   }
 
   /**

@@ -456,6 +456,14 @@ input SavedItemTagsInput {
 }
 
 """
+Input field for adding Tag Associations to a SavedItem, by givenUrl
+"""
+input SavedItemTagInput {
+  givenUrl: Url!
+  tagNames: [String!]! @constraint(minItems: 1, maxItems: 30)
+}
+
+"""
 Input field for creating a Tag
 """
 input TagCreateInput {
@@ -758,6 +766,11 @@ type Mutation {
     input: [SaveUpsertInput!]!  @constraint(minItems: 1, maxItems: 30),
     timestamp: ISOString!
   ): SaveWriteMutationPayload! @tag(name: "alpha")
+
+  """
+  Associate Tag(s) with a Save
+  """
+  savedItemTag(input: SavedItemTagInput!, timestamp: ISOString!): SavedItem
 }
 
 # """

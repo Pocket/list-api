@@ -28,6 +28,7 @@ import {
   SaveUpdateTagsInputGraphql,
   SaveWriteMutationPayload,
   SavedItem,
+  SavedItemTagInput,
   Tag,
 } from '../types';
 import { IContext } from '../server/context';
@@ -199,6 +200,16 @@ const resolvers = {
     ): null => {
       //TODO @Herraj --> implementation in a follow up PR
       return null;
+    },
+    savedItemTag: async (
+      _,
+      args: { input: SavedItemTagInput; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.tag.createSavedItemTagConnections(
+        args.input,
+        args.timestamp
+      );
     },
   },
 };
