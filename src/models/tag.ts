@@ -22,6 +22,7 @@ import { addslashes } from 'locutus/php/strings';
 import * as Sentry from '@sentry/node';
 import { GraphQLResolveInfo } from 'graphql';
 import { ParserCaller } from '../externalCaller/parserCaller';
+import { EventType } from '../businessEvents';
 
 export class TagModel {
   private tagService: TagDataService;
@@ -121,7 +122,10 @@ export class TagModel {
       }))
     );
     await this.tagService.insertTags(creates, timestamp);
-    return this.saveService.getSavedItemById(savedItemId);
+    const savedItem = await this.saveService.getSavedItemById(savedItemId);
+    // Emit events
+    this.context.emitItemEvent(EventType.ADD_TAGS, savedItem, tagNames);
+    return savedItem;
   }
 
   /**

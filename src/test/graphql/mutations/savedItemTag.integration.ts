@@ -2,11 +2,13 @@ import { ApolloServer } from '@apollo/server';
 import { ContextManager } from '../../../server/context';
 import { readClient } from '../../../database/client';
 import { startServer } from '../../../server/apollo';
+import { mockParserGetItemIdRequest } from '../../utils/parserMocks';
 import { Express } from 'express';
 import { gql } from 'graphql-tag';
 import { print } from 'graphql';
 import request from 'supertest';
-import { mockParserGetItemIdRequest } from '../../utils/parserMocks';
+import sinon from 'sinon';
+import { EventType } from '../../../businessEvents';
 
 describe('savedItemTag mutation', () => {
   const db = readClient();
@@ -15,6 +17,7 @@ describe('savedItemTag mutation', () => {
   let app: Express;
   let server: ApolloServer<ContextManager>;
   let url: string;
+  const eventSpy = sinon.spy(ContextManager.prototype, 'emitItemEvent');
 
   const SAVEDITEM_TAGS_CREATE = gql`
     mutation saveBatchUpdateTags(
@@ -31,25 +34,11 @@ describe('savedItemTag mutation', () => {
     }
   `;
 
-  const GET_TAGS_FOR_SAVEDITEM = gql`
-    query getTagsSavedItem($userId: ID!, $itemId: ID!) {
-      _entities(representations: { id: $userId, __typename: "User" }) {
-        ... on User {
-          savedItemById(id: $itemId) {
-            ... on PocketSave {
-              tags {
-                name
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
   beforeAll(async () => {
     ({ app, server, url } = await startServer(0));
   });
   beforeEach(async () => {
+    sinon.resetHistory();
     await db('list').truncate();
     await db('item_tags').truncate();
     const listDataBase = {
@@ -261,5 +250,33 @@ describe('savedItemTag mutation', () => {
       });
     expect(res.body.errors).toStrictEqual(expectedError);
     expect(res.body.data).toStrictEqual(expectedData);
+  });
+  it('should emit add_tags event on success', async () => {
+    const givenUrl = 'http://abc';
+    mockParserGetItemIdRequest(givenUrl, '1');
+    const timestamp = '2023-05-12T10:58:00.000Z';
+    const variables = {
+      input: {
+        givenUrl,
+        tagNames: ['sugawara', 'daiichi'],
+      },
+      timestamp,
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({
+        query: print(SAVEDITEM_TAGS_CREATE),
+        variables,
+      });
+    expect(res.body.errors).toBeUndefined();
+    expect(eventSpy.callCount).toEqual(1);
+    const eventData = eventSpy.getCall(0).args;
+    const expectedEventCall = [
+      EventType.ADD_TAGS,
+      expect.objectContaining({ id: 1, url: 'http://abc' }),
+      expect.toIncludeSameMembers(['sugawara', 'daiichi']),
+    ];
+    expect(eventData).toStrictEqual(expectedEventCall);
   });
 });
