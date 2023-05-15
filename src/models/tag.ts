@@ -109,6 +109,9 @@ export class TagModel {
     timestamp: Date
   ): Promise<SavedItem> {
     const { givenUrl, tagNames } = input;
+    // TODO[IN-1478]: Remove this lookup once givenUrl is indexed
+    // in the list table (replace with direct db update by givenUrl)
+    // https://getpocket.atlassian.net/browse/IN-1478
     const savedItemId = await ParserCaller.getItemIdFromUrl(givenUrl);
     if (savedItemId == null) {
       throw new NotFoundError(

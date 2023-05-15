@@ -72,7 +72,8 @@ export class ParserCaller {
 
   /**
    * Get the Parser-generated itemId for a given url.
-   * TODO: stop using this method once given_url is indexed in the list table
+   * TODO[IN-1478]: stop using this method once given_url is indexed in the list table
+   * https://getpocket.atlassian.net/browse/IN-1478
    * @param url the URL of the Save you want an itemId for
    * @param tries # of request retries if there are issues with the Parser service
    * @returns the itemId for the given url, or null if it does not exist
@@ -87,7 +88,8 @@ export class ParserCaller {
 
   /**
    * Get the Parser-generated itemId for a given url.
-   * TODO: stop using this method once given_url is indexed in the list table
+   * TODO[IN-1478]: Stop using this method once given_url is indexed in the list table
+   * https://getpocket.atlassian.net/browse/IN-1478
    * @param url the URL of the Save you want an itemId for
    * @returns the itemId for the given url
    * @throws Error if item does not exist
