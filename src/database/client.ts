@@ -51,6 +51,7 @@ export function createConnection(dbConfig: {
       charset: 'utf8mb4',
     },
     pool: {
+      idleTimeoutMillis: 500, // ms
       min: 0, //knex docs state to set to 0 so that idle connections are released. Default was 2 for legacy knex reasons (according to docs)
       max: 1000, // current RDS max connections is 5k (SHOW GLOBAL VARIABLES LIKE 'max_connections)
       /**
