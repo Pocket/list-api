@@ -208,10 +208,14 @@ export class TagDataService {
    * is actually in the user's list (no foreign key constraint).
    * @param tagInputs
    */
-  public async insertTags(tagInputs: TagSaveAssociation[]): Promise<void> {
+  public async insertTags(
+    tagInputs: TagSaveAssociation[],
+    timestamp?: Date
+  ): Promise<void> {
+    const updatedTime = timestamp ?? new Date();
     await this.db.transaction(async (trx: Knex.Transaction) => {
-      await this.insertTagAndUpdateSavedItem(tagInputs, trx);
-      await this.usersMetaService.logTagMutation(new Date(), trx);
+      await this.insertTagAndUpdateSavedItem(tagInputs, trx, updatedTime);
+      await this.usersMetaService.logTagMutation(updatedTime, trx);
     });
   }
 

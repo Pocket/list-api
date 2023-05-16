@@ -164,6 +164,11 @@ export type SavedItemTagsInput = {
   tags: string[];
 };
 
+export type SavedItemTagInput = {
+  givenUrl: string;
+  tagNames: string[];
+};
+
 export type TagUpdateInput = {
   name: string;
   id: string;
