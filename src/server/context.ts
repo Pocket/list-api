@@ -67,6 +67,9 @@ export class ContextManager implements IContext {
       pocketSave: new PocketSaveModel(this),
       notFound: new NotFoundErrorModel(),
     };
+    Sentry.setUser({
+      id: this.userId,
+    });
   }
   models: {
     item: ItemModel;
