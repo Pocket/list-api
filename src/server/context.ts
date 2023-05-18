@@ -67,6 +67,14 @@ export class ContextManager implements IContext {
       pocketSave: new PocketSaveModel(this),
       notFound: new NotFoundErrorModel(),
     };
+    // Set tracking data for Sentry
+    Sentry.configureScope((scope) => {
+      scope.setTag(
+        'pocket-api-id',
+        (config.request.headers.apiid || '0') as string
+      );
+      scope.setUser({ id: config.request.headers.encodedid as string });
+    });
   }
   models: {
     item: ItemModel;
