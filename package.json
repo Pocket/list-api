@@ -34,7 +34,7 @@
     "@opentelemetry/instrumentation-mysql2": "0.33.3",
     "@opentelemetry/instrumentation-net": "0.31.2",
     "@opentelemetry/propagator-aws-xray": "1.1.1",
-    "@opentelemetry/resource-detector-aws": "1.2.3",
+    "@opentelemetry/resource-detector-aws": "1.2.4",
     "@opentelemetry/sdk-node": "0.34.0",
     "@opentelemetry/sdk-trace-node": "1.8.0",
     "@pocket-tools/apollo-cursor-pagination": "1.0.3",
