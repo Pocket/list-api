@@ -29,7 +29,7 @@
     "@opentelemetry/instrumentation-express": "0.32.3",
     "@opentelemetry/instrumentation-graphql": "0.33.2",
     "@opentelemetry/instrumentation-http": "0.34.0",
-    "@opentelemetry/instrumentation-knex": "0.31.2",
+    "@opentelemetry/instrumentation-knex": "0.31.3",
     "@opentelemetry/instrumentation-mysql": "0.32.0",
     "@opentelemetry/instrumentation-mysql2": "0.33.3",
     "@opentelemetry/instrumentation-net": "0.31.2",
