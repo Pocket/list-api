@@ -1,7 +1,7 @@
 import { writeClient } from '../../../database/client';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
-import { UsersMetaService } from '../../../dataService';
+import { SavedItemDataService, UsersMetaService } from '../../../dataService';
 import { mysqlTimeString } from '../../../dataService/utils';
 import config from '../../../config';
 import chaiDateTime from 'chai-datetime';
@@ -12,6 +12,7 @@ import { startServer } from '../../../server/apollo';
 import { Express } from 'express';
 import { ApolloServer } from '@apollo/server';
 import request from 'supertest';
+import { TagModel } from '../../../models';
 chai.use(deepEqualInAnyOrder);
 chai.use(chaiDateTime);
 
@@ -38,53 +39,60 @@ describe('updateTag Mutation: ', () => {
   afterAll(async () => {
     await db.destroy();
     clock.restore();
+    sinon.restore();
     await server.stop();
   });
 
   beforeEach(async () => {
+    sinon.resetHistory();
+    const baseTag = {
+      user_id: 1,
+      status: 1,
+      api_id: 'apiid',
+      api_id_updated: 'updated_api_id',
+    };
     await db('item_tags').truncate();
     await db('item_tags').insert([
       {
-        user_id: 1,
+        ...baseTag,
         item_id: 0,
         tag: 'zebra',
-        status: 1,
         time_added: date,
         time_updated: date,
         api_id: 'second_id',
-        api_id_updated: 'updated_api_id',
       },
       {
-        user_id: 1,
+        ...baseTag,
         item_id: 1,
         tag: 'zebra',
-        status: 1,
         time_added: date1,
         time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
       },
       {
-        user_id: 1,
+        ...baseTag,
         item_id: 1,
         tag: 'existing_tag',
-        status: 1,
         time_added: date1,
         time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
       },
       {
-        user_id: 1,
+        ...baseTag,
         item_id: 2,
         tag: 'unchanged',
-        status: 1,
         time_added: date1,
         time_updated: date1,
-        api_id: 'apiid',
-        api_id_updated: 'updated_api_id',
       },
     ]);
+    // Add a tag on every item to test batching
+    [0, 1, 2].map(async (itemId) => {
+      await db('item_tags').insert({
+        ...baseTag,
+        item_id: itemId,
+        time_added: date,
+        time_updated: date,
+        tag: 'everything-everywhere',
+      });
+    });
     await db('list').truncate();
     const inputData = [
       { item_id: 0, status: 1, favorite: 0 },
@@ -219,6 +227,24 @@ describe('updateTag Mutation: ', () => {
       expectedSavedItems
     );
     expect(QueryOldTags.length).equals(0);
+  });
+  it('should update savedItems in chunks if applied to more than the max transaction size of savedItems', async () => {
+    const saveServiceUpdateSpy = sinon.spy(
+      SavedItemDataService.prototype,
+      'updateListItemMany'
+    );
+    const id = TagModel.encodeId('everything-everywhere');
+    const variables = {
+      input: { name: 'all-at-once', id },
+    };
+    const res = await request(app).post(url).set(headers).send({
+      query: updateTagsMutation,
+      variables,
+    });
+    expect(saveServiceUpdateSpy.callCount).to.equal(1);
+    // Expect batch of two calls, and all three are in response
+    expect(saveServiceUpdateSpy.getCall(0).returnValue.length).to.equal(2);
+    expect(res.body.data.updateTag.savedItems.edges.length).to.equal(3);
   });
   it('should log the tag mutation', async () => {
     const variables = {
