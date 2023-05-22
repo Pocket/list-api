@@ -6,6 +6,7 @@ import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import * as Sentry from '@sentry/node';
 import { setTimeout } from 'timers/promises';
+import { chunk } from 'lodash';
 
 type DbResult = {
   user_id?: number;
@@ -383,8 +384,11 @@ export class SavedItemDataService {
   public updateListItemMany(
     itemIds: string[],
     timestamp?: Date
-  ): Knex.QueryBuilder {
-    return this.listItemUpdateBuilder(timestamp).whereIn('item_id', itemIds);
+  ): Knex.QueryBuilder[] {
+    const itemBatches = chunk(itemIds, config.database.maxTransactionSize);
+    return itemBatches.map((ids) =>
+      this.listItemUpdateBuilder(timestamp).whereIn('item_id', ids)
+    );
   }
 
   /**
