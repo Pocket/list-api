@@ -96,6 +96,7 @@ export default {
     },
     dbName: process.env.DATABASE || 'readitla_ril-tmp',
     tz: process.env.DATABASE_TZ || 'US/Central',
+    maxTransactionSize: parseInt(process.env.MAX_TRX_SIZE) || 1000,
   },
   dataloaderDefaults: {
     // TBD: batchScheduleFn: (callback) => setTimeout(callback, 10) // every 10 ms
