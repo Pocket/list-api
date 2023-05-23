@@ -23,7 +23,6 @@ import {
   TerraformStack,
 } from 'cdktf';
 import { config } from './config';
-import { EventLambda } from './lambda/EventLambda';
 
 class ListAPI extends TerraformStack {
   constructor(scope: Construct, name: string) {
@@ -44,17 +43,6 @@ class ListAPI extends TerraformStack {
     const pocketVPC = new PocketVPC(this, 'pocket-vpc');
     const region = new DataAwsRegion(this, 'region');
     const caller = new DataAwsCallerIdentity(this, 'caller');
-
-    new EventLambda(this, 'Sqs-Event-Consumer', { vpc: pocketVPC });
-    new ApplicationSQSQueue(this, 'batch-delete-consumer-queue', {
-      name: config.envVars.sqsBatchDeleteQueueName,
-      tags: config.tags,
-      //need to set maxReceiveCount to enable DLQ
-      maxReceiveCount: 3,
-      visibilityTimeoutSeconds: 10000,
-      messageRetentionSeconds: 1209600,
-    });
-
     const pocketApp = this.createPocketAlbApplication({
       pagerDuty: this.createPagerDuty(),
       secretsManagerKmsAlias: this.getSecretsManagerKmsAlias(),
