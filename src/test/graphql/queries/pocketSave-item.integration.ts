@@ -29,6 +29,7 @@ describe('PocketSave.Item', () => {
                 }
                 ... on Item {
                   itemId
+                  givenUrl
                   __typename
                 }
               }
@@ -117,6 +118,7 @@ describe('PocketSave.Item', () => {
       });
     const expected = {
       itemId: '55',
+      givenUrl: 'https://www.youtube.com/watch?v=nsNMP6_Q0Js',
       __typename: 'Item',
     };
     expect(res.body.errors).toBeUndefined();

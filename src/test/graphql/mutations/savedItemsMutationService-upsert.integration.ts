@@ -165,7 +165,7 @@ describe('UpsertSavedItem Mutation', () => {
             _version
             item {
               ... on Item {
-                itemId
+                givenUrl
               }
             }
             tags {
@@ -188,7 +188,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data.isArchived).is.false;
       expect(data._deletedAt).is.null;
       expect(data._version).is.null;
-      expect(data.item.itemId).equals('8');
+      expect(data.item.givenUrl).equals(variables.url);
       expect(data.tags[0].name).equals('zebra');
       expect(data.archivedAt).is.null;
       expect(data.favoritedAt).is.null;
@@ -236,7 +236,7 @@ describe('UpsertSavedItem Mutation', () => {
             item {
               ... on Item {
                 __typename
-                itemId
+                givenUrl
               }
               ... on PendingItem {
                 __typename
@@ -255,6 +255,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(mutationResult).is.not.null;
       const data = mutationResult.body.data?.upsertSavedItem;
       expect(data.id).to.equal('1');
+      expect(data.item.givenUrl).is.undefined;
       expect(data.item.url).to.equal(givenUrl);
       expect(data.item.itemId).to.equal('1');
       expect(data.item.__typename).to.equal('PendingItem');

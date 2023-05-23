@@ -21,6 +21,9 @@ describe('UnifiedEventHandler', () => {
     isFavorite: true,
     isArchived: false,
     status: 'UNREAD',
+    item: {
+      givenUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    },
   };
 
   it('should log an error if there are failed messages after retrying', async () => {

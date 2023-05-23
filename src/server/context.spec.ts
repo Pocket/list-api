@@ -18,6 +18,9 @@ describe('context', () => {
     isFavorite: false,
     status: 'UNREAD',
     isArchived: false,
+    item: {
+      givenUrl: 'dont-care.com',
+    },
   };
   describe('constructor', () => {
     const sentryScopeSpy = sinon.spy(Sentry, 'configureScope');
