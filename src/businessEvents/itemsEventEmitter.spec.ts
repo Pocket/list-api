@@ -22,7 +22,6 @@ describe('ItemsEventEmitter', () => {
     status: 'UNREAD',
     isFavorite: true,
     isArchived: false,
-    item: { givenUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
   };
 
   const payload: BasicItemEventPayloadWithContext = {

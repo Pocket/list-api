@@ -137,7 +137,7 @@ describe('getSavedItemByItemId', () => {
     });
     expect(res.body.data?._entities[0].savedItemById).to.be.null;
   });
-  it('should resolve item url', async () => {
+  it('should resolve item ID', async () => {
     const variables = {
       userId: '1',
       itemId: '1',
@@ -153,7 +153,7 @@ describe('getSavedItemByItemId', () => {
               favoritedAt
               item {
                 ... on Item {
-                  givenUrl
+                  itemId
                 }
               }
             }
@@ -165,9 +165,7 @@ describe('getSavedItemByItemId', () => {
       query: GET_SAVED_ITEM_ITEM,
       variables,
     });
-    expect(res.body.data?._entities[0].savedItemById.item.givenUrl).to.equal(
-      'http://abc'
-    );
+    expect(res.body.data?._entities[0].savedItemById.item.itemId).to.equal('1');
   });
 
   it('should have _deletedAt field if item is deleted', async () => {
