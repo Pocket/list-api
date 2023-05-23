@@ -11,7 +11,7 @@ describe('item', () => {
 
   const itemFragment = `
     fragment ItemFields on Item {
-      itemId
+      givenUrl
       savedItem {
         id
         url
@@ -22,8 +22,8 @@ describe('item', () => {
   `;
   const GET_SAVED_ITEM = `
     ${itemFragment}
-    query getSaveFromItem($itemId: String!) {
-      _entities(representations: { itemId: $itemId, __typename: "Item" }) {
+    query getSaveFromItem($givenUrl: String!) {
+      _entities(representations: { givenUrl: $givenUrl, __typename: "Item" }) {
         ... on Item {
           ...ItemFields
         }
@@ -34,11 +34,11 @@ describe('item', () => {
   // than to just duplicate it
   const GET_TWO_SAVED_ITEMS = `
     ${itemFragment}
-    query getSavesFromItems($itemId1: String!, $itemId2: String!) {
+    query getSavesFromItems($givenUrl1: String!, $givenUrl2: String!) {
       _entities(
         representations: [
-          { itemId: $itemId1, __typename: "Item" }
-          { itemId: $itemId2, __typename: "Item" }
+          { givenUrl: $givenUrl1, __typename: "Item" }
+          { givenUrl: $givenUrl2, __typename: "Item" }
         ]
       ) {
         ... on Item {
@@ -113,7 +113,7 @@ describe('item', () => {
   it('resolves more than one savedItem from multiple entities', async () => {
     const expected = [
       {
-        itemId: '1',
+        givenUrl: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
         savedItem: {
           url: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
           isFavorite: true,
@@ -122,7 +122,7 @@ describe('item', () => {
         },
       },
       {
-        itemId: '999',
+        givenUrl: 'https://www.youtube.com/watch?v=OZaL86RDGIU',
         savedItem: {
           url: 'https://www.youtube.com/watch?v=OZaL86RDGIU',
           isFavorite: false,
@@ -133,8 +133,8 @@ describe('item', () => {
     ];
     const variables = {
       userId: '1',
-      itemId1: '1',
-      itemId2: '999',
+      givenUrl1: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
+      givenUrl2: 'https://www.youtube.com/watch?v=OZaL86RDGIU',
     };
 
     const res = await request(app).post(url).set(headers).send({
@@ -149,7 +149,7 @@ describe('item', () => {
   });
   it('resolves savedItem field from entity representation', async () => {
     const expected = {
-      itemId: '1',
+      givenUrl: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
       savedItem: {
         url: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
         isFavorite: true,
@@ -159,7 +159,7 @@ describe('item', () => {
     };
     const variables = {
       userId: '1',
-      itemId: '1',
+      givenUrl: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
     };
 
     const res = await request(app).post(url).set(headers).send({
@@ -176,7 +176,7 @@ describe('item', () => {
   it('returns null if the save does not exist', async () => {
     const variables = {
       userId: '1',
-      itemId: '2',
+      givenUrl: 'https://www.youtube.com/watch?v=Tpbo25iBvfU',
     };
 
     const res = await request(app).post(url).set(headers).send({
@@ -187,7 +187,9 @@ describe('item', () => {
     expect(res.body.errors).toBeUndefined;
     const entities = res.body.data._entities;
     expect(entities.length).toEqual(1);
-    expect(entities[0].itemId).toEqual('2');
+    expect(entities[0].givenUrl).toEqual(
+      'https://www.youtube.com/watch?v=Tpbo25iBvfU'
+    );
     expect(entities[0].savedItem).toBeNull;
   });
 });

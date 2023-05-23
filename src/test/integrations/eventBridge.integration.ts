@@ -19,6 +19,9 @@ const testSavedItem: SavedItem = {
   isFavorite: true,
   isArchived: false,
   status: 'UNREAD',
+  item: {
+    givenUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  },
   _createdAt: 1626389735,
 };
 

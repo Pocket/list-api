@@ -58,8 +58,8 @@ export type SavedItem = RemoteEntity & {
   favoritedAt?: number;
   isArchived: boolean;
   archivedAt?: number;
-  item?: {
-    itemId: string;
+  item: {
+    givenUrl: string;
   };
   tags?: Tag[];
 };
