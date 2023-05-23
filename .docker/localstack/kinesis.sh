@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -euo pipefail
 
 STREAMS=('analytics.user_action' 'analytics.web_track' 'unified_event' 'raw_event')
 
