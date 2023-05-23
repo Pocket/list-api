@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -euo pipefail
 
 STREAMS=('dev-user-action-to-braveheart')
 
