@@ -16,9 +16,6 @@ describe('savedItem data loader', function () {
       isFavorite: false,
       isArchived: false,
       status: 'UNREAD',
-      item: {
-        givenUrl: 'abc.com',
-      },
     },
     {
       id: '2',
@@ -27,9 +24,6 @@ describe('savedItem data loader', function () {
       isFavorite: false,
       isArchived: false,
       status: 'DELETED',
-      item: {
-        givenUrl: 'def.com',
-      },
     },
   ];
 

@@ -40,7 +40,7 @@ describe('getSavedItems', () => {
                 url
                 item {
                   ... on Item {
-                    givenUrl
+                    itemId
                   }
                 }
               }
@@ -165,14 +165,14 @@ describe('getSavedItems', () => {
       'http://ijk'
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
-    ).to.equal('http://ijk');
+      res.body.data?._entities[0].savedItems.edges[0].node.item.itemId
+    ).to.equal('3');
     expect(res.body.data?._entities[0].savedItems.edges[1].node.url).to.equal(
       'http://def'
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[1].node.item.givenUrl
-    ).to.equal('http://def');
+      res.body.data?._entities[0].savedItems.edges[1].node.item.itemId
+    ).to.equal('2');
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
       .true;
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
@@ -195,8 +195,8 @@ describe('getSavedItems', () => {
       'http://abc'
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
-    ).to.equal('http://abc');
+      res.body.data?._entities[0].savedItems.edges[0].node.item.itemId
+    ).to.equal('1');
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
       .false;
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
@@ -248,8 +248,8 @@ describe('getSavedItems', () => {
     });
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
-    ).to.equal('http://ijk');
+      res.body.data?._entities[0].savedItems.edges[0].node.item.itemId
+    ).to.equal('3');
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
       .be.false;
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
@@ -406,7 +406,7 @@ describe('getSavedItems', () => {
                   url
                   item {
                     ... on Item {
-                      givenUrl
+                      itemId
                     }
                   }
                 }
@@ -466,47 +466,47 @@ describe('getSavedItems', () => {
       {
         sortBy: 'CREATED_AT',
         sortOrder: 'DESC',
-        expectedUrls: ['http://ijk', 'http://def'],
+        expectedIds: ['3', '2'],
       },
       {
         sortBy: 'CREATED_AT',
         sortOrder: 'ASC',
-        expectedUrls: ['http://abc', 'http://def'],
+        expectedIds: ['1', '2'],
       },
       {
         sortBy: 'UPDATED_AT',
         sortOrder: 'DESC',
-        expectedUrls: ['http://def', 'http://abc'],
+        expectedIds: ['2', '1'],
       },
       {
         sortBy: 'UPDATED_AT',
         sortOrder: 'ASC',
-        expectedUrls: ['http://ijk', 'http://abc'],
+        expectedIds: ['3', '1'],
       },
       {
         sortBy: 'FAVORITED_AT',
         sortOrder: 'DESC',
-        expectedUrls: ['http://def', 'http://ijk'],
+        expectedIds: ['2', '3'],
       },
       {
         sortBy: 'FAVORITED_AT',
         // Note that this will put non-favorite items first (since they are set to time 0)
         sortOrder: 'ASC',
-        expectedUrls: ['http://abc', 'http://ijk'],
+        expectedIds: ['1', '3'],
       },
       {
         sortBy: 'ARCHIVED_AT',
         sortOrder: 'DESC',
-        expectedUrls: ['http://ijk', 'http://def'],
+        expectedIds: ['3', '2'],
       },
       {
         sortBy: 'ARCHIVED_AT',
         sortOrder: 'ASC',
-        expectedUrls: ['http://abc', 'http://def'],
+        expectedIds: ['1', '2'],
       },
     ])(
       ' by $sortBy, $sortOrder works',
-      async ({ sortBy, sortOrder, expectedUrls }) => {
+      async ({ sortBy, sortOrder, expectedIds }) => {
         const variables = {
           id: '1',
           pagination: { first: 2 },
@@ -517,10 +517,10 @@ describe('getSavedItems', () => {
           variables,
         });
         expect(res.body.errors).to.be.undefined;
-        const urls = res.body.data?._entities[0].savedItems.edges.map(
-          (edge) => edge.node.item.givenUrl
+        const ids = res.body.data?._entities[0].savedItems.edges.map(
+          (edge) => edge.node.item.itemId
         );
-        expect(expectedUrls).to.deep.equal(urls);
+        expect(expectedIds).to.deep.equal(ids);
       }
     );
   });

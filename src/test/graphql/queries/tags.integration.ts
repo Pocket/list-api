@@ -292,7 +292,7 @@ describe('tags query tests - happy path', () => {
                       url
                       item {
                         ... on Item {
-                          givenUrl
+                          itemId
                         }
                       }
                     }
@@ -340,7 +340,7 @@ describe('tags query tests - happy path', () => {
                       url
                       item {
                         ... on Item {
-                          givenUrl
+                          itemId
                         }
                       }
                     }

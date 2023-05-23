@@ -614,9 +614,8 @@ type PendingItem @key(fields: "url") {
   status: PendingItemStatus
 }
 
-type Item @key(fields: "givenUrl") {
+type Item @key(fields: "itemId") {
   "key field to identify the Item entity in the Parser service"
-  givenUrl: Url!
   itemId: String! @shareable
 
   #Note more properties exist here but are defined in another service.
