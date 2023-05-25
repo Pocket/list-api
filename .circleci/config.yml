@@ -218,6 +218,7 @@ workflows:
           <<: *slack-fail-post-step
 
       - apollo:
+          context: pocket
           requires:
             - build
           <<: *slack-fail-post-step
