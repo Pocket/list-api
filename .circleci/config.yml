@@ -201,7 +201,7 @@ jobs:
           command: npm run test
 
 workflows:
-  force-build:
+  all:
     jobs:
       - test_specs:
           <<: *not_main
