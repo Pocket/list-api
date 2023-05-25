@@ -6,7 +6,7 @@ services:
     env_file:
       - ./.docker/local.env
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       TZ: "US/Central"
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
