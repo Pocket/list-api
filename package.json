@@ -32,7 +32,7 @@
     "@opentelemetry/instrumentation-knex": "0.31.3",
     "@opentelemetry/instrumentation-mysql": "0.32.0",
     "@opentelemetry/instrumentation-mysql2": "0.33.3",
-    "@opentelemetry/instrumentation-net": "0.31.2",
+    "@opentelemetry/instrumentation-net": "0.31.3",
     "@opentelemetry/propagator-aws-xray": "1.1.1",
     "@opentelemetry/resource-detector-aws": "1.2.4",
     "@opentelemetry/sdk-node": "0.34.0",
