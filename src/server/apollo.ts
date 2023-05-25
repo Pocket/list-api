@@ -23,7 +23,6 @@ import {
   sqsEventHandler,
   unifiedEventHandler,
 } from '../businessEvents';
-import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
 import { Knex } from 'knex';
 import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive/apollo4';
 import { schema } from './schema';
@@ -70,7 +69,6 @@ export async function startServer(port: number) {
     unifiedEventHandler,
     sqsEventHandler,
     snowplowEventHandler,
-    initAccountDeletionCompleteEvents,
     eventBridgeEventHandler,
   ]);
 
