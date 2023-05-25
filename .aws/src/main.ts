@@ -9,7 +9,6 @@ import { NullProvider } from '@cdktf/provider-null/lib/provider';
 import { PagerdutyProvider } from '@cdktf/provider-pagerduty/lib/provider';
 import {
   ApplicationRDSCluster,
-  ApplicationSQSQueue,
   PocketALBApplication,
   PocketECSCodePipeline,
   PocketPagerDuty,
