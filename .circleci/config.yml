@@ -60,7 +60,7 @@ slack-fail-post-step: &slack-fail-post-step
 jobs:
   apollo:
     docker:
-      - image: cimg/base:2023.04@sha256:3460d41b9ad6276b9df0e54e3c22e5e28310ad832cc4627a178de5f7097da82d
+      - image: cimg/base:2023.05@sha256:6a428205b5323279319ca9ff73e81b3e78135dceff6aa84aa8609771f139040b
     steps:
       - checkout
       - attach_workspace:
