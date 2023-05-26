@@ -27,7 +27,7 @@
     "@opentelemetry/instrumentation-aws-sdk": "0.34.2",
     "@opentelemetry/instrumentation-dataloader": "0.3.1",
     "@opentelemetry/instrumentation-express": "0.32.3",
-    "@opentelemetry/instrumentation-graphql": "0.33.2",
+    "@opentelemetry/instrumentation-graphql": "0.34.2",
     "@opentelemetry/instrumentation-http": "0.34.0",
     "@opentelemetry/instrumentation-knex": "0.31.3",
     "@opentelemetry/instrumentation-mysql": "0.32.0",
