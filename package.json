@@ -25,7 +25,7 @@
     "@opentelemetry/id-generator-aws-xray": "1.1.2",
     "@opentelemetry/instrumentation-aws-lambda": "0.35.2",
     "@opentelemetry/instrumentation-aws-sdk": "0.34.2",
-    "@opentelemetry/instrumentation-dataloader": "0.3.1",
+    "@opentelemetry/instrumentation-dataloader": "0.4.2",
     "@opentelemetry/instrumentation-express": "0.32.3",
     "@opentelemetry/instrumentation-graphql": "0.34.2",
     "@opentelemetry/instrumentation-http": "0.34.0",
