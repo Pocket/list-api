@@ -23,10 +23,6 @@ import {
   sqsEventHandler,
   unifiedEventHandler,
 } from '../businessEvents';
-import queueDeleteRouter from './routes/queueDelete';
-import { BatchDeleteHandler } from '../aws/batchDeleteHandler';
-import { EventEmitter } from 'events';
-import { initAccountDeletionCompleteEvents } from '../aws/eventTypes';
 import { Knex } from 'knex';
 import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive/apollo4';
 import { schema } from './schema';
@@ -62,25 +58,17 @@ export async function startServer(port: number) {
   // Below, we tell Apollo Server to "drain" this httpServer,
   // enabling our servers to shut down gracefully.
   const httpServer = http.createServer(app);
-  // Initialize routes
-  app.use('/queueDelete', queueDeleteRouter);
 
   // Expose health check url
   app.get('/.well-known/apollo/server-health', (req, res) => {
     res.status(200).send('ok');
   });
 
-  // Start BatchDelete queue polling if not test env
-  if (process.env.NODE_ENV != 'test') {
-    new BatchDeleteHandler(new EventEmitter());
-  }
-
   // Initialize event handlers
   initItemEventHandlers(itemsEventEmitter, [
     unifiedEventHandler,
     sqsEventHandler,
     snowplowEventHandler,
-    initAccountDeletionCompleteEvents,
     eventBridgeEventHandler,
   ]);
 
