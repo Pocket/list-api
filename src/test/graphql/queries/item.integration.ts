@@ -9,7 +9,7 @@ describe('item', () => {
   let server: ApolloServer<ContextManager>;
   let url: string;
 
-  const itemFragment = `
+  const itemFragment_givenUrl = `
     fragment ItemFields on Item {
       givenUrl
       savedItem {
@@ -20,8 +20,21 @@ describe('item', () => {
       }
     }
   `;
-  const GET_SAVED_ITEM = `
-    ${itemFragment}
+
+  const itemFragment_itemId = `
+    fragment ItemFields on Item {
+      itemId
+      savedItem {
+        id
+        url
+        isFavorite
+        isArchived
+      }
+    }
+  `;
+
+  const GET_SAVED_ITEM_GIVEN_URL = `
+    ${itemFragment_givenUrl}
     query getSaveFromItem($givenUrl: String!) {
       _entities(representations: { givenUrl: $givenUrl, __typename: "Item" }) {
         ... on Item {
@@ -32,13 +45,40 @@ describe('item', () => {
   `;
   // It was more effort to format the entity string programmatically
   // than to just duplicate it
-  const GET_TWO_SAVED_ITEMS = `
-    ${itemFragment}
+  const GET_TWO_SAVED_ITEMS_GIVEN_URL = `
+    ${itemFragment_givenUrl}
     query getSavesFromItems($givenUrl1: String!, $givenUrl2: String!) {
       _entities(
         representations: [
           { givenUrl: $givenUrl1, __typename: "Item" }
           { givenUrl: $givenUrl2, __typename: "Item" }
+        ]
+      ) {
+        ... on Item {
+          ...ItemFields
+        }
+      }
+    }
+  `;
+
+  const GET_SAVED_ITEM_ITEMID = `
+    ${itemFragment_itemId}
+    query getSaveFromItem($itemId: String!) {
+      _entities(representations: { itemId: $itemId, __typename: "Item" }) {
+        ... on Item {
+          ...ItemFields
+        }
+      }
+    }
+  `;
+
+  const GET_TWO_SAVED_ITEMS_ITEMID = `
+    ${itemFragment_itemId}
+    query getSavesFromItems($itemId1: String!, $itemId2: String!) {
+      _entities(
+        representations: [
+          { itemId: $itemId1, __typename: "Item" }
+          { itemId: $itemId2, __typename: "Item" }
         ]
       ) {
         ... on Item {
@@ -110,7 +150,7 @@ describe('item', () => {
     await db.destroy();
     await server.stop();
   });
-  it('resolves more than one savedItem from multiple entities', async () => {
+  it('resolves more than one savedItem by givenUrl from multiple entities', async () => {
     const expected = [
       {
         givenUrl: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
@@ -138,7 +178,7 @@ describe('item', () => {
     };
 
     const res = await request(app).post(url).set(headers).send({
-      query: GET_TWO_SAVED_ITEMS,
+      query: GET_TWO_SAVED_ITEMS_GIVEN_URL,
       variables,
     });
     expect(res.body.errors).toBeUndefined;
@@ -147,7 +187,7 @@ describe('item', () => {
     expect(entities.length).toEqual(2);
     expect(entities).toEqual(expect.arrayContaining(expected));
   });
-  it('resolves savedItem field from entity representation', async () => {
+  it('resolves savedItem by givenUrl field from entity representation', async () => {
     const expected = {
       givenUrl: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
       savedItem: {
@@ -163,7 +203,7 @@ describe('item', () => {
     };
 
     const res = await request(app).post(url).set(headers).send({
-      query: GET_SAVED_ITEM,
+      query: GET_SAVED_ITEM_GIVEN_URL,
       variables,
     });
 
@@ -173,14 +213,14 @@ describe('item', () => {
     expect(entities.length).toEqual(1);
     expect(entities[0]).toEqual(expected);
   });
-  it('returns null if the save does not exist', async () => {
+  it('returns null if the save by givenUrl does not exist', async () => {
     const variables = {
       userId: '1',
       givenUrl: 'https://www.youtube.com/watch?v=Tpbo25iBvfU',
     };
 
     const res = await request(app).post(url).set(headers).send({
-      query: GET_SAVED_ITEM,
+      query: GET_SAVED_ITEM_GIVEN_URL,
       variables,
     });
     expect(res.body.data).not.toBeUndefined;
@@ -190,6 +230,85 @@ describe('item', () => {
     expect(entities[0].givenUrl).toEqual(
       'https://www.youtube.com/watch?v=Tpbo25iBvfU'
     );
+    expect(entities[0].savedItem).toBeNull;
+  });
+  it('resolves more than one savedItem by itemId from multiple entities', async () => {
+    const expected = [
+      {
+        itemId: '1',
+        savedItem: {
+          url: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
+          isFavorite: true,
+          isArchived: false,
+          id: '1',
+        },
+      },
+      {
+        itemId: '999',
+        savedItem: {
+          url: 'https://www.youtube.com/watch?v=OZaL86RDGIU',
+          isFavorite: false,
+          isArchived: true,
+          id: '999',
+        },
+      },
+    ];
+    const variables = {
+      userId: '1',
+      itemId1: '1',
+      itemId2: '999',
+    };
+
+    const res = await request(app).post(url).set(headers).send({
+      query: GET_TWO_SAVED_ITEMS_ITEMID,
+      variables,
+    });
+    expect(res.body.errors).toBeUndefined;
+    expect(res.body.data).not.toBeUndefined;
+    const entities = res.body.data._entities;
+    expect(entities.length).toEqual(2);
+    expect(entities).toEqual(expect.arrayContaining(expected));
+  });
+  it('resolves savedItem by itemId field from entity representation', async () => {
+    const expected = {
+      itemId: '1',
+      savedItem: {
+        url: 'https://www.youtube.com/watch?v=aWJ_7akYFhg',
+        isFavorite: true,
+        isArchived: false,
+        id: '1',
+      },
+    };
+    const variables = {
+      userId: '1',
+      itemId: '1',
+    };
+
+    const res = await request(app).post(url).set(headers).send({
+      query: GET_SAVED_ITEM_ITEMID,
+      variables,
+    });
+    expect(res.body.errors).toBeUndefined;
+    expect(res.body.data).not.toBeUndefined;
+    const entities = res.body.data._entities;
+    expect(entities.length).toEqual(1);
+    expect(entities[0]).toEqual(expected);
+  });
+  it('returns null if the save by itemId does not exist', async () => {
+    const variables = {
+      userId: '1',
+      itemId: '1',
+    };
+
+    const res = await request(app).post(url).set(headers).send({
+      query: GET_SAVED_ITEM_ITEMID,
+      variables,
+    });
+    expect(res.body.data).not.toBeUndefined;
+    expect(res.body.errors).toBeUndefined;
+    const entities = res.body.data._entities;
+    expect(entities.length).toEqual(1);
+    expect(entities[0].itemId).toEqual('1');
     expect(entities[0].savedItem).toBeNull;
   });
 });

@@ -18,6 +18,7 @@ describe('savedItem data loader', function () {
       status: 'UNREAD',
       item: {
         givenUrl: 'abc.com',
+        itemId: '1',
       },
     },
     {
@@ -29,6 +30,7 @@ describe('savedItem data loader', function () {
       status: 'DELETED',
       item: {
         givenUrl: 'def.com',
+        itemId: '2',
       },
     },
   ];

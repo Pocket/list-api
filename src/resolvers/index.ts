@@ -66,9 +66,13 @@ const resolvers = {
   },
   Item: {
     savedItem: async (item: Item, args, context: IContext) => {
-      return await context.dataLoaders.savedItemsByUrl.load(item.givenUrl);
+      if (item.itemId) {
+        return await context.dataLoaders.savedItemsById.load(item.itemId);
+      } else {
+        return await context.dataLoaders.savedItemsByUrl.load(item.givenUrl);
+      }
     },
-    // This is basically a passthrough so that the givenUrl is available
+    // This is basically a passthrough so that the givenUrl & itemId are available
     // on the parent when the savedItem entity is resolved
     // Possible to resolve savedItem on this reference resolver instead,
     // but this maintains our pattern of separation of entity resolvers

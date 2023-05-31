@@ -60,6 +60,7 @@ export type SavedItem = RemoteEntity & {
   archivedAt?: number;
   item: {
     givenUrl: string;
+    itemId: string;
   };
   tags?: Tag[];
 };

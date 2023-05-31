@@ -170,6 +170,37 @@ describe('getSavedItemByItemId', () => {
     );
   });
 
+  it('should resolve item ID', async () => {
+    const variables = {
+      userId: '1',
+      itemId: '1',
+    };
+    const GET_SAVED_ITEM_ITEM = `
+      query getSavedItem($userId: ID!, $itemId: ID!) {
+        _entities(representations: { id: $userId, __typename: "User" }) {
+          ... on User {
+            savedItemById(id: $itemId) {
+              id
+              url
+              isFavorite
+              favoritedAt
+              item {
+                ... on Item {
+                  itemId
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    const res = await request(app).post(url).set(headers).send({
+      query: GET_SAVED_ITEM_ITEM,
+      variables,
+    });
+    expect(res.body.data?._entities[0].savedItemById.item.itemId).to.equal('1');
+  });
+
   it('should have _deletedAt field if item is deleted', async () => {
     const variables = {
       userId: '1',
