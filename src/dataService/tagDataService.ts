@@ -52,8 +52,6 @@ export class TagDataService {
         'tag as name',
         'tag',
         this.db.raw('MAX(id) as _cursor'),
-        // TODO: Risky - this could be a HUGE array for certain users (e.g. IFTT auto-taggers)
-        this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
         this.db.raw('NULL as _deletedAt'),
         this.db.raw('NULL as _version')
         //TODO: add version and deletedAt feature to tag
@@ -69,29 +67,20 @@ export class TagDataService {
   }
 
   /**
-   * For a given item_id, retrieves tags
-   * and list of itemIds associated with it.
+   * For a given item_id, retrieves tags associated with it.
    * @param itemId
    */
   public async getTagsByUserItem(itemId: string): Promise<Tag[]> {
-    const subQueryName = 'subQuery_tags';
-    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
-
-    const getTagsForItemQuery = this.db('item_tags')
-      .select(`${subQueryName}.*`)
-      .where({
-        user_id: parseInt(this.userId),
-        item_id: itemId,
-      });
-
-    const result = await getTagsForItemQuery.join(
-      getItemIdsForEveryTag,
-      function () {
-        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
-      }
-    );
-
-    return result.map(TagModel.toGraphqlEntity);
+    const tags = await this.db('item_tags')
+      .select(
+        'tag as name',
+        this.db.raw('NULL as _deletedAt'),
+        this.db.raw('NULL as _version')
+        //TODO: add version and deletedAt feature to tag
+      )
+      .orderBy('id', 'desc')
+      .where({ user_id: this.userId, item_id: itemId });
+    return tags.map(TagModel.toGraphqlEntity);
   }
 
   /**
@@ -99,24 +88,34 @@ export class TagDataService {
    * and list of itemIds associated with it.
    * @param itemId
    */
-  public async batchGetTagsByUserItems(itemIds: string[]): Promise<Tag[]> {
-    const subQueryName = 'subQuery_tags';
-    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
+  public async batchGetTagsByUserItems(
+    itemIds: string[]
+  ): Promise<{ [savedItemId: string]: Tag[] }> {
+    const tags = await this.db('item_tags')
+      .select(
+        'tag as name',
+        'item_id',
+        this.db.raw('NULL as _deletedAt'),
+        this.db.raw('NULL as _version')
+        //TODO: add version and deletedAt feature to tag
+      )
+      .orderBy('id', 'desc')
+      .whereIn('item_id', itemIds)
+      .andWhere({ user_id: parseInt(this.userId) });
 
-    const getTagsForItemQuery = this.db('item_tags')
-      .select(`${subQueryName}.*`)
-      .where({
-        user_id: parseInt(this.userId),
-      })
-      .whereIn('item_id', itemIds);
+    // Aggregate list of tags by item_id
+    const result = tags.reduce((saveTagMap, tagRow) => {
+      const itemId = tagRow['item_id'].toString();
+      const tagEntity = TagModel.toGraphqlEntity(tagRow);
+      if (saveTagMap[itemId]?.length > 0) {
+        saveTagMap[itemId].push(tagEntity);
+      } else {
+        saveTagMap[itemId] = [tagEntity];
+      }
+      return saveTagMap;
+    }, {} as { [savedItemId: string]: Tag[] });
 
-    const result = await getTagsForItemQuery
-      .join(getItemIdsForEveryTag, function () {
-        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
-      })
-      .distinct();
-
-    return result.map(TagModel.toGraphqlEntity);
+    return result;
   }
 
   /**
@@ -451,6 +450,14 @@ export class TagDataService {
       await this.usersMetaService.logTagMutation(timestamp, trx);
     });
     return { updated: saveIds, missing: [] };
+  }
+
+  public async fetchItemIdAssociations(tag: string): Promise<string[]> {
+    const res = await this.db('item_tags')
+      .select('item_id')
+      .where({ tag, user_id: this.userId })
+      .pluck('item_id');
+    return res as string[];
   }
 
   private deleteTagsByItemId(itemId: string): Knex.QueryBuilder {

@@ -105,5 +105,49 @@ describe('tags on saved items', () => {
     expect(res.body.data?._entities[0]).toStrictEqual(expected);
     console.log(JSON.stringify(res));
   });
-  it('works for multiple tags, applied to many saves and few saves', async () => {});
+  describe('for multiple tags on a save', () => {
+    const savedItemByIdId = count + startId - 1;
+    beforeAll(async () => {
+      await db('item_tags').insert({
+        user_id: userid,
+        item_id: savedItemByIdId,
+        tag: 'tofu',
+        time_added: chance.date(),
+        time_updated: chance.date(),
+        status: 1,
+        api_id: '0',
+        api_id_updated: '0',
+      });
+    });
+    it('where tags are applied to many saves and few saves', async () => {
+      const variables = {
+        representations: {
+          id: userid,
+          __typename: 'User',
+        },
+        savedItemByIdId,
+      };
+      const res = await request(app)
+        .post(url)
+        .set(headers)
+        .send({
+          query: print(GET_SAVES),
+          variables,
+        });
+      const expected = {
+        savedItemById: {
+          tags: expect.toIncludeSameMembers([
+            {
+              name: 'recipe',
+            },
+            {
+              name: 'tofu',
+            },
+          ]),
+        },
+      };
+      expect(res.body.data.errors).toBeUndefined();
+      expect(res.body.data?._entities[0]).toStrictEqual(expected);
+    });
+  });
 });
