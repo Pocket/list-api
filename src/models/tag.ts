@@ -375,7 +375,9 @@ export class TagModel {
     return updates;
   }
 
-  // Fetch list of item ids associated with a tag name
+  /**
+   * Fetch list of item ids associated with a tag name.
+   */
   private async getItemIdAssociations(tag: string): Promise<string[]> {
     return await this.tagService.fetchItemIdAssociations(tag);
   }
@@ -428,7 +430,6 @@ export function sanitizeTagName(name: string): string {
 const validateTag = (tag: any): true => {
   const tagModelFields: { field: string; required?: boolean }[] = [
     { field: 'name', required: true },
-    // { field: 'savedItems', required: true },
     { field: '_version', required: false },
     { field: '_deletedAt', required: false },
   ];

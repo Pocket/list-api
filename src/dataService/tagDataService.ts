@@ -84,9 +84,11 @@ export class TagDataService {
   }
 
   /**
-   * For a given item_id, retrieves tags
-   * and list of itemIds associated with it.
-   * @param itemId
+   * For a list of itemIds, retrieve tags associated with each.
+   * Response is keyed on the itemId (if there are no tags,
+   * associated to a given itemId key, that itemId key will
+   * not be present in the response).
+   * @param itemId ID of the savedItem to fetch tags for
    */
   public async batchGetTagsByUserItems(
     itemIds: string[]
