@@ -117,7 +117,7 @@ export class SavedItemDataService {
    * Fetch a single SavedItem from a User's list
    * @param itemId the savedItem ID to fetch
    */
-  public getSavedItemById(itemId: string): Promise<SavedItem> {
+  public getSavedItemById(itemId: string): Promise<SavedItem | null> {
     const query = this.buildQuery()
       .where({ user_id: this.userId, item_id: itemId })
       .first();
@@ -202,13 +202,16 @@ export class SavedItemDataService {
    * and the auditing fields in the table ('time_updated', etc.)
    * @param itemId the item ID to update
    * @param archived whether the item is a favorite or not
+   * @param updatedAt optional timestamp for when the mutation occured
+   * (defaults to current server time)
    * @returns savedItem savedItem that got updated
    */
   public async updateSavedItemArchiveProperty(
     itemId: string,
-    archived: boolean
-  ): Promise<SavedItem> {
-    const timestamp = SavedItemDataService.formatDate(new Date());
+    archived: boolean,
+    updatedAt?: Date
+  ): Promise<SavedItem | null> {
+    const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeArchived = archived ? timestamp : '0000-00-00 00:00:00';
     const status = archived ? 1 : 0;
     // TODO: Do we care if this makes an update that doesn't change the status?

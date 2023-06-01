@@ -17,6 +17,7 @@ import {
   ItemModel,
   TagModel,
 } from '../models';
+import { SavedItemModel } from '../models/SavedItem';
 export interface IContext {
   userId: string;
   headers: IncomingHttpHeaders;
@@ -29,6 +30,7 @@ export interface IContext {
     pocketSave: PocketSaveModel;
     notFound: NotFoundErrorModel;
     item: ItemModel;
+    savedItem: SavedItemModel;
   };
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
@@ -66,6 +68,7 @@ export class ContextManager implements IContext {
       tag: new TagModel(this),
       pocketSave: new PocketSaveModel(this),
       notFound: new NotFoundErrorModel(),
+      savedItem: new SavedItemModel(this),
     };
     // Set tracking data for Sentry
     Sentry.configureScope((scope) => {
@@ -81,6 +84,7 @@ export class ContextManager implements IContext {
     tag: TagModel;
     pocketSave: PocketSaveModel;
     notFound: NotFoundErrorModel;
+    savedItem: SavedItemModel;
   };
 
   get headers(): { [key: string]: any } {

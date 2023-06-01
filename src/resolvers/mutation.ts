@@ -134,13 +134,7 @@ export async function updateSavedItemArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
-    args.id,
-    true
-  );
-  context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.archiveById(args.id);
 }
 
 /**
@@ -154,13 +148,7 @@ export async function updateSavedItemUnArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
-    args.id,
-    false
-  );
-  context.emitItemEvent(EventType.UNARCHIVE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.unarchiveById(args.id);
 }
 
 /**

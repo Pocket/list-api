@@ -771,6 +771,16 @@ type Mutation {
   Associate Tag(s) with a Save
   """
   savedItemTag(input: SavedItemTagInput!, timestamp: ISOString!): SavedItem
+
+  """
+  Archive a SavedItem (identified by URL)
+  """
+  savedItemArchive(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  Unarchive a SavedItem (identified by URL)
+  """
+  savedItemUnArchive(givenUrl: Url!, timestamp: ISOString!): SavedItem
 }
 
 # """
