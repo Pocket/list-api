@@ -87,6 +87,7 @@ export async function startServer(port: number) {
   const defaultPlugins = [
     sentryPlugin,
     ApolloServerPluginUsageReportingDisabled(),
+    ApolloServerPluginLandingPageGraphQLPlayground(),
     ApolloServerPluginDrainHttpServer({ httpServer }),
     createApollo4QueryValidationPlugin({ schema }),
   ];
@@ -97,11 +98,9 @@ export async function startServer(port: number) {
   > = {
     test: [ApolloServerPluginInlineTraceDisabled()],
     development: [
-      ApolloServerPluginLandingPageGraphQLPlayground(),
       ApolloServerPluginInlineTrace({ includeErrors: { unmodified: true } }),
     ],
     production: [
-      ApolloServerPluginLandingPageDisabled(),
       ApolloServerPluginInlineTrace({
         includeErrors: { unmodified: true },
       }),
@@ -117,7 +116,7 @@ export async function startServer(port: number) {
     schema,
     plugins,
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true,
   });
 
   await server.start();
