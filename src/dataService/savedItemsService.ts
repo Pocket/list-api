@@ -177,13 +177,16 @@ export class SavedItemDataService {
    * in the table ('time_updated', etc.)
    * @param itemId the item ID to update
    * @param favorite whether the item is a favorite or not
+   * @param updatedAt optional timestamp for when the mutation occured
+   * (defaults to current server time)
    * @returns savedItem savedItem that got updated
    */
   public async updateSavedItemFavoriteProperty(
     itemId: string,
-    favorite: boolean
-  ): Promise<SavedItem> {
-    const timestamp = SavedItemDataService.formatDate(new Date());
+    favorite: boolean,
+    updatedAt?: Date
+  ): Promise<SavedItem | null> {
+    const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeFavorited = favorite ? timestamp : '0000-00-00 00:00:00';
     await this.db('list')
       .update({

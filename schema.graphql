@@ -781,6 +781,16 @@ type Mutation {
   Unarchive a SavedItem (identified by URL)
   """
   savedItemUnArchive(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  Favorite a SavedItem (identified by URL)
+  """
+  savedItemFavorite(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  'Unfavorite' a 'favorite' SavedItem (identified by URL)
+  """
+  savedItemUnFavorite(givenUrl: Url!, timestamp: ISOString!): SavedItem
 }
 
 # """

@@ -61,6 +61,54 @@ export class SavedItemModel {
   }
 
   /**
+   * 'Favorite' a Save in a Pocket User's list
+   * @param id the ID of the SavedItem to favorite
+   * @param timestamp timestamp for when the mutation occurred. Optional
+   * to support old id-keyed mutations that didn't require timetsamp.
+   * If not provided, defaults to current server time.
+   * @returns The updated SavedItem if it exists, or null if it doesn't
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async favoriteById(
+    id: string,
+    timestamp?: Date
+  ): Promise<SavedItem | null> {
+    const savedItem = await this.saveService.updateSavedItemFavoriteProperty(
+      id,
+      true,
+      timestamp
+    );
+    if (savedItem == null) {
+      throw new NotFoundError(this.defaultNotFoundMessage);
+    } else {
+      this.context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
+    }
+    return savedItem;
+  }
+  /**
+   * 'Unfavorite' a Save in a Pocket User's list
+   * @param id the ID of the SavedItem to unfavorite (move to 'saves')
+   * @param timestamp timestamp for when the mutation occurred. Optional
+   * to support old id-keyed mutations that didn't require timetsamp.
+   * If not provided, defaults to current server time.
+   * @returns The updated SavedItem if it exists, or null if it doesn't
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async unfavoriteById(id: string, timestamp?: Date) {
+    const savedItem = await this.saveService.updateSavedItemFavoriteProperty(
+      id,
+      false,
+      timestamp
+    );
+    if (savedItem == null) {
+      throw new NotFoundError(this.defaultNotFoundMessage);
+    } else {
+      this.context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
+    }
+    return savedItem;
+  }
+
+  /**
    * 'Archive' a Save in a Pocket User's list
    * @param url the given url of the SavedItem to archive
    * @param timestamp timestamp for when the mutation occurred
@@ -87,6 +135,35 @@ export class SavedItemModel {
   ): Promise<SavedItem | null> {
     const id = await this.fetchIdFromUrl(url);
     return this.unarchiveById(id, timestamp);
+  }
+
+  /**
+   * 'Favorite' a Save in a Pocket User's list
+   * @param url the given url of the SavedItem to favorite
+   * @param timestamp timestamp for when the mutation occurred
+   * @returns The updated SavedItem if it exists, or null if it doesn't
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async favoriteByUrl(
+    url: string,
+    timestamp: Date
+  ): Promise<SavedItem | null> {
+    const id = await this.fetchIdFromUrl(url);
+    return this.favoriteById(id, timestamp);
+  }
+  /**
+   * 'Unfavorite' a Save in a Pocket User's list
+   * @param url the given url of the SavedItem to unfavorite
+   * @param timestamp timestamp for when the mutation occurred
+   * @returns The updated SavedItem if it exists, or null if it doesn't
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async unfavoriteByUrl(
+    url: string,
+    timestamp: Date
+  ): Promise<SavedItem | null> {
+    const id = await this.fetchIdFromUrl(url);
+    return this.unfavoriteById(id, timestamp);
   }
 
   /**

@@ -231,6 +231,26 @@ const resolvers = {
         args.timestamp
       );
     },
+    savedItemFavorite: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.favoriteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemUnFavorite: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.unfavoriteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
   },
 };
 

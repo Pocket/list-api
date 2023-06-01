@@ -94,13 +94,7 @@ export async function updateSavedItemFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
-    args.id,
-    true
-  );
-  context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.favoriteById(args.id);
 }
 
 /**
@@ -114,13 +108,7 @@ export async function updateSavedItemUnFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
-    args.id,
-    false
-  );
-  context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.unfavoriteById(args.id);
 }
 
 /**
