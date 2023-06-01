@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import express from 'express';
+import express, { query } from 'express';
 import http from 'http';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
@@ -36,6 +36,12 @@ export const isIntrospection = (query: string): boolean => {
   //Ref: https://github.com/anvilco/apollo-server-plugin-introspection-metadata/blob/main/src/index.js#L25
   const isIntrospectionRegex = /\b(__schema|__type)\b/;
   return typeof query === 'string' && isIntrospectionRegex.test(query);
+};
+
+export const isSubgraphIntrospection = (query: string): boolean => {
+  //Ref: https://github.com/anvilco/apollo-server-plugin-introspection-metadata/blob/main/src/index.js#L25
+  const isSubgraphIntrospectionRegex = /\b(_service)\b/;
+  return typeof query === 'string' && isSubgraphIntrospectionRegex.test(query);
 };
 
 /**
@@ -85,7 +91,10 @@ export async function startServer(port: number) {
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
-    if (isIntrospection(req.body.query)) {
+    if (
+      isIntrospection(req.body.query) ||
+      isSubgraphIntrospection(req.body.query)
+    ) {
       // Bypass auth (ie, the userId() function throwing auth errors) for introspection
       return null;
     }
