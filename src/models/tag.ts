@@ -41,10 +41,7 @@ export class TagModel {
    */
   public static toGraphqlEntity(tagResponse: any): Tag {
     validateTag(tagResponse);
-    return {
-      ...tagResponse,
-      savedItems: tagResponse.savedItems.split(','),
-    };
+    return tagResponse;
   }
 
   /**
@@ -229,11 +226,8 @@ export class TagModel {
       throw new NotFoundError(`Tag Id ${tag.id} does not exist`);
     }
     const newName = sanitizeTagName(tag.name);
-    await this.tagService.updateTagByUser(
-      oldTag.name,
-      newName,
-      oldTag.savedItems
-    );
+    const savedItems = await this.getItemIdAssociations(oldTag.name);
+    await this.tagService.updateTagByUser(oldTag.name, newName, savedItems);
     return this.tagService.getTagByName(newName);
   }
 
@@ -380,6 +374,13 @@ export class TagModel {
     updates.creates = deduplicateTagInput(updates.creates);
     return updates;
   }
+
+  /**
+   * Fetch list of item ids associated with a tag name.
+   */
+  private async getItemIdAssociations(tag: string): Promise<string[]> {
+    return await this.tagService.fetchItemIdAssociations(tag);
+  }
 }
 
 /**
@@ -429,7 +430,6 @@ export function sanitizeTagName(name: string): string {
 const validateTag = (tag: any): true => {
   const tagModelFields: { field: string; required?: boolean }[] = [
     { field: 'name', required: true },
-    { field: 'savedItems', required: true },
     { field: '_version', required: false },
     { field: '_deletedAt', required: false },
   ];

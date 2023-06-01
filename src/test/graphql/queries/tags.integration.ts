@@ -382,7 +382,7 @@ describe('tags query tests - happy path', () => {
       });
     const expected = {
       url: 'http://abc',
-      tags: [
+      tags: expect.toIncludeSameMembers([
         expect.objectContaining({
           name: 'travel',
           id: toBeStringOfLengthGreaterThanOne(),
@@ -421,7 +421,7 @@ describe('tags query tests - happy path', () => {
             }),
           }),
         }),
-      ],
+      ]),
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].savedItemById).toMatchObject(expected);
