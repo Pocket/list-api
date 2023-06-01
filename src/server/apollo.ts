@@ -7,7 +7,6 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
 import {
   ApolloServerPluginInlineTraceDisabled,
-  ApolloServerPluginLandingPageDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from '@apollo/server/plugin/disabled';
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
@@ -26,6 +25,18 @@ import {
 import { Knex } from 'knex';
 import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive/apollo4';
 import { schema } from './schema';
+
+/**
+ * Used to determine if a query is an introspection query so
+ * that it can bypass our authentication checks and return the schema.
+ * @param query
+ * @returns
+ */
+export const isIntrospection = (query: string): boolean => {
+  //Ref: https://github.com/anvilco/apollo-server-plugin-introspection-metadata/blob/main/src/index.js#L25
+  const isIntrospectionRegex = /\b(__schema|__type)\b/;
+  return typeof query === 'string' && isIntrospectionRegex.test(query);
+};
 
 /**
  * Stopgap method to set global db connection in context,
@@ -74,6 +85,10 @@ export async function startServer(port: number) {
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
+    if (isIntrospection(req.body.query)) {
+      // Bypass auth (ie, the userId() function throwing auth errors) for introspection
+      return null;
+    }
     const dbClient = contextConnection(req.body.query);
     return new ContextManager({
       request: req,
