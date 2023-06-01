@@ -100,12 +100,7 @@ export async function batchGetTagsByItemIds(
   itemIds: string[]
 ): Promise<Tag[][]> {
   // get tags from database for given PocketSave or SavedItem IDs.
-  const tags = await tagDataService.batchGetTagsByUserItems(itemIds);
-  // forces itemIds to string. SavedItem Mutations can return int or number ID.
-  // re-structures tags response for 1 array of tags per given Item ID,
-  // sorted following order of original Item ID array passed to dataloader.
-  const results: Tag[][] = itemIds.map((itemId) =>
-    tags.filter((x) => x.savedItems.includes(itemId.toString()))
-  );
-  return results;
+  const saveTags = await tagDataService.batchGetTagsByUserItems(itemIds);
+  // Return tag list per itemId in the original itemId order requested
+  return itemIds.map((itemId) => saveTags[itemId] ?? []);
 }
