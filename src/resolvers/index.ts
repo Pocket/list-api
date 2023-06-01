@@ -211,6 +211,26 @@ const resolvers = {
         args.timestamp
       );
     },
+    savedItemArchive: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.archiveByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemUnArchive: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.unarchiveByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
   },
 };
 
