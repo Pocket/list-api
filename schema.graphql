@@ -647,10 +647,6 @@ type Mutation {
   """
   updateSavedItemUnArchive(id: ID!): SavedItem!
 
-  """
-  Undo the delete operation for a SavedItem
-  """
-  updateSavedItemUnDelete(id: ID!): SavedItem!
 
   """
   Favorites a SavedItem
@@ -791,6 +787,16 @@ type Mutation {
   'Unfavorite' a 'favorite' SavedItem (identified by URL)
   """
   savedItemUnFavorite(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  'Soft-delete' a SavedItem (identified by URL)
+  """
+  savedItemDelete(givenUrl: Url!, timestamp: ISOString!): Url
+
+  """
+  Undo the 'soft-delete' operation on a SavedItem (identified by URL)
+  """
+  savedItemUnDelete(givenUrl: Url!, timestamp: ISOString!): SavedItem
 }
 
 # """
