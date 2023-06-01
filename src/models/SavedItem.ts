@@ -13,7 +13,7 @@ export class SavedItemModel {
   }
 
   /**
-   *
+   * 'Archive' a Save in a Pocket User's list
    * @param id the ID of the SavedItem to archive
    * @param timestamp timestamp for when the mutation occurred. Optional
    * to support old id-keyed mutations that didn't require timetsamp.
@@ -38,7 +38,7 @@ export class SavedItemModel {
     return savedItem;
   }
   /**
-   *
+   * 'Unarchive' a Save in a Pocket User's list
    * @param id the ID of the SavedItem to unarchive (move to 'saves')
    * @param timestamp timestamp for when the mutation occurred. Optional
    * to support old id-keyed mutations that didn't require timetsamp.
@@ -61,7 +61,7 @@ export class SavedItemModel {
   }
 
   /**
-   *
+   * 'Archive' a Save in a Pocket User's list
    * @param url the given url of the SavedItem to archive
    * @param timestamp timestamp for when the mutation occurred
    * @returns The updated SavedItem if it exists, or null if it doesn't
@@ -75,7 +75,7 @@ export class SavedItemModel {
     return this.archiveById(id, timestamp);
   }
   /**
-   *
+   * 'Unarchive' a Save in a Pocket User's list
    * @param url the given url of the SavedItem to unarchive (move to 'saves')
    * @param timestamp timestamp for when the mutation occurred
    * @returns The updated SavedItem if it exists, or null if it doesn't
