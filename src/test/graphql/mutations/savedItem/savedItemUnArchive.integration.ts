@@ -91,7 +91,7 @@ describe('savedItemUnArchive mutation', function () {
       _updatedAt: testEpoch,
     });
   });
-  it('throws NotFound error if the savedItem does not exist', async () => {
+  it('throws NotFound error if the savedItem does not have an itemId', async () => {
     const givenUrl = 'http://999';
     mockParserGetItemIdRequest(givenUrl, null);
     const testTimestamp = '2023-10-05T14:48:00.000Z';
@@ -110,7 +110,7 @@ describe('savedItemUnArchive mutation', function () {
       })
     );
   });
-  it('should not emit an archive event if the savedItem did not exist', async () => {
+  it('should not emit an archive event if the savedItem did not have an itemId', async () => {
     const givenUrl = 'http://999';
     mockParserGetItemIdRequest(givenUrl, null);
     const testTimestamp = '2023-10-05T14:48:00.000Z';
@@ -122,6 +122,26 @@ describe('savedItemUnArchive mutation', function () {
       .post(url)
       .set(headers)
       .send({ query: print(UNARCHIVE_MUTATION), variables });
+    expect(eventSpy.callCount).toEqual(0);
+  });
+  it('throws NotFound error and does not emit event if the savedItem is not in the user saves', async () => {
+    const givenUrl = 'http://999';
+    mockParserGetItemIdRequest(givenUrl, '999');
+    const testTimestamp = '2023-10-05T14:48:00.000Z';
+    const variables = {
+      givenUrl,
+      timestamp: testTimestamp,
+    };
+    const res = await request(app)
+      .post(url)
+      .set(headers)
+      .send({ query: print(UNARCHIVE_MUTATION), variables });
+    expect(res.body.errors).toContainEqual(
+      expect.objectContaining({
+        extensions: { code: 'NOT_FOUND' },
+        message: expect.stringContaining('SavedItem does not exist'),
+      })
+    );
     expect(eventSpy.callCount).toEqual(0);
   });
   it('should emit an unarchive event when a savedItem is unarchived', async () => {
