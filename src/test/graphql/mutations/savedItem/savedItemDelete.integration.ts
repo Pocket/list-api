@@ -126,7 +126,7 @@ describe('savedItemDelete mutation', function () {
       .send({ query: print(GET_SAVE_QUERY), variables: { itemId: '0' } });
 
     expect(deleteRes.body.errors).toBeUndefined();
-    expect(deleteRes.body.data.savedItemDelete).toStrictEqual('http://0');
+    expect(deleteRes.body.data.savedItemDelete).toStrictEqual(givenUrl);
     expect(roundTripRes.body.data._entities[0].savedItemById).toStrictEqual({
       url: givenUrl,
       status: 'DELETED',
@@ -156,7 +156,7 @@ describe('savedItemDelete mutation', function () {
       .send({ query: print(GET_SAVE_QUERY), variables: { itemId: '1' } });
 
     expect(deleteRes.body.errors).toBeUndefined();
-    expect(deleteRes.body.data.savedItemDelete).toStrictEqual('http://1');
+    expect(deleteRes.body.data.savedItemDelete).toStrictEqual(givenUrl);
     expect(roundTripRes.body.data._entities[0].savedItemById).toStrictEqual({
       url: givenUrl,
       status: 'DELETED',

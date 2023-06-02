@@ -198,7 +198,7 @@ export class SavedItemModel {
    * sets the status to 'deleted'.
    * @param id the ID of the SavedItem to delete
    * @param timestamp timestamp for when the mutation occurred
-   * @returns The ID of the deleted SavedItem, or null if it does not exist
+   * @returns The url of the deleted SavedItem, or null if it does not exist
    * @throws NotFound if the SavedItem doesn't exist
    */
   public async deleteByUrl(
