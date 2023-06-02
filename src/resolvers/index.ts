@@ -261,6 +261,16 @@ const resolvers = {
         args.timestamp
       );
     },
+    savedItemUnDelete: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.undeleteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
   },
 };
 
