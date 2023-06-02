@@ -238,8 +238,11 @@ export class SavedItemDataService {
    * to allow us to fully rollback should any on of the
    * database statements fail.
    * @param itemId the itemId to delete
+   * @param deletedAt optional timestamp for when the mutation was completed;
+   * defaults to current server time
    */
-  public async deleteSavedItem(itemId) {
+  public async deleteSavedItem(itemId, deletedAt?: Date) {
+    const timestamp = deletedAt ?? SavedItemDataService.formatDate(new Date());
     const transaction = await this.db.transaction();
     try {
       // remove tags for saved item
@@ -264,7 +267,7 @@ export class SavedItemDataService {
       await transaction('list')
         .update({
           status: SavedItemStatus.DELETED,
-          time_updated: SavedItemDataService.formatDate(new Date()),
+          time_updated: timestamp,
           api_id_updated: this.apiId,
         })
         .where({ item_id: itemId, user_id: this.userId });

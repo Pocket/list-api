@@ -150,12 +150,7 @@ export async function deleteSavedItem(
   args: { id: string },
   context: IContext
 ): Promise<string> {
-  // TODO: setup a process to delete saved items X number of days after deleted
-  const savedItemService = new SavedItemDataService(context);
-  await savedItemService.deleteSavedItem(args.id);
-  const savedItem = await savedItemService.getSavedItemById(args.id);
-  context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
-  return args.id;
+  return context.models.savedItem.deleteById(args.id);
 }
 
 /**

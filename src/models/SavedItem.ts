@@ -109,6 +109,32 @@ export class SavedItemModel {
   }
 
   /**
+   * 'Soft-delete' a Save in a Pocket User's list. Removes tags, scroll
+   * sync position, and attributions associated with the SavedItem, then
+   * sets the status to 'deleted'.
+   * @param id the ID of the SavedItem to delete
+   * @param timestamp timestamp for when the mutation occurred. Optional
+   * to support old id-keyed mutations that didn't require timetsamp.
+   * If not provided, defaults to current server time.
+   * @returns The ID of the deleted SavedItem, or null if it does not exist
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async deleteById(
+    id: string,
+    timestamp?: Date
+  ): Promise<string | null> {
+    // TODO: setup a process to delete saved items X number of days after deleted
+    await this.saveService.deleteSavedItem(id, timestamp);
+    const savedItem = await this.saveService.getSavedItemById(id);
+    if (savedItem == null) {
+      throw new NotFoundError(this.defaultNotFoundMessage);
+    } else {
+      this.context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
+    }
+    return id;
+  }
+
+  /**
    * 'Archive' a Save in a Pocket User's list
    * @param url the given url of the SavedItem to archive
    * @param timestamp timestamp for when the mutation occurred
@@ -164,6 +190,25 @@ export class SavedItemModel {
   ): Promise<SavedItem | null> {
     const id = await this.fetchIdFromUrl(url);
     return this.unfavoriteById(id, timestamp);
+  }
+
+  /**
+   * 'Soft-delete' a Save in a Pocket User's list. Removes tags, scroll
+   * sync position, and attributions associated with the SavedItem, then
+   * sets the status to 'deleted'.
+   * @param id the ID of the SavedItem to delete
+   * @param timestamp timestamp for when the mutation occurred
+   * @returns The url of the deleted SavedItem, or null if it does not exist
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async deleteByUrl(
+    url: string,
+    timestamp: Date
+  ): Promise<string | null> {
+    const id = await this.fetchIdFromUrl(url);
+    // Will throw if fails or returns null
+    await this.deleteById(id, timestamp);
+    return url;
   }
 
   /**
