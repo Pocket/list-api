@@ -94,7 +94,10 @@ export class SavedItemModel {
    * @returns The updated SavedItem if it exists, or null if it doesn't
    * @throws NotFound if the SavedItem doesn't exist
    */
-  public async unfavoriteById(id: string, timestamp?: Date) {
+  public async unfavoriteById(
+    id: string,
+    timestamp?: Date
+  ): Promise<SavedItem | null> {
     const savedItem = await this.saveService.updateSavedItemFavoriteProperty(
       id,
       false,
@@ -132,6 +135,31 @@ export class SavedItemModel {
       this.context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
     }
     return id;
+  }
+
+  /**
+   * Undo the 'soft-delete' operation on a Save in a Pocket User's list.
+   * Does not restore tags, scroll sync position, or attributions.
+   * Does not work if the record has been 'hard-deleted' (removed from db table).
+   * Restores 'archive' and 'unread' status depending on whether there
+   * is a nonzero 'time_read' value (happens if the Save was archived).
+   * @param id the ID of the SavedItem to undelete
+   * @param timestamp timestamp for when the mutation occurred
+   * @returns The restored SavedItem, or null if it does not exist
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async undeleteById(
+    id: string,
+    timestamp?: Date
+  ): Promise<SavedItem | null> {
+    const savedItem = await this.saveService.updateSavedItemUnDelete(
+      id,
+      timestamp
+    );
+    if (savedItem == null) {
+      throw new NotFoundError(this.defaultNotFoundMessage);
+    }
+    return savedItem;
   }
 
   /**
@@ -209,6 +237,26 @@ export class SavedItemModel {
     // Will throw if fails or returns null
     await this.deleteById(id, timestamp);
     return url;
+  }
+
+  /**
+   * Undo the 'soft-delete' operation on a Save in a Pocket User's list.
+   * Does not restore tags, scroll sync position, or attributions.
+   * Does not work if the record has been 'hard-deleted' (removed from db table).
+   * Restores 'archive' and 'unread' status depending on whether there
+   * is a nonzero 'time_read' value (happens if the Save was archived).
+   * @param url the givenUrl of the SavedItem to undelete
+   * @param timestamp timestamp for when the mutation occurred
+   * @returns The restored SavedItem, or null if it does not exist
+   * @throws NotFound if the SavedItem doesn't exist
+   */
+  public async undeleteByUrl(
+    url: string,
+    timestamp?: Date
+  ): Promise<SavedItem | null> {
+    const id = await this.fetchIdFromUrl(url);
+    // Will throw if fails or returns null
+    return this.undeleteById(id, timestamp);
   }
 
   /**
