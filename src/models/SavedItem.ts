@@ -119,7 +119,10 @@ export class SavedItemModel {
    * @returns The ID of the deleted SavedItem, or null if it does not exist
    * @throws NotFound if the SavedItem doesn't exist
    */
-  public async deleteById(id: string, timestamp?: Date) {
+  public async deleteById(
+    id: string,
+    timestamp?: Date
+  ): Promise<string | null> {
     // TODO: setup a process to delete saved items X number of days after deleted
     await this.saveService.deleteSavedItem(id, timestamp);
     const savedItem = await this.saveService.getSavedItemById(id);
@@ -198,7 +201,10 @@ export class SavedItemModel {
    * @returns The ID of the deleted SavedItem, or null if it does not exist
    * @throws NotFound if the SavedItem doesn't exist
    */
-  public async deleteByUrl(url: string, timestamp?: Date) {
+  public async deleteByUrl(
+    url: string,
+    timestamp: Date
+  ): Promise<string | null> {
     const id = await this.fetchIdFromUrl(url);
     // Will throw if fails or returns null
     await this.deleteById(id, timestamp);
