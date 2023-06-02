@@ -794,7 +794,9 @@ type Mutation {
   savedItemDelete(givenUrl: Url!, timestamp: ISOString!): Url
 
   """
-  Undo the 'soft-delete' operation on a SavedItem (identified by URL)
+  Undo the 'soft-delete' operation on a SavedItem (identified by URL).
+  Does not restore tags. Does not restore SavedItems that have been
+  'hard-deleted' (record removed from the database entirely).
   """
   savedItemUnDelete(givenUrl: Url!, timestamp: ISOString!): SavedItem
 }

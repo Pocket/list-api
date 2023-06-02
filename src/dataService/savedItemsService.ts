@@ -326,9 +326,16 @@ export class SavedItemDataService {
    * which status the item is assigned when moved from the deleted state.
    * @param itemId
    */
-  public async updateSavedItemUnDelete(itemId): Promise<SavedItem> {
+  public async updateSavedItemUnDelete(
+    itemId: string,
+    updatedAt?: Date
+  ): Promise<SavedItem | null> {
+    const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const query: any = await this.getSavedItemTimeRead(itemId);
-
+    // Does not exist or was hard-deleted
+    if (query == null) {
+      return null;
+    }
     // This is a check to determine if the saved item was previously archived. Fun, right?
     const status =
       query.time_read === '0000-00-00 00:00:00'
@@ -338,7 +345,7 @@ export class SavedItemDataService {
     await this.db('list')
       .update({
         status,
-        time_updated: SavedItemDataService.formatDate(new Date()),
+        time_updated: timestamp,
         api_id_updated: this.apiId,
       })
       .where({ item_id: itemId, user_id: this.userId });

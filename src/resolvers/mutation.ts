@@ -164,12 +164,7 @@ export async function updateSavedItemUnDelete(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  // TODO: when there is a process in place to permanently delete a saved item,
-  // check if saved item exists before attempting to undelete.
-  // TODO: Implement item undelete action
-  return await new SavedItemDataService(context).updateSavedItemUnDelete(
-    args.id
-  );
+  return context.models.savedItem.undeleteById(args.id);
 }
 
 /**
