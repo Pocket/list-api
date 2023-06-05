@@ -44,7 +44,7 @@ export const config = {
     sqsPermLibItemMainQueueName: `PermLib-${environment}-ItemMain`,
     unifiedEventStreamName: 'unified_event',
     databaseTz: 'US/Central',
-    eventBusName: `default`,
+    eventBusName: `PocketEventBridge-${environment}-Shared-Event-Bus`,
   },
   lambda: {
     snsTopicName: {
