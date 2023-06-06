@@ -293,11 +293,12 @@ describe('item', () => {
     const entities = res.body.data._entities;
     expect(entities.length).toEqual(1);
     expect(entities[0]).toEqual(expected);
+    expect(entities[0].savedItem).toEqual(expected.savedItem);
   });
   it('returns null if the save by itemId does not exist', async () => {
     const variables = {
       userId: '1',
-      itemId: '1',
+      itemId: '2', // valid itemId but not for userId 1
     };
 
     const res = await request(app).post(url).set(headers).send({
@@ -308,7 +309,7 @@ describe('item', () => {
     expect(res.body.errors).toBeUndefined;
     const entities = res.body.data._entities;
     expect(entities.length).toEqual(1);
-    expect(entities[0].itemId).toEqual('1');
+    expect(entities[0].itemId).toEqual('2');
     expect(entities[0].savedItem).toBeNull;
   });
 });
