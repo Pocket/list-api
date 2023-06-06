@@ -151,9 +151,10 @@ type SavedItem implements RemoteEntity @key(fields: "id") @key(fields: "url") {
   """
   url: String!
   """
-  The title for user saved item. Set by the user and if not, set by the parser
+  The title for user saved item. Set by the user and if not, set by the parser.
+  For third party clients use-case only.
   """
-  title: String
+  title: String @deprecated(reason: "internal clients must use item.title") @tag(name: "alpha")
   """
   Helper property to indicate if the SavedItem is favorited
   """
@@ -771,6 +772,38 @@ type Mutation {
   Associate Tag(s) with a Save
   """
   savedItemTag(input: SavedItemTagInput!, timestamp: ISOString!): SavedItem
+
+  """
+  Archive a SavedItem (identified by URL)
+  """
+  savedItemArchive(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  Unarchive a SavedItem (identified by URL)
+  """
+  savedItemUnArchive(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  Favorite a SavedItem (identified by URL)
+  """
+  savedItemFavorite(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  'Unfavorite' a 'favorite' SavedItem (identified by URL)
+  """
+  savedItemUnFavorite(givenUrl: Url!, timestamp: ISOString!): SavedItem
+
+  """
+  'Soft-delete' a SavedItem (identified by URL)
+  """
+  savedItemDelete(givenUrl: Url!, timestamp: ISOString!): Url
+
+  """
+  Undo the 'soft-delete' operation on a SavedItem (identified by URL).
+  Does not restore tags. Does not restore SavedItems that have been
+  'hard-deleted' (record removed from the database entirely).
+  """
+  savedItemUnDelete(givenUrl: Url!, timestamp: ISOString!): SavedItem
 }
 
 # """

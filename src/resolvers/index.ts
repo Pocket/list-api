@@ -215,6 +215,66 @@ const resolvers = {
         args.timestamp
       );
     },
+    savedItemArchive: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.archiveByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemUnArchive: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.unarchiveByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemFavorite: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.favoriteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemUnFavorite: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.unfavoriteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemDelete: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<string | null> => {
+      return await context.models.savedItem.deleteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
+    savedItemUnDelete: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.undeleteByUrl(
+        args.givenUrl,
+        args.timestamp
+      );
+    },
   },
 };
 

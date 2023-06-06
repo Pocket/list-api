@@ -117,7 +117,7 @@ export class SavedItemDataService {
    * Fetch a single SavedItem from a User's list
    * @param itemId the savedItem ID to fetch
    */
-  public getSavedItemById(itemId: string): Promise<SavedItem> {
+  public getSavedItemById(itemId: string): Promise<SavedItem | null> {
     const query = this.buildQuery()
       .where({ user_id: this.userId, item_id: itemId })
       .first();
@@ -177,13 +177,16 @@ export class SavedItemDataService {
    * in the table ('time_updated', etc.)
    * @param itemId the item ID to update
    * @param favorite whether the item is a favorite or not
+   * @param updatedAt optional timestamp for when the mutation occured
+   * (defaults to current server time)
    * @returns savedItem savedItem that got updated
    */
   public async updateSavedItemFavoriteProperty(
     itemId: string,
-    favorite: boolean
-  ): Promise<SavedItem> {
-    const timestamp = SavedItemDataService.formatDate(new Date());
+    favorite: boolean,
+    updatedAt?: Date
+  ): Promise<SavedItem | null> {
+    const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeFavorited = favorite ? timestamp : '0000-00-00 00:00:00';
     await this.db('list')
       .update({
@@ -202,13 +205,16 @@ export class SavedItemDataService {
    * and the auditing fields in the table ('time_updated', etc.)
    * @param itemId the item ID to update
    * @param archived whether the item is a favorite or not
+   * @param updatedAt optional timestamp for when the mutation occured
+   * (defaults to current server time)
    * @returns savedItem savedItem that got updated
    */
   public async updateSavedItemArchiveProperty(
     itemId: string,
-    archived: boolean
-  ): Promise<SavedItem> {
-    const timestamp = SavedItemDataService.formatDate(new Date());
+    archived: boolean,
+    updatedAt?: Date
+  ): Promise<SavedItem | null> {
+    const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeArchived = archived ? timestamp : '0000-00-00 00:00:00';
     const status = archived ? 1 : 0;
     // TODO: Do we care if this makes an update that doesn't change the status?
@@ -232,8 +238,11 @@ export class SavedItemDataService {
    * to allow us to fully rollback should any on of the
    * database statements fail.
    * @param itemId the itemId to delete
+   * @param deletedAt optional timestamp for when the mutation was completed;
+   * defaults to current server time
    */
-  public async deleteSavedItem(itemId) {
+  public async deleteSavedItem(itemId, deletedAt?: Date) {
+    const timestamp = deletedAt ?? SavedItemDataService.formatDate(new Date());
     const transaction = await this.db.transaction();
     try {
       // remove tags for saved item
@@ -258,7 +267,7 @@ export class SavedItemDataService {
       await transaction('list')
         .update({
           status: SavedItemStatus.DELETED,
-          time_updated: SavedItemDataService.formatDate(new Date()),
+          time_updated: timestamp,
           api_id_updated: this.apiId,
         })
         .where({ item_id: itemId, user_id: this.userId });
@@ -317,9 +326,16 @@ export class SavedItemDataService {
    * which status the item is assigned when moved from the deleted state.
    * @param itemId
    */
-  public async updateSavedItemUnDelete(itemId): Promise<SavedItem> {
+  public async updateSavedItemUnDelete(
+    itemId: string,
+    updatedAt?: Date
+  ): Promise<SavedItem | null> {
+    const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const query: any = await this.getSavedItemTimeRead(itemId);
-
+    // Does not exist or was hard-deleted
+    if (query == null) {
+      return null;
+    }
     // This is a check to determine if the saved item was previously archived. Fun, right?
     const status =
       query.time_read === '0000-00-00 00:00:00'
@@ -329,7 +345,7 @@ export class SavedItemDataService {
     await this.db('list')
       .update({
         status,
-        time_updated: SavedItemDataService.formatDate(new Date()),
+        time_updated: timestamp,
         api_id_updated: this.apiId,
       })
       .where({ item_id: itemId, user_id: this.userId });

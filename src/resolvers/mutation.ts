@@ -94,13 +94,7 @@ export async function updateSavedItemFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
-    args.id,
-    true
-  );
-  context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.favoriteById(args.id);
 }
 
 /**
@@ -114,13 +108,7 @@ export async function updateSavedItemUnFavorite(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
-    args.id,
-    false
-  );
-  context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.unfavoriteById(args.id);
 }
 
 /**
@@ -134,13 +122,7 @@ export async function updateSavedItemArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
-    args.id,
-    true
-  );
-  context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.archiveById(args.id);
 }
 
 /**
@@ -154,13 +136,7 @@ export async function updateSavedItemUnArchive(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
-    args.id,
-    false
-  );
-  context.emitItemEvent(EventType.UNARCHIVE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.unarchiveById(args.id);
 }
 
 /**
@@ -174,12 +150,7 @@ export async function deleteSavedItem(
   args: { id: string },
   context: IContext
 ): Promise<string> {
-  // TODO: setup a process to delete saved items X number of days after deleted
-  const savedItemService = new SavedItemDataService(context);
-  await savedItemService.deleteSavedItem(args.id);
-  const savedItem = await savedItemService.getSavedItemById(args.id);
-  context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
-  return args.id;
+  return context.models.savedItem.deleteById(args.id);
 }
 
 /**
@@ -193,12 +164,7 @@ export async function updateSavedItemUnDelete(
   args: { id: string },
   context: IContext
 ): Promise<SavedItem> {
-  // TODO: when there is a process in place to permanently delete a saved item,
-  // check if saved item exists before attempting to undelete.
-  // TODO: Implement item undelete action
-  return await new SavedItemDataService(context).updateSavedItemUnDelete(
-    args.id
-  );
+  return context.models.savedItem.undeleteById(args.id);
 }
 
 /**
