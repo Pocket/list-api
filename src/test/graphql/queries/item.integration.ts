@@ -88,7 +88,7 @@ describe('item', () => {
     }
   `;
   const db = readClient();
-  const headers = { userid: '1' };
+  const headers = { userId: '1' };
   const date = new Date('2020-10-03 10:20:30'); // Consistent date for seeding
   const date1 = new Date('2020-10-03 10:30:30'); // Consistent date for seeding
 
@@ -310,6 +310,6 @@ describe('item', () => {
     const entities = res.body.data._entities;
     expect(entities.length).toEqual(1);
     expect(entities[0].itemId).toEqual('2');
-    expect(entities[0].savedItem).toBeNull;
+    expect(entities[0].savedItem).toBeNull();
   });
 });
