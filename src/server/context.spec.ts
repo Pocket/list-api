@@ -20,7 +20,6 @@ describe('context', () => {
     isArchived: false,
     item: {
       givenUrl: 'dont-care.com',
-      itemId: '1',
     },
   };
   describe('constructor', () => {

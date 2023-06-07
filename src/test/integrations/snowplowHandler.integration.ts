@@ -90,7 +90,6 @@ const testSavedItem: SavedItem = {
   status: 'UNREAD',
   item: {
     givenUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    itemId: '2',
   },
   _createdAt: 1626389735,
 };

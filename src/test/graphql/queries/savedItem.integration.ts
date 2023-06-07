@@ -137,12 +137,12 @@ describe('getSavedItemByItemId', () => {
     });
     expect(res.body.data?._entities[0].savedItemById).to.be.null;
   });
-  it('should resolve item by itemId or givenUrl', async () => {
+  it('should resolve item url', async () => {
     const variables = {
       userId: '1',
       itemId: '1',
     };
-    let GET_SAVED_ITEM_ITEM = `
+    const GET_SAVED_ITEM_ITEM = `
       query getSavedItem($userId: ID!, $itemId: ID!) {
         _entities(representations: { id: $userId, __typename: "User" }) {
           ... on User {
@@ -161,39 +161,12 @@ describe('getSavedItemByItemId', () => {
         }
       }
     `;
-    const res1 = await request(app).post(url).set(headers).send({
+    const res = await request(app).post(url).set(headers).send({
       query: GET_SAVED_ITEM_ITEM,
       variables,
     });
-    expect(res1.body.data?._entities[0].savedItemById.item.givenUrl).to.equal(
+    expect(res.body.data?._entities[0].savedItemById.item.givenUrl).to.equal(
       'http://abc'
-    );
-
-    GET_SAVED_ITEM_ITEM = `
-      query getSavedItem($userId: ID!, $itemId: ID!) {
-        _entities(representations: { id: $userId, __typename: "User" }) {
-          ... on User {
-            savedItemById(id: $itemId) {
-              id
-              url
-              isFavorite
-              favoritedAt
-              item {
-                ... on Item {
-                  itemId
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-    const res2 = await request(app).post(url).set(headers).send({
-      query: GET_SAVED_ITEM_ITEM,
-      variables,
-    });
-    expect(res2.body.data?._entities[0].savedItemById.item.itemId).to.equal(
-      '1'
     );
   });
 

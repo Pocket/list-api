@@ -23,7 +23,6 @@ describe('UnifiedEventHandler', () => {
     status: 'UNREAD',
     item: {
       givenUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      itemId: '2',
     },
   };
 
