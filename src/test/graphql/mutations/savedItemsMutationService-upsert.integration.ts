@@ -166,7 +166,6 @@ describe('UpsertSavedItem Mutation', () => {
             item {
               ... on Item {
                 givenUrl
-                itemId
               }
             }
             tags {
@@ -190,7 +189,6 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data._deletedAt).is.null;
       expect(data._version).is.null;
       expect(data.item.givenUrl).equals(variables.url);
-      expect(data.item.itemId).equals('8');
       expect(data.tags[0].name).equals('zebra');
       expect(data.archivedAt).is.null;
       expect(data.favoritedAt).is.null;
@@ -239,7 +237,6 @@ describe('UpsertSavedItem Mutation', () => {
               ... on Item {
                 __typename
                 givenUrl
-                itemId
               }
               ... on PendingItem {
                 __typename
