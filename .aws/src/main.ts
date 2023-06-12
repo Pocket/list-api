@@ -208,6 +208,10 @@ class ListAPI extends TerraformStack {
       tags: config.tags,
       cdn: false,
       domain: config.domain,
+      taskSize: {
+        cpu: 1024,
+        memory: 2048,
+      },
       containerConfigs: [
         {
           name: 'app',
@@ -425,8 +429,8 @@ class ListAPI extends TerraformStack {
           'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
       },
       autoscalingConfig: {
-        targetMinCapacity: config.environment === 'Prod' ? 10 : 2,
-        targetMaxCapacity: config.environment === 'Prod' ? 30 : 10,
+        targetMinCapacity: config.environment === 'Prod' ? 2 : 2,
+        targetMaxCapacity: config.environment === 'Prod' ? 10 : 10,
       },
       alarms: {
         http5xxErrorPercentage: {
