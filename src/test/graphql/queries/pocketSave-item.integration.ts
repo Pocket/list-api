@@ -28,7 +28,6 @@ describe('PocketSave.Item', () => {
                   __typename
                 }
                 ... on Item {
-                  itemId
                   givenUrl
                   __typename
                 }
@@ -117,7 +116,6 @@ describe('PocketSave.Item', () => {
         variables,
       });
     const expected = {
-      itemId: '55',
       givenUrl: 'https://www.youtube.com/watch?v=nsNMP6_Q0Js',
       __typename: 'Item',
     };
