@@ -1,5 +1,3 @@
-import { EventBatchProcessor } from './eventBatchProcessor';
-import { unifiedEventKinesisHandler } from './unifiedEventKinesisHandler';
 import { SqsListener } from './sqs/sqsListener';
 import { ItemsEventEmitter } from './itemsEventEmitter';
 import { SnowplowHandler } from './snowplowHandler';
@@ -10,25 +8,6 @@ import { EventType } from './types';
 import { EventBridgeHandler } from './eventBridgeHandler';
 
 export type ItemEventHandlerFn = (emitter: ItemsEventEmitter) => void;
-
-/**
- * @param emitter
- */
-export function unifiedEventHandler(emitter: ItemsEventEmitter): void {
-  // Create a list of event names (as strings) to register
-  // batch kinesis listener for unified event stream
-  const unifiedEventsToListen = Object.values(
-    config.aws.kinesis.unifiedEvents.events
-  ) as string[];
-  // Start event batch handler for unified events to kinesis
-  new EventBatchProcessor( // eslint-disable-line
-    emitter,
-    unifiedEventsToListen,
-    unifiedEventKinesisHandler,
-    config.aws.kinesis.interval,
-    config.aws.kinesis.maxBatch
-  );
-}
 
 /**
  * @param emitter

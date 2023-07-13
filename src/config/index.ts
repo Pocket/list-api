@@ -20,14 +20,6 @@ export default {
     region: process.env.AWS_REGION || 'us-east-1',
     endpoint: localAwsEndpoint,
     maxRetries: 3, // maximum number of retries for aws sdk requests
-    kinesis: {
-      unifiedEvents: {
-        streamName: 'unified_event',
-        events: EventType,
-      },
-      maxBatch: 500, // maximum batch size for kinesis
-      interval: 1000, // ms (approx) between processing batches
-    },
     eventBus: {
       name:
         process.env.EVENT_BUS_NAME || 'PocketEventBridge-Dev-Shared-Event-Bus',
