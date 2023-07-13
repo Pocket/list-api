@@ -68,45 +68,11 @@ export enum SQSEvents {
   DELETE_ITEM = 6,
 }
 
-export type UnifiedEventType =
-  | 'user-list-item-created'
-  | 'user-item-archived'
-  | 'user-item-deleted'
-  | 'item-resolved'
-  | 'user-item-tags-added'
-  | 'user-item-tags-removed'
-  | 'user-item-tags-replaced'
-  | 'user-item-favorited'
-  | 'user-item-unfavorited'
-  | 'user-item-unarchived';
-
 export type EventTypeString = keyof typeof EventType;
 export type RequiredEvents = Exclude<
   EventTypeString,
   'DELETE_TAG' | 'RENAME_TAG'
 >;
-export const UnifiedEventMap: Record<RequiredEvents, UnifiedEventType> = {
-  ADD_ITEM: 'user-list-item-created',
-  DELETE_ITEM: 'user-item-deleted',
-  ARCHIVE_ITEM: 'user-item-archived',
-  UNARCHIVE_ITEM: 'user-item-unarchived',
-  FAVORITE_ITEM: 'user-item-favorited',
-  UNFAVORITE_ITEM: 'user-item-unfavorited',
-  ADD_TAGS: 'user-item-tags-added',
-  REPLACE_TAGS: 'user-item-tags-replaced',
-  REMOVE_TAGS: 'user-item-tags-removed',
-  CLEAR_TAGS: 'user-item-tags-removed',
-};
-
-// Generic key-value object for json event data
-type GenericJsonData = {
-  [key: string]: any;
-};
-
-export type UnifiedEventPayload = BasicEventData & {
-  type: UnifiedEventType;
-  data: GenericJsonData;
-};
 
 export type SnowplowEventType =
   | 'save'

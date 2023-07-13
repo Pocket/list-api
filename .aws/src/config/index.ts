@@ -40,9 +40,7 @@ export const config = {
   envVars: {
     databasePort: '3306',
     sqsPublisherDataQueueName: 'pocket-publisher-data-queue',
-    sqsBatchDeleteQueueName: `${prefix}-Sqs-Batch-Delete-Consumer-Queue`,
     sqsPermLibItemMainQueueName: `PermLib-${environment}-ItemMain`,
-    unifiedEventStreamName: 'unified_event',
     databaseTz: 'US/Central',
     eventBusName: `PocketEventBridge-${environment}-Shared-Event-Bus`,
   },

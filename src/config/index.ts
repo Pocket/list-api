@@ -20,14 +20,6 @@ export default {
     region: process.env.AWS_REGION || 'us-east-1',
     endpoint: localAwsEndpoint,
     maxRetries: 3, // maximum number of retries for aws sdk requests
-    kinesis: {
-      unifiedEvents: {
-        streamName: 'unified_event',
-        events: EventType,
-      },
-      maxBatch: 500, // maximum batch size for kinesis
-      interval: 1000, // ms (approx) between processing batches
-    },
     eventBus: {
       name:
         process.env.EVENT_BUS_NAME || 'PocketEventBridge-Dev-Shared-Event-Bus',
@@ -39,17 +31,6 @@ export default {
         url:
           process.env.SQS_PUBLISHER_DATA_QUEUE_URL ||
           'http://localhost:4566/000000000000/pocket-publisher-data-queue',
-      },
-      listDeleteQueue: {
-        url:
-          process.env.SQS_BATCH_DELETE_QUEUE_URL ||
-          'http://localhost:4566/000000000000/pocket-list-delete-queue',
-        visibilityTimeout: 10000,
-        messageRetentionSeconds: 1209600,
-        maxMessages: 1,
-        waitTimeSeconds: 0,
-        defaultPollIntervalSeconds: 300,
-        afterMessagePollIntervalSeconds: 1,
       },
       permLibItemMainQueue: {
         events: [EventType.ADD_ITEM],

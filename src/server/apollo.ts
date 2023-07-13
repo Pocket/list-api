@@ -21,7 +21,6 @@ import {
   itemsEventEmitter,
   snowplowEventHandler,
   sqsEventHandler,
-  unifiedEventHandler,
 } from '../businessEvents';
 import { Knex } from 'knex';
 import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive/apollo4';
@@ -66,7 +65,6 @@ export async function startServer(port: number) {
 
   // Initialize event handlers
   initItemEventHandlers(itemsEventEmitter, [
-    unifiedEventHandler,
     sqsEventHandler,
     snowplowEventHandler,
     eventBridgeEventHandler,
