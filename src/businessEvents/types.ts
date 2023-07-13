@@ -68,18 +68,6 @@ export enum SQSEvents {
   DELETE_ITEM = 6,
 }
 
-export type UnifiedEventType =
-  | 'user-list-item-created'
-  | 'user-item-archived'
-  | 'user-item-deleted'
-  | 'item-resolved'
-  | 'user-item-tags-added'
-  | 'user-item-tags-removed'
-  | 'user-item-tags-replaced'
-  | 'user-item-favorited'
-  | 'user-item-unfavorited'
-  | 'user-item-unarchived';
-
 export type EventTypeString = keyof typeof EventType;
 export type RequiredEvents = Exclude<
   EventTypeString,

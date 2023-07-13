@@ -32,17 +32,6 @@ export default {
           process.env.SQS_PUBLISHER_DATA_QUEUE_URL ||
           'http://localhost:4566/000000000000/pocket-publisher-data-queue',
       },
-      listDeleteQueue: {
-        url:
-          process.env.SQS_BATCH_DELETE_QUEUE_URL ||
-          'http://localhost:4566/000000000000/pocket-list-delete-queue',
-        visibilityTimeout: 10000,
-        messageRetentionSeconds: 1209600,
-        maxMessages: 1,
-        waitTimeSeconds: 0,
-        defaultPollIntervalSeconds: 300,
-        afterMessagePollIntervalSeconds: 1,
-      },
       permLibItemMainQueue: {
         events: [EventType.ADD_ITEM],
         url:

@@ -249,16 +249,8 @@ class ListAPI extends TerraformStack {
               value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsPublisherDataQueueName}`,
             },
             {
-              name: 'SQS_BATCH_DELETE_QUEUE_URL',
-              value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsBatchDeleteQueueName}`,
-            },
-            {
               name: 'SQS_PERMLIB_ITEMMAIN_QUEUE_URL',
               value: `https://sqs.${region.name}.amazonaws.com/${caller.accountId}/${config.envVars.sqsPermLibItemMainQueueName}`,
-            },
-            {
-              name: 'KINESIS_UNIFIED_EVENT_STREAM',
-              value: config.envVars.unifiedEventStreamName,
             },
             {
               name: 'DATABASE_TZ',
@@ -394,26 +386,6 @@ class ListAPI extends TerraformStack {
             resources: [
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPublisherDataQueueName}`,
               `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsPermLibItemMainQueueName}`,
-            ],
-            effect: 'Allow',
-          },
-          {
-            //no permission for batchReceive as we want only one message polled at a time
-            actions: [
-              'sqs:ReceiveMessage',
-              'sqs:DeleteMessage',
-              'sqs:SendMessage',
-              'sqs:SendMessageBatch',
-            ],
-            resources: [
-              `arn:aws:sqs:${region.name}:${caller.accountId}:${config.envVars.sqsBatchDeleteQueueName}`,
-            ],
-            effect: 'Allow',
-          },
-          {
-            actions: ['kinesis:PutRecord', 'kinesis:PutRecords'],
-            resources: [
-              `arn:aws:kinesis:${region.name}:${caller.accountId}:stream/${config.envVars.unifiedEventStreamName}`,
             ],
             effect: 'Allow',
           },
