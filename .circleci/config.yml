@@ -3,7 +3,7 @@ version: 2.1
 setup: true
 
 orbs:
-  pocket: pocket/circleci-orbs@1.3.1
+  pocket: pocket/circleci-orbs@2.2.0
   aws-cli: circleci/aws-cli@1.2.1
   backstage-entity-validator: roadiehq/backstage-entity-validator@0.4.2
   path-filtering: circleci/path-filtering@0.1.5
@@ -60,7 +60,7 @@ slack-fail-post-step: &slack-fail-post-step
 jobs:
   apollo:
     docker:
-      - image: cimg/base:2023.05@sha256:6a428205b5323279319ca9ff73e81b3e78135dceff6aa84aa8609771f139040b
+      - image: cimg/node:18.16
     steps:
       - checkout
       - attach_workspace:
@@ -92,7 +92,7 @@ jobs:
                 command: rover subgraph publish pocket-client-api@development --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --routing-url https://list-api.getpocket.dev/ --name=list
   build:
     docker:
-      - image: circleci/node:18
+      - image: circleci/node:18.16
     steps:
       - checkout
       # Define the working directory for this job
@@ -129,7 +129,7 @@ jobs:
   test_integrations:
     description: Run integration tests against external services, e.g. MySQL
     docker:
-      - image: circleci/node:18
+      - image: circleci/node:18.16
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -137,7 +137,7 @@ jobs:
           NODE_ENV: test
           AWS_XRAY_LOG_LEVEL: silent
           AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
-      - image: mysql:5.6@sha256:20575ecebe6216036d25dab5903808211f1e9ba63dc7825ac20cb975e34cfcae
+      - image: mysql:5.7
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -180,7 +180,7 @@ jobs:
   test_specs:
     description: Run spec tests
     docker:
-      - image: circleci/node:18
+      - image: circleci/node:18.16
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -203,6 +203,9 @@ jobs:
 workflows:
   all:
     jobs:
+      - pocket/node_lint_check:
+          <<: *not_main
+
       - test_specs:
           <<: *not_main
           context: pocket
@@ -332,6 +335,8 @@ workflows:
           sentry_env: production
           sentry_org: pocket
           workspace-path: /tmp/workspace
+          source-maps-path: /tmp/workspace/app_prod/dist
+          inject-source-maps: true
           requires:
             - deploy_prod
 
@@ -345,5 +350,7 @@ workflows:
           sentry_env: development
           sentry_org: pocket
           workspace-path: /tmp/workspace
+          source-maps-path: /tmp/workspace/app_prod/dist
+          inject-source-maps: true
           requires:
             - deploy_dev
