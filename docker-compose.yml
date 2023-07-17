@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mysql:
-    image: mysql:5.6@sha256:20575ecebe6216036d25dab5903808211f1e9ba63dc7825ac20cb975e34cfcae
+    image: mysql:5.7
     env_file:
       - ./.docker/local.env
     environment:
@@ -40,8 +40,8 @@ services:
       - ./.docker/localstack:/etc/localstack/init/ready.d
 
   otlpcollector:
-    image: amazon/aws-otel-collector@sha256:1addb52aaf4880455aaabcc934924d735212d95e81f5a5fa44ee6a61fa03b8f1
-    command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=debug
+    image: amazon/aws-otel-collector
+    command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=error
     env_file:
       - .docker/local.env
     ports:
@@ -50,13 +50,11 @@ services:
 
   snowplow:
     image: pocket/snowplow-micro:prod
-    platform: linux/amd64
     ports:
       - '9090:9090'
 
   app:
-    image: node:16@sha256:550f484fc5f314b575f5e397c9e2c71d7f218e59729fcda9ffa7ea1fc825dce7
-    platform: linux/amd64
+    image: node:18
     working_dir: /app
     ports:
       - '4005:4005'

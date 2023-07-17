@@ -92,7 +92,7 @@ jobs:
                 command: rover subgraph publish pocket-client-api@development --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --routing-url https://list-api.getpocket.dev/ --name=list
   build:
     docker:
-      - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
+      - image: circleci/node:18
     steps:
       - checkout
       # Define the working directory for this job
@@ -129,7 +129,7 @@ jobs:
   test_integrations:
     description: Run integration tests against external services, e.g. MySQL
     docker:
-      - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
+      - image: circleci/node:18
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -142,7 +142,7 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
         environment:
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
           TZ: 'UTC'
       - image: localstack/localstack@sha256:9e672725b3937f55b69c5c6afe3311d3ac034aab753633ceb2779a1efbba5c7d
         auth:
@@ -180,7 +180,7 @@ jobs:
   test_specs:
     description: Run spec tests
     docker:
-      - image: circleci/node:16.13.1@sha256:1803e9ed7deec9456ad2609124b7333d40b2eec0cf34998ae766cbf90c9a3625
+      - image: circleci/node:18
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
