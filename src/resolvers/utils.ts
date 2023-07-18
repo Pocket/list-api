@@ -74,7 +74,7 @@ export function convertToTagSaveAssociations(
  * @param attr The attribute of the parent to request
  * @returns The value keyed by `attr` of the parent or fetched object.
  */
-export async function lazyParentLoad<T, K, A extends keyof T>(
+export async function lazyParentLoad<T extends object, K, A extends keyof T>(
   key: K,
   loader: DataLoader<K, T>,
   parent: T,
