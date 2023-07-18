@@ -7,7 +7,7 @@ import { ItemResponse } from '../externalCaller/parserCaller';
 import * as Sentry from '@sentry/node';
 import { setTimeout } from 'timers/promises';
 import { chunk } from 'lodash';
-import { serverLogger } from '../server/apollo';
+import { serverLogger } from '../server/logger';
 
 type DbResult = {
   user_id?: number;

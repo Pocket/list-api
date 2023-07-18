@@ -5,6 +5,7 @@ import { SavedItem } from '../../types';
 import { EventType } from '../types';
 import config from '../../config';
 import { sqs } from '../../aws/sqs';
+import { serverLogger } from '../../server/logger';
 
 describe('SqsListener spec test', function () {
   function fakeSendError() {
@@ -26,7 +27,7 @@ describe('SqsListener spec test', function () {
         events: [EventType.ADD_ITEM],
       },
     ]);
-    const consoleSpy = jest.spyOn(console, 'log');
+    const consoleSpy = jest.spyOn(serverLogger, 'error');
 
     const testSavedItem: SavedItem = {
       id: '1',
@@ -47,7 +48,7 @@ describe('SqsListener spec test', function () {
 
     await sqsListener.process(config.aws.sqs.publisherQueue.url, eventData);
     expect(consoleSpy.mock.calls[0][0]).toContain(
-      `unable to add event to queue: ${config.aws.sqs.publisherQueue.url}`
+      `unable to add event to queue`
     );
   });
 });

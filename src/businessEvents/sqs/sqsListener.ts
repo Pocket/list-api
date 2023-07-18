@@ -3,7 +3,7 @@ import { SendMessageCommand, SQS } from '@aws-sdk/client-sqs';
 import { ItemsEventEmitter } from '../itemsEventEmitter';
 import { EventTransFormer } from './transformers';
 import { sqs } from '../../aws/sqs';
-import { serverLogger } from '../../server/apollo';
+import { serverLogger } from '../../server/logger';
 
 /**
  * SQSListener receives business events and adds them to the queue

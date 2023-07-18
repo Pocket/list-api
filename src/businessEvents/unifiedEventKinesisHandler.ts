@@ -12,7 +12,7 @@ import {
   UnifiedEventMap,
   UnifiedEventPayload,
 } from './types';
-import { serverLogger } from '../server/apollo';
+import { serverLogger } from '../server/logger';
 
 /**
  * Transform an ItemEventPayload into the format expected for UnifiedEvents.

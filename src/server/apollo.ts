@@ -26,8 +26,8 @@ import {
 import { Knex } from 'knex';
 import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive/apollo4';
 import { schema } from './schema';
-import { setLogger, setMorgan } from '@pocket-tools/ts-logger';
-export const serverLogger = setLogger();
+import { setMorgan } from '@pocket-tools/ts-logger';
+import { serverLogger } from './logger';
 
 /**
  * Stopgap method to set global db connection in context,

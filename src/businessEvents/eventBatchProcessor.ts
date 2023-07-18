@@ -1,7 +1,7 @@
 import util from 'util';
 import { EventEmitter } from 'events';
 import * as Sentry from '@sentry/node';
-import { serverLogger } from '../server/apollo';
+import { serverLogger } from '../server/logger';
 
 // Generic type for an event handler based on the data it processes
 type EventDataHandler<T> = (data: T) => Promise<void>;
@@ -99,7 +99,7 @@ export class EventBatchProcessor<T> {
       await this.handlerFn(eventBatch);
     } catch (e) {
       serverLogger.error(`Failed event batch`, {
-        eventBatchh: JSON.stringify(eventBatch),
+        eventBatch: JSON.stringify(eventBatch),
         error: e,
       });
       Sentry.captureException(e);

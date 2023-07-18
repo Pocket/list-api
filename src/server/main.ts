@@ -7,4 +7,5 @@ nodeSDKBuilder().then(async () => {
   serverLogger.info(`🚀 Public server ready at http://localhost:4005`);
 });
 
-import { serverLogger, startServer } from './apollo';
+import { startServer } from './apollo';
+import { serverLogger } from './logger';

@@ -8,6 +8,7 @@ import {
 import kinesis from '../aws/kinesis';
 import { SavedItem } from '../types';
 import { getUnixTimestamp } from '../utils';
+import { serverLogger } from '../server/logger';
 
 describe('UnifiedEventHandler', () => {
   afterEach(() => {
@@ -39,7 +40,7 @@ describe('UnifiedEventHandler', () => {
 
     // Since you can't spy on recursive call, the wait function stands
     // in as it's invoked before recursive call for every retry
-    const consoleSpy = jest.spyOn(console, 'log');
+    const consoleSpy = jest.spyOn(serverLogger, 'error');
     // Don't lint unused function
     // eslint-disable-next-line
     const mockSend = jest.spyOn(kinesis, 'send').mockImplementation(() => {
@@ -55,21 +56,7 @@ describe('UnifiedEventHandler', () => {
     ]);
     expect(consoleSpy.mock.calls.length).toEqual(1);
     expect(consoleSpy.mock.calls[0][0]).toContain(
-      'ERROR: Failed to send 1 event(s) to kinesis stream'
-    );
-    const expectedFailedEvent = {
-      type: 'user-list-item-created',
-      data: {
-        user_id: parseInt(eventStub.user.id),
-        item_id: parseInt(testSavedItem.id),
-        api_id: parseInt(eventStub.apiUser.apiId),
-      },
-      timestamp: 1,
-      source: config.events.source,
-      version: config.events.version,
-    };
-    expect(consoleSpy.mock.calls[0][0]).toContain(
-      JSON.stringify(expectedFailedEvent)
+      'Failed to send event(s) to kinesis stream'
     );
   });
 

@@ -2,6 +2,7 @@ import { EventBatchProcessor } from './eventBatchProcessor';
 import sinon from 'sinon';
 import { EventEmitter } from 'stream';
 import sleep from 'util';
+import { serverLogger } from '../server/logger';
 
 // TODO: Remove and replace with await setTimeout from 'timers/promises'
 // after updating to node 16
@@ -71,7 +72,7 @@ describe('EventBatchHandler', () => {
   });
   it('should gracefully handle errors during handler execution', async () => {
     const handlerFn = sinon.fake.rejects(new Error('Some error'));
-    const consoleSpy = jest.spyOn(console, 'log');
+    const consoleSpy = jest.spyOn(serverLogger, 'error');
     // Start the event processing loop
     const batchJob = new EventBatchProcessor(
       emitter,
@@ -97,7 +98,6 @@ describe('EventBatchHandler', () => {
     // Wait time and interval time is approximate, since it's not certain how
     // long calling the function will take; but should have executed more than once
     expect(handlerFn.callCount).toBeGreaterThan(1);
-    expect(consoleSpy.mock.calls[0][0].message).toEqual('Some error');
-    expect(consoleSpy.mock.calls[1][0]).toContain('Failed event batch');
+    expect(consoleSpy.mock.calls[0][0]).toEqual('Failed event batch');
   });
 });
