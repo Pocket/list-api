@@ -12,6 +12,7 @@ import {
   UnifiedEventMap,
   UnifiedEventPayload,
 } from './types';
+import { serverLogger } from '../server/apollo';
 
 /**
  * Transform an ItemEventPayload into the format expected for UnifiedEvents.
@@ -109,12 +110,17 @@ export async function unifiedEventKinesisHandler(
       },
       []
     );
-    const errorMessage = `ERROR: Failed to send ${
-      failedEvents.length
-    } event(s) to kinesis stream '${
-      config.aws.kinesis.unifiedEvents.streamName
-    }'. Failed Events: \n ${JSON.stringify(failedEvents)}`;
-    console.log(errorMessage);
-    Sentry.captureException(new Error(errorMessage));
+    serverLogger.error('Failed to send event(s) to kinesis stream', {
+      stream: config.aws.kinesis.unifiedEvents.streamName,
+      events: JSON.stringify(failedEvents),
+    });
+    Sentry.addBreadcrumb({
+      message: `Failed Events: \n ${JSON.stringify(failedEvents)}`,
+    });
+    Sentry.captureException(
+      new Error(
+        `Failed to send events to kinesis ${config.aws.kinesis.unifiedEvents.streamName}`
+      )
+    );
   }
 }

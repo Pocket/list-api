@@ -4,6 +4,7 @@ import {
   PutEventsCommandOutput,
 } from '@aws-sdk/client-eventbridge';
 import * as Sentry from '@sentry/node';
+import { serverLogger } from '../server/apollo';
 
 /**
  * Shared class for wrapping put event command in EventBridge client
@@ -27,18 +28,18 @@ export class EventBridgeBase {
     try {
       const output: PutEventsCommandOutput = await this.client.send(command);
       if (output.FailedEntryCount) {
+        serverLogger.error(failedEventError);
         // Capture failed events in Sentry and Cloudwatch
         Sentry.captureException(failedEventError);
-        console.error(failedEventError);
       }
     } catch (error) {
+      serverLogger.error(
+        failedEventError.message + ` OriginalError: ${error.message}`
+      );
       // Capture full client send failure in Sentry and Cloudwatch
       Sentry.captureException(failedEventError, {
         extra: { originalError: error.message },
       });
-      console.error(
-        failedEventError.message + ` OriginalError: ${error.message}`
-      );
     }
   }
 }
