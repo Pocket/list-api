@@ -138,6 +138,9 @@ jobs:
           AWS_XRAY_LOG_LEVEL: silent
           AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
       - image: mysql:5.7
+        command:
+          - mysqld
+          - --sql_mode=NO_ENGINE_SUBSTITUTION
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD

@@ -13,6 +13,9 @@ services:
       timeout: 20s
       retries: 10
     platform: linux/amd64
+    command:
+      - mysqld
+      - --sql_mode=NO_ENGINE_SUBSTITUTION
     ports:
       - '3309:3306'
     volumes:
