@@ -7,6 +7,7 @@ import { ItemResponse } from '../externalCaller/parserCaller';
 import * as Sentry from '@sentry/node';
 import { setTimeout } from 'timers/promises';
 import { chunk } from 'lodash';
+import { serverLogger } from '../server/logger';
 
 type DbResult = {
   user_id?: number;
@@ -298,16 +299,21 @@ export class SavedItemDataService {
           .whereIn('item_id', itemIds)
           .andWhere({ user_id: this.userId });
 
-        if (requestId) {
-          console.log(`BatchDelete: Processing request ID=${requestId}`);
-        }
-        console.log(
-          `BatchDelete: deleted row from table: ${table} for user: ${
-            this.userId
-          } and itemIds: ${JSON.stringify(itemIds)}`
-        );
+        serverLogger.info('BatchDelete: deleted row', {
+          table,
+          userId: this.userId,
+          itemIds: itemIds,
+          requestId: requestId ?? 'no-request-id',
+        });
         await setTimeout(config.batchDelete.deleteDelayInMilliSec);
       } catch (error) {
+        serverLogger.error('BatchDelete: Error deleting from table', {
+          table,
+          userId: this.userId,
+          itemIds: itemIds,
+          requestId: requestId ?? 'no-request-id',
+          error,
+        });
         const message =
           `BatchDelete: Error deleting from table ${table}` +
           `for itemId:  ${JSON.stringify(itemIds)} for (userId=${
@@ -315,8 +321,6 @@ export class SavedItemDataService {
           }, requestId=${requestId}).`;
         Sentry.addBreadcrumb({ message });
         Sentry.captureException(error);
-        console.log(message);
-        console.log(error);
       }
     }
   }

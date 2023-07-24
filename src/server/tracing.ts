@@ -24,6 +24,7 @@ import {
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express/build/src/enums/ExpressLayerType';
+import { serverLogger } from './logger';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -98,9 +99,9 @@ export async function nodeSDKBuilder() {
   process.on('SIGTERM', () => {
     sdk
       .shutdown()
-      .then(() => console.log('Tracing and Metrics terminated'))
+      .then(() => serverLogger.info('Tracing and Metrics terminated'))
       .catch((error) =>
-        console.log('Error terminating tracing and metrics', error)
+        serverLogger.error('Error terminating tracing and metrics', error)
       )
       .finally(() => process.exit(0));
   });
