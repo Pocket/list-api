@@ -15,6 +15,7 @@ export default {
   app: {
     environment: process.env.NODE_ENV || 'development',
     depthLimit: 8,
+    port: 4005,
   },
   aws: {
     region: process.env.AWS_REGION || 'us-east-1',

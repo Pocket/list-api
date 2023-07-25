@@ -12,6 +12,7 @@ import {
   UnifiedEventMap,
   UnifiedEventPayload,
 } from './types';
+import { serverLogger } from '../server/apollo';
 
 /**
  * Transform an ItemEventPayload into the format expected for UnifiedEvents.
@@ -114,7 +115,7 @@ export async function unifiedEventKinesisHandler(
     } event(s) to kinesis stream '${
       config.aws.kinesis.unifiedEvents.streamName
     }'. Failed Events: \n ${JSON.stringify(failedEvents)}`;
-    console.log(errorMessage);
+    serverLogger.error(errorMessage);
     Sentry.captureException(new Error(errorMessage));
   }
 }

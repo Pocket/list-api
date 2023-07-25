@@ -1,6 +1,8 @@
 import util from 'util';
 import { EventEmitter } from 'events';
 import * as Sentry from '@sentry/node';
+import { NotFoundError } from '@pocket-tools/apollo-utils';
+import { serverLogger } from '../server/apollo';
 
 // Generic type for an event handler based on the data it processes
 type EventDataHandler<T> = (data: T) => Promise<void>;
@@ -89,7 +91,7 @@ export class EventBatchProcessor<T> {
     // This might be an indication that the batch processing can't catch up to the
     // event generation rate.
     if (this.eventDataQueue.length > this.batchSize) {
-      console.log(`WARNING: ${this.eventDataQueue.length} events still in queue after batch processing on '${this.eventNames}'
+      serverLogger.warn(`WARNING: ${this.eventDataQueue.length} events still in queue after batch processing on '${this.eventNames}'
       Ensure the processing interval is small enough so the queue doesn't grow faster than it can be processed.`);
     }
     try {
@@ -97,7 +99,7 @@ export class EventBatchProcessor<T> {
     } catch (e) {
       console.log(e);
       Sentry.captureException(e);
-      console.log(`Failed event batch: ${JSON.stringify(eventBatch)}`);
+      serverLogger.error(`Failed event batch: ${JSON.stringify(eventBatch)}`);
     }
   }
   /**

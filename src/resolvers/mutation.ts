@@ -14,6 +14,7 @@ import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { getSavedItemTagsMap } from './utils';
 import { TagModel } from '../models';
+import { serverLogger } from '../server/apollo';
 
 /**
  * Create or re-add a saved item in a user's list.
@@ -59,7 +60,7 @@ export async function upsertSavedItem(
     );
 
     if (upsertedItem == undefined) {
-      console.info(`savedUrl: ${savedItemUpsertInput.url}`);
+      serverLogger.info(`savedUrl: ${savedItemUpsertInput.url}`);
       throw new Error(`unable to add an item`);
     }
 
@@ -77,7 +78,7 @@ export async function upsertSavedItem(
     }
     return upsertedItem;
   } catch (e) {
-    console.log(e.message);
+    serverLogger.error(e.message);
     Sentry.captureException(e);
     throw new Error(`unable to add item with url: ${savedItemUpsertInput.url}`);
   }

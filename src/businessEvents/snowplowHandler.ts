@@ -16,6 +16,7 @@ import {
 import { ItemsEventEmitter } from './itemsEventEmitter';
 import config from '../config';
 import { SavedItem } from '../types';
+import { serverLogger } from '../server/apollo';
 
 type ListItemUpdateEvent = Omit<SelfDescribingJson, 'data'> & {
   data: ListItemUpdate;
@@ -73,7 +74,7 @@ export class SnowplowHandler {
       await this.tracker.track(event, context);
     } catch (ex) {
       const message = `Failed to send event to snowplow.\n event: ${event}\n context: ${context}`;
-      console.log(message);
+      serverLogger.error(message);
       Sentry.addBreadcrumb({ message });
       Sentry.captureException(ex);
     }

@@ -7,6 +7,7 @@ import { ItemResponse } from '../externalCaller/parserCaller';
 import * as Sentry from '@sentry/node';
 import { setTimeout } from 'timers/promises';
 import { chunk } from 'lodash';
+import { serverLogger } from '../server/apollo';
 
 type DbResult = {
   user_id?: number;
@@ -299,9 +300,9 @@ export class SavedItemDataService {
           .andWhere({ user_id: this.userId });
 
         if (requestId) {
-          console.log(`BatchDelete: Processing request ID=${requestId}`);
+          serverLogger.info(`BatchDelete: Processing request ID=${requestId}`);
         }
-        console.log(
+        serverLogger.info(
           `BatchDelete: deleted row from table: ${table} for user: ${
             this.userId
           } and itemIds: ${JSON.stringify(itemIds)}`
@@ -315,8 +316,8 @@ export class SavedItemDataService {
           }, requestId=${requestId}).`;
         Sentry.addBreadcrumb({ message });
         Sentry.captureException(error);
-        console.log(message);
-        console.log(error);
+        serverLogger.error(message);
+        serverLogger.error(error);
       }
     }
   }

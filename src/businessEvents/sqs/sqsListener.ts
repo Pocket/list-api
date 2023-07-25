@@ -3,6 +3,7 @@ import { SendMessageCommand, SQS } from '@aws-sdk/client-sqs';
 import { ItemsEventEmitter } from '../itemsEventEmitter';
 import { EventTransFormer } from './transformers';
 import { sqs } from '../../aws/sqs';
+import { serverLogger } from '../../server/apollo';
 
 /**
  * SQSListener receives business events and adds them to the queue
@@ -36,7 +37,7 @@ export class SqsListener {
       await this.sqs.send(sendCommand);
     } catch (err) {
       const errorMessage = `unable to add event to queue: ${queueUrl}`;
-      console.log(errorMessage, err, { data: JSON.stringify(data) });
+      serverLogger.error(errorMessage, err, { data: JSON.stringify(data) });
       Sentry.captureMessage(errorMessage);
     }
   }
