@@ -57,7 +57,7 @@
     "lodash": "4.17.21",
     "luxon": "2.5.2",
     "mysql": "2.18.1",
-    "nanoid": "3.3.6"
+    "nanoid": "4.0.2"
   },
   "devDependencies": {
     "@pocket-tools/eslint-config": "2.1.2",
