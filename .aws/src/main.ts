@@ -110,8 +110,9 @@ class ListAPI extends TerraformStack {
     return new PocketPagerDuty(this, 'pagerduty', {
       prefix: config.prefix,
       service: {
+        // This is a Tier 2 service and as such only raises non-critical alarms.
         criticalEscalationPolicyId: incidentManagement
-          .get('policy_default_critical_id')
+          .get('policy_default_non_critical_id')
           .toString(),
         nonCriticalEscalationPolicyId: incidentManagement
           .get('policy_default_non_critical_id')
@@ -446,7 +447,7 @@ class ListAPI extends TerraformStack {
           threshold: 25,
           evaluationPeriods: 4,
           period: 300,
-          actions: config.isDev ? [] : [pagerDuty.snsCriticalAlarmTopic.arn],
+          actions: config.isDev ? [] : [pagerDuty.snsNonCriticalAlarmTopic.arn],
         },
       },
     });
