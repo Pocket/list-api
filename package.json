@@ -48,7 +48,7 @@
     "dataloader": "2.0.0",
     "express": "4.18.2",
     "express-validator": "6.14.3",
-    "graphql": "16.6.0",
+    "graphql": "16.8.1",
     "graphql-constraint-directive": "5.0.0",
     "graphql-depth-limit": "1.1.0",
     "graphql-tag": "2.12.6",
