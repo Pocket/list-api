@@ -13,7 +13,7 @@
     "lint-fix": "eslint --fix \"src/**/*.ts\""
   },
   "dependencies": {
-    "@apollo/server": "4.7.4",
+    "@apollo/server": "4.9.3",
     "@apollo/server-plugin-landing-page-graphql-playground": "4.0.0",
     "@apollo/subgraph": "2.4.5",
     "@aws-sdk/client-eventbridge": "3.92.0",
