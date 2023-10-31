@@ -40,7 +40,7 @@ export function createConnection(dbConfig: {
   const { host, port, user, password } = dbConfig;
 
   return knex({
-    client: 'mysql',
+    client: 'mysql2',
     acquireConnectionTimeout: 6000, // ms
     connection: {
       host: host,

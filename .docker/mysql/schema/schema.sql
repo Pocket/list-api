@@ -2,6 +2,8 @@ CREATE DATABASE IF NOT EXISTS `readitla_ril-tmp`;
 
 USE readitla_ril-tmp;
 
+SET GLOBAL explicit_defaults_for_timestamp = 0;
+
 -- table with a user's list
 CREATE TABLE IF NOT EXISTS `list` (
   `user_id` int(10) unsigned NOT NULL,
@@ -115,6 +117,8 @@ CREATE TABLE `items_scroll` (
 
 CREATE DATABASE IF NOT EXISTS `readitla_b`;
 USE readitla_b;
+
+SET GLOBAL explicit_defaults_for_timestamp = 0;
 
 -- Suggested Tags Tables
 CREATE TABLE `grouping`

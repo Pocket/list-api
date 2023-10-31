@@ -56,7 +56,7 @@
     "locutus": "2.0.16",
     "lodash": "4.17.21",
     "luxon": "2.5.2",
-    "mysql": "2.18.1",
+    "mysql2": "^3.6.2",
     "nanoid": "3.3.6"
   },
   "devDependencies": {
