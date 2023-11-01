@@ -12,7 +12,6 @@ import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
-import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
 import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
 import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -78,7 +77,6 @@ export async function nodeSDKBuilder() {
         ignoreIncomingPaths: ['/.well-known/apollo/server-health'],
       }),
       new KnexInstrumentation({}),
-      new MySQLInstrumentation({}),
       new MySQL2Instrumentation({}),
       new NetInstrumentation({}),
     ],

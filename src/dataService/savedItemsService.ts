@@ -168,7 +168,9 @@ export class SavedItemDataService {
    */
   public async getSavedItemTimeRead(itemId: string): Promise<any> {
     return this.db('list')
-      .select(this.db.raw('SQL_NO_CACHE time_read'))
+      .select(
+        this.db.raw('SQL_NO_CACHE UNIX_TIMESTAMP(time_read) as time_read')
+      )
       .where({ item_id: itemId, user_id: this.userId })
       .first();
   }
@@ -342,9 +344,7 @@ export class SavedItemDataService {
     }
     // This is a check to determine if the saved item was previously archived. Fun, right?
     const status =
-      query.time_read === '0000-00-00 00:00:00'
-        ? SavedItemStatus.UNREAD
-        : SavedItemStatus.ARCHIVED;
+      query.time_read === 0 ? SavedItemStatus.UNREAD : SavedItemStatus.ARCHIVED;
 
     await this.db('list')
       .update({
