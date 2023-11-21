@@ -383,9 +383,11 @@ export class TagDataService {
     //clear first, so we can get rid of noisy data if savedItem doesn't exist.
     await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.deleteTagsByItemId(savedItemId).transacting(trx);
-      await this.savedItemService
-        .updateListItemOne(savedItemId)
-        .transacting(trx);
+      await Promise.all(
+        this.savedItemService
+          .updateListItemOne(savedItemId)
+          .map((query) => query.transacting(trx))
+      );
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
 

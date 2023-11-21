@@ -214,7 +214,9 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
-      await this.syncShadowTable(row, trx);
+      if (row != null) {
+        await this.syncShadowTable(row, trx);
+      }
     });
     // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
@@ -250,7 +252,9 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
-      await this.syncShadowTable(row, trx);
+      if (row != null) {
+        await this.syncShadowTable(row, trx);
+      }
     });
     // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
@@ -309,8 +313,9 @@ export class SavedItemDataService {
         .where({ item_id: itemId, user_id: this.userId });
 
       const row = await this.getSavedItemByIdRaw(itemId, transaction);
-      await this.syncShadowTable(row, transaction);
-
+      if (row != null) {
+        await this.syncShadowTable(row, transaction);
+      }
       await transaction.commit();
     } catch (err) {
       await transaction.rollback();
@@ -346,7 +351,9 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
-      await this.syncShadowTable(row, trx);
+      if (row != null) {
+        await this.syncShadowTable(row, trx);
+      }
     });
     // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
@@ -389,7 +396,9 @@ export class SavedItemDataService {
         .onConflict()
         .merge();
       const row = await this.getSavedItemByIdRaw(item.itemId, trx);
-      await this.syncShadowTable(row, trx);
+      if (row != null) {
+        await this.syncShadowTable(row, trx);
+      }
     });
     // TODO: Can make this simpler
     return await this.getSavedItemById(item.itemId.toString());
@@ -404,10 +413,14 @@ export class SavedItemDataService {
     itemIds: string[],
     timestamp?: Date
   ): Knex.QueryBuilder[] {
-    const itemBatches = chunk(itemIds, config.database.maxTransactionSize);
-    return itemBatches.map((ids) =>
-      this.listItemUpdateBuilder(timestamp).whereIn('item_id', ids)
-    );
+    const itemBatches = chunk(itemIds, config.database.maxTransactionSize / 2);
+    return itemBatches.flatMap((ids) => {
+      const queries = this.listItemUpdateBuilder(timestamp);
+      return [
+        queries[0].whereIn('item_id', ids),
+        queries[1].whereIn('item_id', ids),
+      ];
+    });
   }
 
   /**
@@ -415,8 +428,9 @@ export class SavedItemDataService {
    * the list table, by item id.
    * @param itemId
    */
-  public updateListItemOne(itemId: string): Knex.QueryBuilder {
-    return this.listItemUpdateBuilder().where('item_id', itemId);
+  public updateListItemOne(itemId: string): Array<Knex.QueryBuilder> {
+    const base = this.listItemUpdateBuilder();
+    return [base[0].where('item_id', itemId), base[1].where('item_id', itemId)];
   }
 
   /**
@@ -442,12 +456,14 @@ export class SavedItemDataService {
    * Do not run this query as-is. Should only be used to compose other
    * queries. That's why it's private :)
    */
-  private listItemUpdateBuilder(timestamp?: Date): Knex.QueryBuilder {
-    return this.db('list')
+  private listItemUpdateBuilder(timestamp?: Date): Array<Knex.QueryBuilder> {
+    // TODO: Return the 'list_schema_update' version of this
+    const base = this.db
       .update({
         time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),
         api_id_updated: this.apiId,
       })
       .andWhere('user_id', this.userId);
+    return [base.clone().from('list'), base.clone().from('list_schema_update')];
   }
 }

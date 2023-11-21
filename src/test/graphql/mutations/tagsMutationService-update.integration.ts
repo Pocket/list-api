@@ -243,8 +243,9 @@ describe('updateTag Mutation: ', () => {
       variables,
     });
     expect(saveServiceUpdateSpy.callCount).to.equal(1);
-    // Expect batch of two calls, and all three are in response
-    expect(saveServiceUpdateSpy.getCall(0).returnValue.length).to.equal(2);
+    // Expect 1 batch of four calls (2 groups of ids x 2 tables [list + list_schema_update])
+    expect(saveServiceUpdateSpy.getCall(0).returnValue.length).to.equal(4);
+    // Expect 3 items in response
     expect(res.body.data.updateTag.savedItems.edges.length).to.equal(3);
   });
   it('should log the tag mutation', async () => {

@@ -103,7 +103,6 @@ describe('tags on saved items', () => {
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0]).toStrictEqual(expected);
-    console.log(JSON.stringify(res));
   });
   describe('for multiple tags on a save', () => {
     const savedItemByIdId = count + startId - 1;
