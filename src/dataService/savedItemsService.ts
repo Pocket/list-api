@@ -6,7 +6,7 @@ import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import { chunk } from 'lodash';
 
-type DbResult = {
+export type ListEntity = {
   user_id?: number;
   item_id?: number;
   resolved_id?: number;
@@ -43,20 +43,20 @@ export class SavedItemDataService {
     this.apiId = context.apiId;
   }
 
-  public static convertDbResultStatus(dbResult: DbResult): DbResult;
-  public static convertDbResultStatus(dbResult: DbResult[]): DbResult[];
+  public static convertDbResultStatus(dbResult: ListEntity): ListEntity;
+  public static convertDbResultStatus(dbResult: ListEntity[]): ListEntity[];
   /**
    * Convert the `status` field in the list table to the expected
    * GraphQL ENUM string
    * @param dbResult
    */
   public static convertDbResultStatus(
-    dbResult: DbResult | DbResult[]
-  ): DbResult | DbResult[] {
+    dbResult: ListEntity | ListEntity[]
+  ): ListEntity | ListEntity[] {
     if (dbResult == null) {
       return dbResult;
     }
-    const statusConvert = (row: DbResult) => {
+    const statusConvert = (row: ListEntity) => {
       if (row.status != null) {
         row.status = SavedItemDataService.statusMap[row.status];
       }
@@ -124,6 +124,22 @@ export class SavedItemDataService {
   }
 
   /**
+   *
+   * @param itemId
+   * @param trx
+   * @returns
+   */
+  public getSavedItemByIdRaw(
+    itemId: string,
+    trx: Knex.Transaction
+  ): Promise<ListEntity | null> {
+    return trx('list')
+      .select('*')
+      .where({ user_id: this.userId, item_id: itemId })
+      .first();
+  }
+
+  /**
    * Fetch a single SavedItem via its unique URL from a user's list
    * @param givenUrl the URL of the item to fetch
    */
@@ -188,15 +204,19 @@ export class SavedItemDataService {
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeFavorited = favorite ? timestamp : '0000-00-00 00:00:00';
-    await this.db('list')
-      .update({
-        favorite: +favorite,
-        time_favorited: timeFavorited,
-        time_updated: timestamp,
-        api_id_updated: this.apiId,
-      })
-      .where({ item_id: itemId, user_id: this.userId });
-
+    await this.db.transaction(async (trx) => {
+      await trx('list')
+        .update({
+          favorite: +favorite,
+          time_favorited: timeFavorited,
+          time_updated: timestamp,
+          api_id_updated: this.apiId,
+        })
+        .where({ item_id: itemId, user_id: this.userId });
+      const row = await this.getSavedItemByIdRaw(itemId, trx);
+      await this.syncShadowTable(row, trx);
+    });
+    // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
   }
 
@@ -220,16 +240,32 @@ export class SavedItemDataService {
     // TODO: Do we care if this makes an update that doesn't change the status?
     // e.g. archiving an already archived item will update
     //    time_read, time_upated, api_id_updated; but not status
-    await this.db('list')
-      .update({
-        status: status,
-        time_read: timeArchived,
-        time_updated: timestamp,
-        api_id_updated: this.apiId,
-      })
-      .where({ item_id: itemId, user_id: this.userId });
-
+    await this.db.transaction(async (trx) => {
+      await trx('list')
+        .update({
+          status: status,
+          time_read: timeArchived,
+          time_updated: timestamp,
+          api_id_updated: this.apiId,
+        })
+        .where({ item_id: itemId, user_id: this.userId });
+      const row = await this.getSavedItemByIdRaw(itemId, trx);
+      await this.syncShadowTable(row, trx);
+    });
+    // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
+  }
+
+  private async syncShadowTable(row: ListEntity, trx: Knex.Transaction) {
+    const input = Object.keys(row).reduce((obj, key) => {
+      if (row[key] instanceof Date && isNaN(row[key])) {
+        obj[key] = '0000-00-00 00:00:00';
+      } else {
+        obj[key] = row[key];
+      }
+      return obj;
+    }, {});
+    return trx('list_schema_update').update(input).onConflict().merge();
   }
 
   /**
@@ -272,6 +308,9 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
 
+      const row = await this.getSavedItemByIdRaw(itemId, transaction);
+      await this.syncShadowTable(row, transaction);
+
       await transaction.commit();
     } catch (err) {
       await transaction.rollback();
@@ -298,14 +337,18 @@ export class SavedItemDataService {
     const status =
       query.time_read === 0 ? SavedItemStatus.UNREAD : SavedItemStatus.ARCHIVED;
 
-    await this.db('list')
-      .update({
-        status,
-        time_updated: timestamp,
-        api_id_updated: this.apiId,
-      })
-      .where({ item_id: itemId, user_id: this.userId });
-
+    await this.db.transaction(async (trx) => {
+      await trx('list')
+        .update({
+          status,
+          time_updated: timestamp,
+          api_id_updated: this.apiId,
+        })
+        .where({ item_id: itemId, user_id: this.userId });
+      const row = await this.getSavedItemByIdRaw(itemId, trx);
+      await this.syncShadowTable(row, trx);
+    });
+    // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
   }
 
@@ -324,27 +367,31 @@ export class SavedItemDataService {
       ? SavedItemDataService.formatDate(givenTimestamp)
       : currentDate;
     //`returning` is not supported for mysql in knex
-    await this.db('list')
-      .insert({
-        user_id: parseInt(this.userId),
-        item_id: item.itemId,
-        given_url: savedItemUpsertInput.url,
-        status: 0,
-        resolved_id: item.resolvedId,
-        title: item.title,
-        time_added: givenDate,
-        time_updated: currentDate,
-        time_read: '0000-00-00 00:00:00',
-        time_favorited: savedItemUpsertInput.isFavorite
-          ? givenDate
-          : '0000-00-00 00:00:00',
-        favorite: savedItemUpsertInput.isFavorite ? 1 : 0,
-        api_id: parseInt(this.apiId),
-        api_id_updated: parseInt(this.apiId),
-      })
-      .onConflict()
-      .merge();
-
+    await this.db.transaction(async (trx) => {
+      await trx('list')
+        .insert({
+          user_id: parseInt(this.userId),
+          item_id: item.itemId,
+          given_url: savedItemUpsertInput.url,
+          status: 0,
+          resolved_id: item.resolvedId,
+          title: item.title,
+          time_added: givenDate,
+          time_updated: currentDate,
+          time_read: '0000-00-00 00:00:00',
+          time_favorited: savedItemUpsertInput.isFavorite
+            ? givenDate
+            : '0000-00-00 00:00:00',
+          favorite: savedItemUpsertInput.isFavorite ? 1 : 0,
+          api_id: parseInt(this.apiId),
+          api_id_updated: parseInt(this.apiId),
+        })
+        .onConflict()
+        .merge();
+      const row = await this.getSavedItemByIdRaw(item.itemId, trx);
+      await this.syncShadowTable(row, trx);
+    });
+    // TODO: Can make this simpler
     return await this.getSavedItemById(item.itemId.toString());
   }
 
