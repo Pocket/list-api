@@ -4,10 +4,7 @@ import { mysqlTimeString } from './utils';
 import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
-import * as Sentry from '@sentry/node';
-import { setTimeout } from 'timers/promises';
 import { chunk } from 'lodash';
-import { serverLogger } from '../server/logger';
 
 type DbResult = {
   user_id?: number;
@@ -279,51 +276,6 @@ export class SavedItemDataService {
     } catch (err) {
       await transaction.rollback();
       throw err;
-    }
-  }
-
-  /**
-   * For a given itemId, deletes one row at a time from list related tables and sleeps for X times.
-   * Note: we are not wrapping the deletes in a transactions as the deletes are un-related and
-   * and we don't want the transaction to get session lock for longer time.
-   * If a single deletion fails, log error and move on to the next record.
-   * @param itemIds: the ids of the items to delete from the user's list, along with tags
-   * and accompanying metadata
-   * @param requestId: optional unique request ID for tracing
-   */
-  public async batchDeleteSavedItems(itemIds: number[], requestId?: string) {
-    const tables = [...config.batchDelete.tablesWithPii];
-
-    for (const table of tables) {
-      try {
-        await this.db(table)
-          .delete()
-          .whereIn('item_id', itemIds)
-          .andWhere({ user_id: this.userId });
-
-        serverLogger.info('BatchDelete: deleted row', {
-          table,
-          userId: this.userId,
-          itemIds: itemIds,
-          requestId: requestId ?? 'no-request-id',
-        });
-        await setTimeout(config.batchDelete.deleteDelayInMilliSec);
-      } catch (error) {
-        serverLogger.error('BatchDelete: Error deleting from table', {
-          table,
-          userId: this.userId,
-          itemIds: itemIds,
-          requestId: requestId ?? 'no-request-id',
-          error,
-        });
-        const message =
-          `BatchDelete: Error deleting from table ${table}` +
-          `for itemId:  ${JSON.stringify(itemIds)} for (userId=${
-            this.userId
-          }, requestId=${requestId}).`;
-        Sentry.addBreadcrumb({ message });
-        Sentry.captureException(error);
-      }
     }
   }
 
