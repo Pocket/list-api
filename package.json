@@ -46,7 +46,7 @@
     "aws-sdk": "2.1354.0",
     "dataloader": "2.0.0",
     "express": "4.18.2",
-    "express-validator": "6.14.3",
+    "express-validator": "6.15.0",
     "graphql": "16.8.1",
     "graphql-constraint-directive": "5.0.0",
     "graphql-depth-limit": "1.1.0",
