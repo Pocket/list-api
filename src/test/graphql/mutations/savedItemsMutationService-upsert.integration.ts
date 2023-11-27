@@ -75,6 +75,7 @@ describe('UpsertSavedItem Mutation', () => {
     clock = sinon.useFakeTimers({
       now: dateNow,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 
@@ -434,7 +435,7 @@ describe('UpsertSavedItem Mutation', () => {
         config.aws.sqs.permLibItemMainQueue.url
       );
       // Should not send for non-premium users
-      expect(permLibQueueData?.Messages).is.undefined;
+      expect(permLibQueueData?.Messages).is.empty;
     });
 
     it('should push addItem event to perm lib queue for premium users', async () => {

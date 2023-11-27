@@ -34,6 +34,7 @@ describe('createSavedItemTags mutation', function () {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 

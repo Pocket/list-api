@@ -37,6 +37,7 @@ describe('tags mutation update: ', () => {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 

@@ -138,6 +138,7 @@ describe('Delete/Undelete SavedItem: ', () => {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 

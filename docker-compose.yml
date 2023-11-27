@@ -22,7 +22,7 @@ services:
       - .docker/mysql/schema:/docker-entrypoint-initdb.d:delegated
 
   localstack:
-    image: localstack/localstack:2.3
+    image: localstack/localstack:3.0.1
     env_file:
       - .docker/local.env
     environment:
