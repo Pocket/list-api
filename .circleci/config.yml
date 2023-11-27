@@ -60,7 +60,7 @@ slack-fail-post-step: &slack-fail-post-step
 jobs:
   apollo:
     docker:
-      - image: cimg/node:18.16
+      - image: cimg/node:20.10.0
     steps:
       - checkout
       - attach_workspace:
@@ -92,7 +92,7 @@ jobs:
                 command: rover subgraph publish pocket-client-api@development --schema /tmp/workspace/app_prod/dist/schema-generated.graphql --routing-url https://list-api.getpocket.dev/ --name=list
   build:
     docker:
-      - image: cimg/node:18.16
+      - image: cimg/node:20.10.0
     steps:
       - checkout
       # Define the working directory for this job
@@ -129,7 +129,7 @@ jobs:
   test_integrations:
     description: Run integration tests against external services, e.g. MySQL
     docker:
-      - image: cimg/node:18.16
+      - image: cimg/node:20.10.0
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -147,7 +147,7 @@ jobs:
         environment:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
           TZ: 'UTC'
-      - image: localstack/localstack@sha256:9e672725b3937f55b69c5c6afe3311d3ac034aab753633ceb2779a1efbba5c7d
+      - image: localstack/localstack:2.3
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -183,7 +183,7 @@ jobs:
   test_specs:
     description: Run spec tests
     docker:
-      - image: cimg/node:18.16
+      - image: cimg/node:20.10.0
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD

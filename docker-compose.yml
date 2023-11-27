@@ -22,7 +22,7 @@ services:
       - .docker/mysql/schema:/docker-entrypoint-initdb.d:delegated
 
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:2.3
     env_file:
       - .docker/local.env
     environment:
@@ -57,7 +57,7 @@ services:
       - '9090:9090'
 
   app:
-    image: node:18
+    image: node:20
     working_dir: /app
     ports:
       - '4005:4005'
