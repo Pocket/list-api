@@ -4,12 +4,12 @@ import http from 'http';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
 import {
   ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginLandingPageDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from '@apollo/server/plugin/disabled';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
 import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
 import config from '../config';
@@ -91,6 +91,7 @@ export async function startServer(port: number) {
     ApolloServerPluginUsageReportingDisabled(),
     ApolloServerPluginDrainHttpServer({ httpServer }),
     createApollo4QueryValidationPlugin({ schema }),
+    ApolloServerPluginLandingPageLocalDefault({ footer: false }),
   ];
   // Environment-specific plugins map
   const pluginsConfig: Record<
@@ -99,7 +100,6 @@ export async function startServer(port: number) {
   > = {
     test: [ApolloServerPluginInlineTraceDisabled()],
     development: [
-      ApolloServerPluginLandingPageGraphQLPlayground(),
       ApolloServerPluginInlineTrace({ includeErrors: { unmodified: true } }),
     ],
     production: [
