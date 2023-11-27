@@ -5,7 +5,6 @@ import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import { chunk } from 'lodash';
-import { serverLogger } from '../server/logger';
 import { RawListResult, ListResult } from './types';
 
 export type ListEntity = {
