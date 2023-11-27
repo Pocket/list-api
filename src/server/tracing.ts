@@ -1,7 +1,6 @@
 import config from '../config/index';
 import process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
@@ -46,10 +45,7 @@ const _traceExporter = new OTLPTraceExporter({
   url: `http://${config.tracing.host}:${config.tracing.grpcDefaultPort}`,
 });
 const _spanProcessor = new BatchSpanProcessor(_traceExporter);
-
-const _tracerConfig = {
-  idGenerator: new AWSXRayIdGenerator(),
-};
+const _idGenerator = new AWSXRayIdGenerator();
 
 /**
  * function to setup open-telemetry tracing config
@@ -63,7 +59,6 @@ export async function nodeSDKBuilder() {
       new AwsInstrumentation({
         suppressInternalInstrumentation: true,
       }),
-      new AwsLambdaInstrumentation({}),
       new DataloaderInstrumentation({}),
       new ExpressInstrumentation({
         ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
@@ -83,12 +78,12 @@ export async function nodeSDKBuilder() {
     resource: _resource,
     spanProcessor: _spanProcessor,
     traceExporter: _traceExporter,
+    idGenerator: _idGenerator,
     sampler: new ParentBasedSampler({
       //set at 20% sampling rate
       root: new TraceIdRatioBasedSampler(config.tracing.samplingRatio),
     }),
   });
-  sdk.configureTracerProvider(_tracerConfig, _spanProcessor);
 
   // this enables the API to record telemetry
   await sdk.start();
