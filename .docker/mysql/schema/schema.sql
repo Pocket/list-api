@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS `readitla_ril-tmp`;
 
-USE readitla_ril-tmp;
+USE `readitla_ril-tmp`;
 
 -- table with a user's list
 CREATE TABLE IF NOT EXISTS `list` (

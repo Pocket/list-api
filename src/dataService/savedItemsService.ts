@@ -282,7 +282,7 @@ export class SavedItemDataService {
       }
       return obj;
     }, {});
-    return trx('list_schema_update').update(input).onConflict().merge();
+    return trx('list_schema_update').insert(input).onConflict().merge();
   }
 
   /**
