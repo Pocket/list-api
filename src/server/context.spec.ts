@@ -52,11 +52,12 @@ describe('context', () => {
           setUser: jest.fn(),
         } as unknown as Sentry.Scope; // Coercing since these are the only two methods we need to check
         scopeConfigureCallback(mockScope);
-        expect(mockScope.setTag).toHaveBeenCalledOnceWith(
+        expect(mockScope.setTag).toHaveBeenNthCalledWith(
+          1,
           'pocket-api-id',
           expectedApiId
         );
-        expect(mockScope.setUser).toHaveBeenCalledOnceWith({
+        expect(mockScope.setUser).toHaveBeenNthCalledWith(1, {
           id: headers.encodedid,
         });
       }
