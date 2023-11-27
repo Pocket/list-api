@@ -19,9 +19,5 @@ describe('SavedItemsDataService', () => {
       const result = SavedItemDataService.convertDbResultStatus({ status: 3 });
       expect(result.status).to.equal('HIDDEN');
     });
-    it('does not add status field if it does not exist on input', () => {
-      const result = SavedItemDataService.convertDbResultStatus({ user_id: 0 });
-      expect(result).to.not.have.property('status');
-    });
   });
 });

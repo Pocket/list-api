@@ -6,7 +6,7 @@ import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import { chunk } from 'lodash';
 import { serverLogger } from '../server/logger';
-import { RawListResult } from './types';
+import { RawListResult, ListResult } from './types';
 
 export type ListEntity = {
   user_id?: number;
@@ -45,26 +45,33 @@ export class SavedItemDataService {
     this.apiId = context.apiId;
   }
 
-  public static convertDbResultStatus(dbResult: RawListResult): RawListResult;
-  public static convertDbResultStatus(
-    dbResult: RawListResult[]
-  ): RawListResult[];
+  public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
+    dbResult: T
+  ): T & { status: Pick<ListResult, 'status'> };
+  public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
+    dbResult: Array<T>
+  ): Array<T & { status: Pick<ListResult, 'status'> }>;
   /**
    * Convert the `status` field in the list table to the expected
    * GraphQL ENUM string
    * @param dbResult
    */
-  public static convertDbResultStatus(
-    dbResult: RawListResult | RawListResult[]
-  ): RawListResult | RawListResult[] {
+  public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
+    dbResult: T | T[]
+  ):
+    | (T & { status: Pick<ListResult, 'status'> })
+    | Array<T & { status: Pick<ListResult, 'status'> }> {
     if (dbResult == null) {
-      return dbResult;
+      return undefined;
     }
-    const statusConvert = (row: RawListResult) => {
-      if (row.status != null) {
-        row.status = SavedItemDataService.statusMap[row.status];
-      }
-      return row;
+    const statusConvert = (row: T) => {
+      return {
+        ...row,
+        status:
+          row.status != null
+            ? SavedItemDataService.statusMap[row.status]
+            : row.status,
+      };
     };
     if (dbResult instanceof Array) {
       return dbResult.map((row) => statusConvert(row));
@@ -464,7 +471,6 @@ export class SavedItemDataService {
    * queries. That's why it's private :)
    */
   private listItemUpdateBuilder(timestamp?: Date): Array<Knex.QueryBuilder> {
-    // TODO: Return the 'list_schema_update' version of this
     const base = this.db
       .update({
         time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),
