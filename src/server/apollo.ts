@@ -4,12 +4,12 @@ import http from 'http';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
 import {
   ApolloServerPluginInlineTraceDisabled,
   ApolloServerPluginLandingPageDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from '@apollo/server/plugin/disabled';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
 import { sentryPlugin, errorHandler } from '@pocket-tools/apollo-utils';
 import config from '../config';
@@ -50,12 +50,23 @@ export const contextConnection = (query: string): Knex => {
 };
 
 export async function startServer(port: number) {
+  const app = express();
+
   Sentry.init({
     ...config.sentry,
     debug: config.sentry.environment == 'development',
+    integrations: [
+      // enable HTTP calls tracing
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Sentry.Integrations.Apollo(),
+      // enable Express.js middleware tracing
+      new Sentry.Integrations.Express({
+        // to trace all requests to the default router
+        app,
+      }),
+    ],
   });
 
-  const app = express();
   // Our httpServer handles incoming requests to our Express app.
   // Below, we tell Apollo Server to "drain" this httpServer,
   // enabling our servers to shut down gracefully.
@@ -91,6 +102,7 @@ export async function startServer(port: number) {
     ApolloServerPluginUsageReportingDisabled(),
     ApolloServerPluginDrainHttpServer({ httpServer }),
     createApollo4QueryValidationPlugin({ schema }),
+    ApolloServerPluginLandingPageLocalDefault({ footer: false }),
   ];
   // Environment-specific plugins map
   const pluginsConfig: Record<
@@ -99,7 +111,6 @@ export async function startServer(port: number) {
   > = {
     test: [ApolloServerPluginInlineTraceDisabled()],
     development: [
-      ApolloServerPluginLandingPageGraphQLPlayground(),
       ApolloServerPluginInlineTrace({ includeErrors: { unmodified: true } }),
     ],
     production: [
@@ -124,6 +135,10 @@ export async function startServer(port: number) {
 
   await server.start();
 
+  // RequestHandler creates a separate execution context, so that all
+  // transactions/spans/breadcrumbs are isolated across requests
+  app.use(Sentry.Handlers.requestHandler() as express.RequestHandler);
+
   // Apply to root
   const url = '/';
 
@@ -134,8 +149,11 @@ export async function startServer(port: number) {
     setMorgan(serverLogger),
     expressMiddleware(server, {
       context: async ({ req }) => contextFactory(req),
-    })
+    }),
   );
+
+  // The error handler must be before any other error middleware and after all controllers
+  app.use(Sentry.Handlers.errorHandler() as express.ErrorRequestHandler);
 
   await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
   return { app, server, url };
