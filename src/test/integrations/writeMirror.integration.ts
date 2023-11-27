@@ -1,4 +1,4 @@
-import { SavedItemDataService } from '../../dataService';
+import { PocketSaveDataService, SavedItemDataService } from '../../dataService';
 import { writeClient } from '../../database/client';
 import { ItemResponse } from '../../externalCaller/parserCaller';
 import { SavedItemUpsertInput } from '../../types';
@@ -20,7 +20,12 @@ describe('List API mirroring', () => {
   const db = writeClient();
   const date = new Date();
   const epochDate = date.getTime() / 1000;
-  const saveService = new SavedItemDataService({
+  const savedItemService = new SavedItemDataService({
+    dbClient: db,
+    userId: '1',
+    apiId: '777',
+  });
+  const pocketSaveService = new PocketSaveDataService({
     dbClient: db,
     userId: '1',
     apiId: '777',
@@ -84,7 +89,7 @@ describe('List API mirroring', () => {
       isFavorite: false,
       timestamp: epochDate,
     };
-    await saveService.upsertSavedItem(seedItem, seedSave);
+    await savedItemService.upsertSavedItem(seedItem, seedSave);
     const listResult = await fetchRow('2', 'list');
     const shadowResult = await fetchRow('2', 'list_schema_update');
     expect(listResult).not.toBeNull();
@@ -101,14 +106,14 @@ describe('List API mirroring', () => {
       isFavorite: true,
       timestamp: epochDate,
     };
-    await saveService.upsertSavedItem(seedItem, seedSave);
+    await savedItemService.upsertSavedItem(seedItem, seedSave);
     const listResult = await fetchRow('2', 'list');
     const shadowResult = await fetchRow('2', 'list_schema_update');
     expect(listResult).not.toBeUndefined();
     expect(listResult).toStrictEqual(shadowResult);
   });
   it('Merges changes to shadow table for rows that already exist', async () => {
-    await saveService.updateSavedItemArchiveProperty('999', true);
+    await savedItemService.updateSavedItemArchiveProperty('999', true);
     const listResult = await fetchRow('999', 'list');
     const shadowResult = await fetchRow('999', 'list_schema_update');
     expect(listResult).not.toBeUndefined();
@@ -117,22 +122,32 @@ describe('List API mirroring', () => {
   });
   it.each([
     {
-      property: 'favorite',
+      property: 'favorite - savedItem',
       method: () =>
-        saveService.updateSavedItemFavoriteProperty('1', true, date),
+        savedItemService.updateSavedItemFavoriteProperty('1', true, date),
     },
     {
-      property: 'archived',
-      method: () => saveService.updateSavedItemArchiveProperty('1', true, date),
+      property: 'archived - savedItem',
+      method: () =>
+        savedItemService.updateSavedItemArchiveProperty('1', true, date),
     },
     {
-      property: 'deleted',
-      method: () => saveService.deleteSavedItem('1', date),
+      property: 'deleted - savedItem',
+      method: () => savedItemService.deleteSavedItem('1', date),
     },
     {
-      property: 'undeleted',
-      method: () => saveService.updateSavedItemUnDelete('1', date),
+      property: 'undeleted - savedItem',
+      method: () => savedItemService.updateSavedItemUnDelete('1', date),
     },
+    {
+      property: 'favorite - pocketSave',
+      method: () => pocketSaveService.favoriteListRow([1], date),
+    },
+    {
+      property: 'archived - pocketSave',
+      method: () => pocketSaveService.archiveListRow([1], date),
+    },
+    // No deleted/undeleted properties for pocketSave
   ])(
     'Copies new rows to shadow table on update: $property',
     async ({ method }) => {

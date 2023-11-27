@@ -5,6 +5,8 @@ import { SavedItem, SavedItemStatus, SavedItemUpsertInput } from '../types';
 import config from '../config';
 import { ItemResponse } from '../externalCaller/parserCaller';
 import { chunk } from 'lodash';
+import { serverLogger } from '../server/logger';
+import { RawListResult } from './types';
 
 export type ListEntity = {
   user_id?: number;
@@ -43,20 +45,22 @@ export class SavedItemDataService {
     this.apiId = context.apiId;
   }
 
-  public static convertDbResultStatus(dbResult: ListEntity): ListEntity;
-  public static convertDbResultStatus(dbResult: ListEntity[]): ListEntity[];
+  public static convertDbResultStatus(dbResult: RawListResult): RawListResult;
+  public static convertDbResultStatus(
+    dbResult: RawListResult[]
+  ): RawListResult[];
   /**
    * Convert the `status` field in the list table to the expected
    * GraphQL ENUM string
    * @param dbResult
    */
   public static convertDbResultStatus(
-    dbResult: ListEntity | ListEntity[]
-  ): ListEntity | ListEntity[] {
+    dbResult: RawListResult | RawListResult[]
+  ): RawListResult | RawListResult[] {
     if (dbResult == null) {
       return dbResult;
     }
-    const statusConvert = (row: ListEntity) => {
+    const statusConvert = (row: RawListResult) => {
       if (row.status != null) {
         row.status = SavedItemDataService.statusMap[row.status];
       }
@@ -132,7 +136,7 @@ export class SavedItemDataService {
   public getSavedItemByIdRaw(
     itemId: string,
     trx: Knex.Transaction
-  ): Promise<ListEntity | null> {
+  ): Promise<RawListResult | null> {
     return trx('list')
       .select('*')
       .where({ user_id: this.userId, item_id: itemId })
@@ -215,7 +219,7 @@ export class SavedItemDataService {
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
       if (row != null) {
-        await this.syncShadowTable(row, trx);
+        await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
     // TODO: Can make this simpler
@@ -253,14 +257,17 @@ export class SavedItemDataService {
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
       if (row != null) {
-        await this.syncShadowTable(row, trx);
+        await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
     // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
   }
 
-  private async syncShadowTable(row: ListEntity, trx: Knex.Transaction) {
+  public static async syncShadowTable(
+    row: RawListResult,
+    trx: Knex.Transaction
+  ) {
     const input = Object.keys(row).reduce((obj, key) => {
       if (row[key] instanceof Date && isNaN(row[key])) {
         obj[key] = '0000-00-00 00:00:00';
@@ -314,7 +321,7 @@ export class SavedItemDataService {
 
       const row = await this.getSavedItemByIdRaw(itemId, transaction);
       if (row != null) {
-        await this.syncShadowTable(row, transaction);
+        await SavedItemDataService.syncShadowTable(row, transaction);
       }
       await transaction.commit();
     } catch (err) {
@@ -352,7 +359,7 @@ export class SavedItemDataService {
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
       if (row != null) {
-        await this.syncShadowTable(row, trx);
+        await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
     // TODO: Can make this simpler
@@ -397,7 +404,7 @@ export class SavedItemDataService {
         .merge();
       const row = await this.getSavedItemByIdRaw(item.itemId, trx);
       if (row != null) {
-        await this.syncShadowTable(row, trx);
+        await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
     // TODO: Can make this simpler
