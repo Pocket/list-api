@@ -10,7 +10,9 @@ import {
   SqsListener,
 } from '../../../businessEvents';
 import {
+  QueueAttributeName,
   ReceiveMessageCommand,
+  ReceiveMessageCommandInput,
   ReceiveMessageCommandOutput,
 } from '@aws-sdk/client-sqs';
 import { sqs } from '../../../aws/sqs';
@@ -36,8 +38,8 @@ function mockParserGetItemRequest(urlToParse: string, data: any) {
 async function getSqsMessages(
   queueUrl: string
 ): Promise<ReceiveMessageCommandOutput> {
-  const receiveParams = {
-    AttributeNames: ['All'],
+  const receiveParams: ReceiveMessageCommandInput = {
+    AttributeNames: [QueueAttributeName.All],
     MaxNumberOfMessages: 10,
     MessageAttributeNames: ['All'],
     QueueUrl: queueUrl,
