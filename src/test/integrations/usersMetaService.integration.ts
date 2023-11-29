@@ -6,22 +6,31 @@ import chaiDateTime from 'chai-datetime';
 import { mysqlTimeString } from '../../dataService/utils';
 import config from '../../config';
 
+jest.mock('../../featureFlags/client');
+import { getClient } from '../../featureFlags/client';
+
 chai.use(chaiDateTime);
 
 describe('UsersMetaService ', () => {
   const db = readClient();
-  const context = new ContextManager({
-    request: {
-      headers: {
-        userid: '1',
-        apiid: '0',
-      },
-    },
-    dbClient: readClient(),
-    eventEmitter: null,
-  });
+  let context: ContextManager;
+  let usersMetaService: UsersMetaService;
   const currentTime = new Date();
-  const usersMetaService = new UsersMetaService(context);
+
+  beforeAll(async () => {
+    context = new ContextManager({
+      request: {
+        headers: {
+          userid: '1',
+          apiid: '0',
+        },
+      },
+      dbClient: readClient(),
+      eventEmitter: null,
+      unleash: await getClient(),
+    });
+    usersMetaService = new UsersMetaService(context);
+  });
 
   beforeEach(async () => {
     await db('users_meta').truncate();

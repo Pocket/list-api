@@ -1,6 +1,7 @@
 import { readClient, writeClient } from '../../database/client';
 import { SavedItemDataService } from '../../dataService';
 import { ContextManager } from '../../server/context';
+import { getClient } from '../../featureFlags';
 
 describe('SavedItemsService', () => {
   const db = writeClient();
@@ -49,6 +50,7 @@ describe('SavedItemsService', () => {
       },
       dbClient: readClient(),
       eventEmitter: null,
+      unleash: await getClient(),
     });
 
     const savedItems = await new SavedItemDataService(
@@ -66,6 +68,7 @@ describe('SavedItemsService', () => {
       },
       dbClient: readClient(),
       eventEmitter: null,
+      unleash: await getClient(),
     });
 
     const savedItems = await new SavedItemDataService(
@@ -83,6 +86,7 @@ describe('SavedItemsService', () => {
       },
       dbClient: readClient(),
       eventEmitter: null,
+      unleash: await getClient(),
     });
 
     const savedItemIds = await new SavedItemDataService(
@@ -99,6 +103,7 @@ describe('SavedItemsService', () => {
       },
       dbClient: readClient(),
       eventEmitter: null,
+      unleash: await getClient(),
     });
 
     const savedItemIds = await new SavedItemDataService(
@@ -115,6 +120,7 @@ describe('SavedItemsService', () => {
       },
       dbClient: readClient(),
       eventEmitter: null,
+      unleash: await getClient(),
     });
 
     const savedItemIds = await new SavedItemDataService(
@@ -159,6 +165,7 @@ describe('SavedItemsService', () => {
         },
         dbClient: writeClient(),
         eventEmitter: null,
+        unleash: await getClient(),
       });
       await new SavedItemDataService(context).deleteSavedItem(itemId);
       // Adding coverage for data not made available through the API

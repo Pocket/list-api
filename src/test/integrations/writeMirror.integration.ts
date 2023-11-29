@@ -3,7 +3,7 @@ import { writeClient } from '../../database/client';
 import { ItemResponse } from '../../externalCaller/parserCaller';
 import { SavedItemUpsertInput } from '../../types';
 import { expect } from '@jest/globals';
-import unleashClient from '../utils/unleashMock';
+import unleashClient from '../../featureFlags/mockClient';
 import config from '../../config';
 
 function areBothNaN(a, b) {

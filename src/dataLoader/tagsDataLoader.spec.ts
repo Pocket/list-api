@@ -6,7 +6,6 @@ import { ContextManager, IContext } from '../server/context';
 import { Tag } from '../types';
 
 jest.mock('../featureFlags/client');
-
 import { getClient } from '../featureFlags/client';
 
 describe('tags dataloader', function () {

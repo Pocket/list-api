@@ -7,6 +7,9 @@ import {
 } from './savedItemsDataLoader';
 import { writeClient } from '../database/client';
 
+jest.mock('../featureFlags/client');
+import { getClient } from '../featureFlags/client';
+
 describe('savedItem data loader', function () {
   const testSavedItem: SavedItem[] = [
     {
@@ -48,6 +51,7 @@ describe('savedItem data loader', function () {
       dbClient: db,
       userId: '1',
       apiId: 'backend',
+      unleash: await getClient(),
     });
     sinon
       .stub(service, 'batchGetSavedItemsByGivenIds')
@@ -66,6 +70,7 @@ describe('savedItem data loader', function () {
       dbClient: db,
       userId: '1',
       apiId: 'backend',
+      unleash: await getClient(),
     });
     sinon
       .stub(service, 'batchGetSavedItemsByGivenUrls')

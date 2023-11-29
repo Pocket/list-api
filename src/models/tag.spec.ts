@@ -8,6 +8,9 @@ import { Knex } from 'knex';
 import { PocketSave, Tag } from '../types';
 import { TagDataService } from '../dataService';
 
+jest.mock('../featureFlags/client');
+import { getClient } from '../featureFlags/client';
+
 const tagServiceResp: Tag[] = [
   { name: 'zebra', id: 'emVicmFfX3hwa3R4dGFneF9f' },
   { name: 'travel', id: 'dHJhdmVsX194cGt0eHRhZ3hfXw==' },
@@ -32,6 +35,7 @@ describe('tag model', () => {
         },
         dbClient: jest.fn() as unknown as Knex,
         eventEmitter: null,
+        unleash: await getClient(),
       });
       const resp = context.models.tag.getSuggestedBySaveId(parent);
       const data = await resp;
@@ -45,6 +49,7 @@ describe('tag model', () => {
         },
         dbClient: jest.fn() as unknown as Knex,
         eventEmitter: null,
+        unleash: await getClient(),
       });
       const resp = context.models.tag.getSuggestedBySaveId(parent);
       const data = await resp;
