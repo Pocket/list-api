@@ -291,6 +291,10 @@ class ListAPI extends TerraformStack {
               valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/SNOWPLOW_ENDPOINT`,
             },
             {
+              name: 'UNLEASH_ENDPOINT',
+              valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/UNLEASH_ENDPOINT`,
+            },
+            {
               name: 'SENTRY_DSN',
               valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/SENTRY_DSN`,
             },
