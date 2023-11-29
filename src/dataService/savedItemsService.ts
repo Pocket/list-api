@@ -48,6 +48,16 @@ export class SavedItemDataService {
     this.db = context.dbClient;
     this.userId = context.userId;
     this.apiId = context.apiId;
+    console.log(
+      this.context.unleash.isEnabled(config.unleash.flags.mirrorWrites.name)
+    );
+    console.log(
+      this.context.unleash.isEnabled(
+        config.unleash.flags.mirrorWrites.name,
+        undefined,
+        config.unleash.flags.mirrorWrites.fallback
+      )
+    );
     this.flags = {
       mirrorWrites: this.context.unleash.isEnabled(
         config.unleash.flags.mirrorWrites.name,

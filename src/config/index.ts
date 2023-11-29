@@ -131,7 +131,9 @@ export default {
     flags: {
       mirrorWrites: {
         name: 'temp.backend.list_table_mirror_writes_enabled',
-        fallback: true,
+        // TODO(@kschelon): Change this before rollout
+        // POCKET-9216
+        fallback: false,
       },
     },
   },

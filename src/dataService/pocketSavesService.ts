@@ -74,13 +74,20 @@ export class PocketSaveDataService {
   ];
 
   // For release/toggle flags
-  private flags: Record<string, boolean>
+  private flags: Record<string, boolean>;
   constructor(
     private context: Pick<IContext, 'apiId' | 'dbClient' | 'userId' | 'unleash'>
   ) {
     this.apiId = context.apiId;
     this.db = context.dbClient;
     this.userId = context.userId;
+    this.flags = {
+      mirrorWrites: this.context.unleash.isEnabled(
+        config.unleash.flags.mirrorWrites.name,
+        undefined,
+        config.unleash.flags.mirrorWrites.fallback
+      ),
+    };
   }
 
   public static convertListResult(listResult: null): null;
@@ -276,9 +283,7 @@ export class PocketSaveDataService {
           throw new NotFoundError('At least one ID was not found');
         }
         // Mirror writes to "shadow" table for itemId overflow mitigation
-        if (
-          
-        ) {
+        if (this.flags.mirrorWrites) {
           await Promise.all(
             updated.map((row) => SavedItemDataService.syncShadowTable(row, trx))
           );

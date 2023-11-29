@@ -6,8 +6,6 @@ import {
   batchGetSavedItemsByUrls,
 } from './savedItemsDataLoader';
 import { writeClient } from '../database/client';
-
-jest.mock('../featureFlags/client');
 import { getClient } from '../featureFlags/client';
 
 describe('savedItem data loader', function () {

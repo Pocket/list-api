@@ -1,12 +1,19 @@
-import { initialize } from 'unleash-client';
+import { initialize, Unleash } from 'unleash-client';
 import config from '../config';
 import { serverLogger } from '../server/logger';
 
 export function getClient() {
+  let unleash: Unleash;
   if (config.app.environment.toLowerCase() === 'test') {
-    // Local no-op client just to pass through
-    // Use unleashMock in test utils for bootstrapping a non-global client instance
-    return initialize({
+    // Local no-op client just to ensure all dependencies (e.g. ContextManager)
+    // are constructed correctly.
+    // Use `./mockClient` for tests that need to access actual (fake) feature
+    // flags toggles.
+    // (will construct a non-global unleash instance)
+    // This will default to any fallback that's passed to it due to some
+    // convoluted logic about bootstraps. See `./mockClient` for more
+    // info on ensuring local data is used.
+    unleash = initialize({
       appName: config.serviceName,
       url: config.unleash.endpoint,
       refreshInterval: 0,
@@ -14,7 +21,11 @@ export function getClient() {
       bootstrap: { data: [] },
     });
   } else {
-    const unleash = initialize({
+    // The actual unleash client. Note that this is not a blocking
+    // call, so it's possible that the application uses stale toggles
+    // on startup (defaults to any fallback values provided to `isEnabled`,
+    // etc. until client is marked as ready).
+    unleash = initialize({
       url: config.unleash.endpoint,
       appName: config.serviceName,
       customHeaders: { Authorization: config.unleash.clientKey },
@@ -25,6 +36,6 @@ export function getClient() {
     unleash.on('error', (err) =>
       serverLogger.error('Unleash errror', { data: err })
     );
-    return unleash;
   }
+  return unleash;
 }

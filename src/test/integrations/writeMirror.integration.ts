@@ -22,20 +22,18 @@ describe('List API mirroring', () => {
   const db = writeClient();
   const date = new Date();
   const epochDate = date.getTime() / 1000;
-  const unleash = unleashClient({
-    data: [
-      {
-        enabled: true,
-        name: config.unleash.flags.mirrorWrites.name,
-        stale: false,
-        type: 'release',
-        project: 'default',
-        variants: [],
-        strategies: [],
-        impressionData: false,
-      },
-    ],
-  });
+  const unleash = unleashClient([
+    {
+      enabled: true,
+      name: config.unleash.flags.mirrorWrites.name,
+      stale: false,
+      type: 'release',
+      project: 'default',
+      variants: [],
+      strategies: [],
+      impressionData: false,
+    },
+  ]);
   const savedItemService = new SavedItemDataService({
     dbClient: db,
     userId: '1',
@@ -181,20 +179,18 @@ describe('List API mirroring', () => {
   );
   describe('with feature flag disabled', () => {
     const syncSpy = jest.spyOn(SavedItemDataService, 'syncShadowTable');
-    const disabledUnleash = unleashClient({
-      data: [
-        {
-          enabled: false,
-          name: config.unleash.flags.mirrorWrites.name,
-          stale: false,
-          type: 'release',
-          project: 'default',
-          variants: [],
-          strategies: [],
-          impressionData: false,
-        },
-      ],
-    });
+    const disabledUnleash = unleashClient([
+      {
+        enabled: false,
+        name: config.unleash.flags.mirrorWrites.name,
+        stale: false,
+        type: 'release',
+        project: 'default',
+        variants: [],
+        strategies: [],
+        impressionData: false,
+      },
+    ]);
     const saveServiceNoSync = new SavedItemDataService({
       dbClient: db,
       userId: '1',
@@ -271,5 +267,17 @@ describe('List API mirroring', () => {
         expect(syncSpy).toBeCalledTimes(0);
       }
     );
+    it('another test property', async () => {
+      const method = () =>
+        saveServiceNoSync.upsertSavedItem(upsertSeed.item, upsertSeed.save);
+      const preOperationResult = await fetchRow('1', 'list_schema_update');
+      expect(preOperationResult).toBeUndefined();
+      await method();
+      const listResult = await fetchRow('1', 'list');
+      const shadowResult = await fetchRow('1', 'list_schema_update');
+      expect(listResult).not.toBeUndefined();
+      expect(shadowResult).toBeUndefined();
+      expect(syncSpy).toBeCalledTimes(0);
+    });
   });
 });
