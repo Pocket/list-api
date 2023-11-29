@@ -128,8 +128,11 @@ export default {
   unleash: {
     clientKey: process.env.UNLEASH_KEY || 'unleash-key-fake',
     endpoint: process.env.UNLEASH_ENDPOINT || 'https://unleash-client.com/api',
-    toggle: {
-      mirrorWrites: 'temp.backend.list_table_mirror_writes_enabled',
+    flags: {
+      mirrorWrites: {
+        name: 'temp.backend.list_table_mirror_writes_enabled',
+        fallback: true,
+      },
     },
   },
   snowplow: {

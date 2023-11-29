@@ -5,9 +5,6 @@ import { SavedItemDataService, TagDataService } from '../dataService';
 import { ContextManager, IContext } from '../server/context';
 import { Tag } from '../types';
 
-jest.mock('../featureFlags/client');
-import { getClient } from '../featureFlags/client';
-
 describe('tags dataloader', function () {
   const testTags: { [savedItemId: string]: Tag[] } = {
     '1': [
@@ -46,7 +43,6 @@ describe('tags dataloader', function () {
       },
       dbClient: db,
       eventEmitter: null,
-      unleash: await getClient(),
     });
     const savedItemService = new SavedItemDataService(context);
     const service = new TagDataService(context, savedItemService);
@@ -72,7 +68,6 @@ describe('tags dataloader', function () {
       },
       dbClient: db,
       eventEmitter: null,
-      unleash: await getClient(),
     });
     const savedItemService = new SavedItemDataService(context);
     const service = new TagDataService(context, savedItemService);
@@ -106,7 +101,6 @@ describe('tags dataloader', function () {
       },
       dbClient: db,
       eventEmitter: null,
-      unleash: await getClient(),
     });
     const savedItemService = new SavedItemDataService(context);
     const service = new TagDataService(context, savedItemService);

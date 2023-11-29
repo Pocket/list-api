@@ -37,6 +37,8 @@ export class SavedItemDataService {
   private db: Knex;
   private readonly userId: string;
   private readonly apiId: string;
+  // For toggle/release flags
+  private flags: Record<string, boolean>;
   constructor(
     private readonly context: Pick<
       IContext,
@@ -46,6 +48,13 @@ export class SavedItemDataService {
     this.db = context.dbClient;
     this.userId = context.userId;
     this.apiId = context.apiId;
+    this.flags = {
+      mirrorWrites: this.context.unleash.isEnabled(
+        config.unleash.flags.mirrorWrites.name,
+        undefined,
+        config.unleash.flags.mirrorWrites.fallback
+      ),
+    };
   }
 
   public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
@@ -228,10 +237,7 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
-      if (
-        row != null &&
-        this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
-      ) {
+      if (row != null && this.flags.mirrorWrites) {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
@@ -269,10 +275,7 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
-      if (
-        row != null &&
-        this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
-      ) {
+      if (row != null && this.flags.mirrorWrites) {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
@@ -336,10 +339,7 @@ export class SavedItemDataService {
         .where({ item_id: itemId, user_id: this.userId });
 
       const row = await this.getSavedItemByIdRaw(itemId, transaction);
-      if (
-        row != null &&
-        this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
-      ) {
+      if (row != null && this.flags.mirrorWrites) {
         await SavedItemDataService.syncShadowTable(row, transaction);
       }
       await transaction.commit();
@@ -377,10 +377,7 @@ export class SavedItemDataService {
         })
         .where({ item_id: itemId, user_id: this.userId });
       const row = await this.getSavedItemByIdRaw(itemId, trx);
-      if (
-        row != null &&
-        this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
-      ) {
+      if (row != null && this.flags.mirrorWrites) {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
@@ -425,10 +422,7 @@ export class SavedItemDataService {
         .onConflict()
         .merge();
       const row = await this.getSavedItemByIdRaw(item.itemId, trx);
-      if (
-        row != null &&
-        this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
-      ) {
+      if (row != null && this.flags.mirrorWrites) {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });

@@ -51,7 +51,7 @@ describe('savedItem data loader', function () {
       dbClient: db,
       userId: '1',
       apiId: 'backend',
-      unleash: await getClient(),
+      unleash: getClient(),
     });
     sinon
       .stub(service, 'batchGetSavedItemsByGivenIds')
@@ -70,7 +70,7 @@ describe('savedItem data loader', function () {
       dbClient: db,
       userId: '1',
       apiId: 'backend',
-      unleash: await getClient(),
+      unleash: getClient(),
     });
     sinon
       .stub(service, 'batchGetSavedItemsByGivenUrls')

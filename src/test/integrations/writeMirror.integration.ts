@@ -26,7 +26,7 @@ describe('List API mirroring', () => {
     data: [
       {
         enabled: true,
-        name: config.unleash.toggle.mirrorWrites,
+        name: config.unleash.flags.mirrorWrites.name,
         stale: false,
         type: 'release',
         project: 'default',
@@ -185,7 +185,7 @@ describe('List API mirroring', () => {
       data: [
         {
           enabled: false,
-          name: config.unleash.toggle.mirrorWrites,
+          name: config.unleash.flags.mirrorWrites.name,
           stale: false,
           type: 'release',
           project: 'default',

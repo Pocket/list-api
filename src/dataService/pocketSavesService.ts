@@ -72,6 +72,9 @@ export class PocketSaveDataService {
     'title',
     'user_id',
   ];
+
+  // For release/toggle flags
+  private flags: Record<string, boolean>
   constructor(
     private context: Pick<IContext, 'apiId' | 'dbClient' | 'userId' | 'unleash'>
   ) {
@@ -274,7 +277,7 @@ export class PocketSaveDataService {
         }
         // Mirror writes to "shadow" table for itemId overflow mitigation
         if (
-          this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
+          
         ) {
           await Promise.all(
             updated.map((row) => SavedItemDataService.syncShadowTable(row, trx))

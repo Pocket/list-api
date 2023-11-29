@@ -9,8 +9,6 @@ import sinon from 'sinon';
 import { Request } from 'express';
 
 jest.mock('../dataService');
-jest.mock('../featureFlags/client');
-import { getClient } from '../featureFlags/client';
 
 describe('context', () => {
   const savedItem: SavedItem = {
@@ -45,7 +43,6 @@ describe('context', () => {
           },
           dbClient: jest.fn() as unknown as Knex,
           eventEmitter: new ItemsEventEmitter(),
-          unleash: await getClient(),
         });
         // Mock out the scope methods used in the configureScope callback
         expect(sentryScopeSpy.callCount).toEqual(1);
@@ -69,16 +66,12 @@ describe('context', () => {
   describe('event emitter', () => {
     let sentryEventSpy;
     let sentryExceptionSpy;
-    let context: ContextManager;
-    beforeAll(async () => {
-      context = new ContextManager({
-        request: {
-          headers: { userid: '1', apiid: '0' },
-        } as unknown as Request,
-        dbClient: jest.fn() as unknown as Knex,
-        eventEmitter: new ItemsEventEmitter(),
-        unleash: await getClient(),
-      });
+    const context = new ContextManager({
+      request: {
+        headers: { userid: '1', apiid: '0' },
+      } as unknown as Request,
+      dbClient: jest.fn() as unknown as Knex,
+      eventEmitter: new ItemsEventEmitter(),
     });
     beforeEach(() => {
       sinon.restore();
@@ -147,7 +140,6 @@ describe('context', () => {
         },
         dbClient: jest.fn() as unknown as Knex,
         eventEmitter: null,
-        unleash: await getClient(),
       });
     });
 

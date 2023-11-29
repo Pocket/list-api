@@ -86,8 +86,8 @@ export async function startServer(port: number) {
     eventBridgeEventHandler,
   ]);
 
-  // Start unleash client
-  const unleashClient = await unleash.getClient();
+  // Start unleash client async, (global namespace)
+  unleash.getClient();
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
@@ -96,7 +96,6 @@ export async function startServer(port: number) {
       request: req,
       dbClient,
       eventEmitter: itemsEventEmitter,
-      unleash: unleashClient,
     });
   };
 

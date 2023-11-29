@@ -1,7 +1,8 @@
-import { startUnleash, initialize } from 'unleash-client';
+import { initialize } from 'unleash-client';
 import config from '../config';
+import { serverLogger } from '../server/logger';
 
-export async function getClient() {
+export function getClient() {
   if (config.app.environment.toLowerCase() === 'test') {
     // Local no-op client just to pass through
     // Use unleashMock in test utils for bootstrapping a non-global client instance
@@ -13,10 +14,17 @@ export async function getClient() {
       bootstrap: { data: [] },
     });
   } else {
-    return await startUnleash({
+    const unleash = initialize({
       url: config.unleash.endpoint,
       appName: config.serviceName,
       customHeaders: { Authorization: config.unleash.clientKey },
+      timeout: 2000, // ms
+      namePrefix: 'temp.backend',
+      refreshInterval: 60000, //ms
     });
+    unleash.on('error', (err) =>
+      serverLogger.error('Unleash errror', { data: err })
+    );
+    return unleash;
   }
 }

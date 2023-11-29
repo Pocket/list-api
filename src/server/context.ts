@@ -19,6 +19,7 @@ import {
 } from '../models';
 import { SavedItemModel } from '../models/SavedItem';
 import { Unleash } from 'unleash-client';
+import { getClient } from '../featureFlags';
 
 export interface IContext {
   userId: string;
@@ -60,10 +61,9 @@ export class ContextManager implements IContext {
       request: any;
       dbClient: Knex;
       eventEmitter: ItemsEventEmitter;
-      unleash: Unleash;
     }
   ) {
-    this.unleash = config.unleash;
+    this.unleash = getClient();
     this._dbClient = config.dbClient;
     this.dataLoaders = {
       ...createTagDataLoaders(this),
