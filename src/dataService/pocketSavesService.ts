@@ -72,7 +72,9 @@ export class PocketSaveDataService {
     'title',
     'user_id',
   ];
-  constructor(context: Pick<IContext, 'apiId' | 'dbClient' | 'userId'>) {
+  constructor(
+    private context: Pick<IContext, 'apiId' | 'dbClient' | 'userId' | 'unleash'>
+  ) {
     this.apiId = context.apiId;
     this.db = context.dbClient;
     this.userId = context.userId;
@@ -271,9 +273,13 @@ export class PocketSaveDataService {
           throw new NotFoundError('At least one ID was not found');
         }
         // Mirror writes to "shadow" table for itemId overflow mitigation
-        await Promise.all(
-          updated.map((row) => SavedItemDataService.syncShadowTable(row, trx))
-        );
+        if (
+          this.context.unleash.isEnabled(config.unleash.toggle.mirrorWrites)
+        ) {
+          await Promise.all(
+            updated.map((row) => SavedItemDataService.syncShadowTable(row, trx))
+          );
+        }
       });
     } catch (error) {
       // Capture NotFoundError thrown by inner block, and use response

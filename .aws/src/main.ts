@@ -318,6 +318,10 @@ class ListAPI extends TerraformStack {
               name: 'DATABASE_WRITE_PASSWORD',
               valueFrom: databaseSecretEnvVars.writePassword,
             },
+            {
+              name: 'UNLEASH_KEY',
+              valueFrom: `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/UNLEASH_KEY`,
+            },
           ],
           logGroup: this.createCustomLogGroup('app'),
           logMultilinePattern: '^\\S.+',
@@ -473,7 +477,6 @@ class ListAPI extends TerraformStack {
     return logGroup.name;
   }
 }
-
 const app = new App();
 new ListAPI(app, 'list-api');
 app.synth();

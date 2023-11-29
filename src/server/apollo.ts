@@ -28,6 +28,7 @@ import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive
 import { schema } from './schema';
 import { setMorgan } from '@pocket-tools/ts-logger';
 import { serverLogger } from './logger';
+import * as unleash from '../featureFlags';
 
 /**
  * Stopgap method to set global db connection in context,
@@ -85,6 +86,9 @@ export async function startServer(port: number) {
     eventBridgeEventHandler,
   ]);
 
+  // Start unleash client
+  const unleashClient = await unleash.getClient();
+
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
     const dbClient = contextConnection(req.body.query);
@@ -92,6 +96,7 @@ export async function startServer(port: number) {
       request: req,
       dbClient,
       eventEmitter: itemsEventEmitter,
+      unleash: unleashClient,
     });
   };
 
@@ -149,7 +154,7 @@ export async function startServer(port: number) {
     setMorgan(serverLogger),
     expressMiddleware(server, {
       context: async ({ req }) => contextFactory(req),
-    }),
+    })
   );
 
   // The error handler must be before any other error middleware and after all controllers

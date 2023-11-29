@@ -18,6 +18,8 @@ import {
   TagModel,
 } from '../models';
 import { SavedItemModel } from '../models/SavedItem';
+import { Unleash } from 'unleash-client';
+
 export interface IContext {
   userId: string;
   headers: IncomingHttpHeaders;
@@ -25,6 +27,7 @@ export interface IContext {
   userIsPremium: boolean;
   dbClient: Knex;
   eventEmitter: ItemsEventEmitter;
+  unleash: Unleash;
   models: {
     tag: TagModel;
     pocketSave: PocketSaveModel;
@@ -49,6 +52,7 @@ export interface IContext {
 
 export class ContextManager implements IContext {
   public readonly dataLoaders: IContext['dataLoaders'];
+  public readonly unleash: Unleash;
   private _dbClient: Knex;
 
   constructor(
@@ -56,8 +60,10 @@ export class ContextManager implements IContext {
       request: any;
       dbClient: Knex;
       eventEmitter: ItemsEventEmitter;
+      unleash: Unleash;
     }
   ) {
+    this.unleash = config.unleash;
     this._dbClient = config.dbClient;
     this.dataLoaders = {
       ...createTagDataLoaders(this),
@@ -74,7 +80,7 @@ export class ContextManager implements IContext {
     Sentry.configureScope((scope) => {
       scope.setTag(
         'pocket-api-id',
-        (config.request.headers.apiid || '0') as string,
+        (config.request.headers.apiid || '0') as string
       );
       scope.setUser({
         id: config.request.headers.encodedid as string,
