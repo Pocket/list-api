@@ -132,7 +132,7 @@ export class PocketSaveDataService {
    * @param listResult
    */
   public static convertListResult(
-    listResult: RawListResult | RawListResult[] | null
+    listResult: RawListResult | RawListResult[] | null,
   ): ListResult | ListResult[] | null {
     if (listResult === undefined || listResult === null) {
       return null;
@@ -174,7 +174,7 @@ export class PocketSaveDataService {
    */
   public async archiveListRow(
     ids: number[],
-    timestamp: Date
+    timestamp: Date,
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
     const updateValues: ListArchiveUpdate = {
@@ -188,7 +188,7 @@ export class PocketSaveDataService {
       updateValues,
       ids,
       'status',
-      PocketSaveStatus.ARCHIVED
+      PocketSaveStatus.ARCHIVED,
     );
   }
 
@@ -202,7 +202,7 @@ export class PocketSaveDataService {
    */
   public async unArchiveListRow(
     ids: number[],
-    timestamp: Date
+    timestamp: Date,
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
     const updateValues: ListArchiveUpdate = {
@@ -216,7 +216,7 @@ export class PocketSaveDataService {
       updateValues,
       ids,
       'status',
-      PocketSaveStatus.UNREAD
+      PocketSaveStatus.UNREAD,
     );
   }
 
@@ -230,7 +230,7 @@ export class PocketSaveDataService {
    */
   public async favoriteListRow(
     ids: number[],
-    timestamp: Date
+    timestamp: Date,
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
     const updateValues: ListFavoriteUpdate = {
@@ -243,7 +243,7 @@ export class PocketSaveDataService {
       updateValues,
       ids,
       'favorite',
-      FavoriteStatus.FAVORITE
+      FavoriteStatus.FAVORITE,
     );
   }
 
@@ -257,7 +257,7 @@ export class PocketSaveDataService {
    */
   public async unFavoriteListRow(
     ids: number[],
-    timestamp: Date
+    timestamp: Date,
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     const timeUpdate = mysqlTimeString(timestamp, config.database.tz);
     const updateValues: ListFavoriteUpdate = {
@@ -270,7 +270,7 @@ export class PocketSaveDataService {
       updateValues,
       ids,
       'favorite',
-      FavoriteStatus.UNFAVORITE
+      FavoriteStatus.UNFAVORITE,
     );
   }
 
@@ -288,7 +288,7 @@ export class PocketSaveDataService {
     updateValues: ListFavoriteUpdate | ListArchiveUpdate,
     ids: number[],
     checkField: 'status' | 'favorite',
-    value: FavoriteStatus | PocketSaveStatus
+    value: FavoriteStatus | PocketSaveStatus,
   ): Promise<{ updated: ListResult[]; missing: string[] }> {
     // Initialize in outer scope so we can access outside of the
     // try/catch block and transaction block
@@ -322,7 +322,7 @@ export class PocketSaveDataService {
       if (error instanceof NotFoundError) {
         const extantIds = new Set(updated.map((row) => row.item_id));
         missing = setDifference(new Set(ids), extantIds).map((id) =>
-          id.toString()
+          id.toString(),
         );
         // The transaction was rolled back; reset values
         updated = [];

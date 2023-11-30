@@ -123,7 +123,7 @@ describe('savedItemUnDelete mutation', function () {
       expect.objectContaining({
         extensions: { code: 'NOT_FOUND' },
         message: expect.stringContaining('SavedItem does not exist'),
-      })
+      }),
     );
   });
   it('should not emit a delete event if the savedItem did not have an itemId', async () => {
@@ -155,7 +155,7 @@ describe('savedItemUnDelete mutation', function () {
       expect.objectContaining({
         extensions: { code: 'NOT_FOUND' },
         message: expect.stringContaining('SavedItem does not exist'),
-      })
+      }),
     );
   });
   // This might change to a true no-op later, but let's stick with current behavior of

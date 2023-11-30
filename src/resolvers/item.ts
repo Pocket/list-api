@@ -11,9 +11,9 @@ import { SavedItemDataService } from '../dataService';
 export function savedItem(
   parent: Item,
   args,
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
   return new SavedItemDataService(context).getSavedItemByGivenUrl(
-    parent.givenUrl
+    parent.givenUrl,
   );
 }

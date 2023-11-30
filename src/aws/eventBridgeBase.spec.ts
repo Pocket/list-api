@@ -28,11 +28,11 @@ describe('EventBridgeBase.putEvent', () => {
     await client.putEvents(command);
     expect(sentryStub.callCount).toBe(1);
     expect(sentryStub.getCall(0).firstArg.message).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
     expect(consoleSpy.callCount).toBe(1);
     expect(consoleSpy.getCall(0).firstArg.message).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
   });
 
@@ -41,14 +41,14 @@ describe('EventBridgeBase.putEvent', () => {
     await client.putEvents(command);
     expect(sentryStub.callCount).toBe(1);
     expect(sentryStub.getCall(0).firstArg.message).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
     expect(sentryStub.getCall(0).args[1]).toMatchObject({
       extra: { originalError: 'boo!' },
     });
     expect(consoleSpy.callCount).toBe(1);
     expect(consoleSpy.getCall(0).firstArg).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
     expect(consoleSpy.getCall(0).firstArg).toContain(`boo!`);
   });

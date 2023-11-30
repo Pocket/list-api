@@ -1,4 +1,4 @@
-import { writeClient } from '../../../database/client';
+import { readClient, writeClient } from '../../../database/client';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
@@ -18,7 +18,7 @@ async function upsertSavedItem(
   db: Knex,
   status: number,
   date: Date,
-  archived = false
+  archived = false,
 ) {
   await db('list').insert([
     {
@@ -123,6 +123,7 @@ describe('Delete/Undelete SavedItem: ', () => {
 
   afterAll(async () => {
     await writeClient().destroy();
+    await readClient().destroy();
     clock.restore();
     sinon.restore();
     config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;

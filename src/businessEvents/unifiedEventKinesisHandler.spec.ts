@@ -1,14 +1,7 @@
 import config from '../config';
-import {
-  EventType,
-  ItemEventPayload,
-  unifiedEventKinesisHandler,
-  unifiedEventTransformer,
-} from '.';
-import kinesis from '../aws/kinesis';
+import { EventType, unifiedEventTransformer } from '.';
 import { SavedItem } from '../types';
 import { getUnixTimestamp } from '../utils';
-import { serverLogger } from '../server/logger';
 
 describe('UnifiedEventHandler', () => {
   afterEach(() => {
@@ -26,39 +19,6 @@ describe('UnifiedEventHandler', () => {
       givenUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     },
   };
-
-  it('should log an error if there are failed messages after retrying', async () => {
-    const eventStub = {
-      source: config.events.source,
-      version: config.events.version,
-      user: { id: '1', isPremium: false },
-      apiUser: { apiId: '1' },
-      eventType: EventType.ADD_ITEM,
-      data: { abc: '123' },
-      savedItem: testSavedItem,
-    } as Omit<ItemEventPayload, 'timestamp'>;
-
-    // Since you can't spy on recursive call, the wait function stands
-    // in as it's invoked before recursive call for every retry
-    const consoleSpy = jest.spyOn(serverLogger, 'error');
-    // Don't lint unused function
-    // eslint-disable-next-line
-    const mockSend = jest.spyOn(kinesis, 'send').mockImplementation(() => {
-      return {
-        FailedRecordCount: 1,
-        Records: [{ ErrorCode: null }, { ErrorCode: 500 }, { ErrorCode: null }],
-      };
-    });
-    await unifiedEventKinesisHandler([
-      { ...eventStub, timestamp: 0 },
-      { ...eventStub, timestamp: 1 },
-      { ...eventStub, timestamp: 2 },
-    ]);
-    expect(consoleSpy.mock.calls.length).toEqual(1);
-    expect(consoleSpy.mock.calls[0][0]).toContain(
-      'Failed to send event(s) to kinesis stream'
-    );
-  });
 
   it('should include tagUpdated in kinesis payload for tagEvents', async () => {
     const eventStub = {

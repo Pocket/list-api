@@ -48,7 +48,7 @@ describe('SqsListener spec test', function () {
 
     await sqsListener.process(config.aws.sqs.publisherQueue.url, eventData);
     expect(consoleSpy.mock.calls[0][0]).toContain(
-      `unable to add event to queue`
+      `unable to add event to queue`,
     );
   });
 });

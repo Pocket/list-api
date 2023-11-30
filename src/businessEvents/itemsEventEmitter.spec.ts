@@ -12,7 +12,7 @@ describe('ItemsEventEmitter', () => {
   let clock;
   const handler = sinon.fake();
   Object.values(EventType).forEach((event: string) =>
-    emitter.on(event, handler)
+    emitter.on(event, handler),
   );
 
   const testSavedItem: SavedItem = {

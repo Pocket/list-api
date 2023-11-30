@@ -28,7 +28,6 @@ import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive
 import { schema } from './schema';
 import { setMorgan } from '@pocket-tools/ts-logger';
 import { serverLogger } from './logger';
-
 /**
  * Stopgap method to set global db connection in context,
  * depending on whether the request is a query or mutation.
@@ -49,7 +48,11 @@ export const contextConnection = (query: string): Knex => {
   return isMutation ? writeClient() : readClient();
 };
 
-export async function startServer(port: number) {
+export async function startServer(port: number): Promise<{
+  app: express.Express;
+  server: ApolloServer<ContextManager>;
+  url: string;
+}> {
   const app = express();
 
   Sentry.init({
@@ -130,7 +133,7 @@ export async function startServer(port: number) {
     schema,
     plugins,
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true,
   });
 
   await server.start();

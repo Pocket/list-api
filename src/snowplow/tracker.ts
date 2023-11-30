@@ -12,12 +12,12 @@ const emitter = gotEmitter(
   undefined,
   HttpMethod.POST,
   config.snowplow.bufferSize,
-  config.snowplow.retries
+  config.snowplow.retries,
 );
 
 export const tracker = snowPlowTracker(
   emitter,
   null,
   config.snowplow.appId,
-  true
+  true,
 );

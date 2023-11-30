@@ -52,7 +52,7 @@ describe('SavedItemsService', () => {
     });
 
     const savedItems = await new SavedItemDataService(
-      context
+      context,
     ).batchGetSavedItemsByGivenUrls(['https://abc', 'https://def']);
 
     expect(savedItems[0].url).toStrictEqual('https://abc');
@@ -69,7 +69,7 @@ describe('SavedItemsService', () => {
     });
 
     const savedItems = await new SavedItemDataService(
-      context
+      context,
     ).batchGetSavedItemsByGivenIds(['1', '2']);
 
     expect(savedItems[0].url).toStrictEqual('https://abc');
@@ -86,7 +86,7 @@ describe('SavedItemsService', () => {
     });
 
     const savedItemIds = await new SavedItemDataService(
-      context
+      context,
     ).getSavedItemIds(0, 1);
 
     expect(savedItemIds[0]).toStrictEqual(1);
@@ -102,7 +102,7 @@ describe('SavedItemsService', () => {
     });
 
     const savedItemIds = await new SavedItemDataService(
-      context
+      context,
     ).getSavedItemIds(1, 1);
 
     expect(savedItemIds[0]).toStrictEqual(2);
@@ -118,7 +118,7 @@ describe('SavedItemsService', () => {
     });
 
     const savedItemIds = await new SavedItemDataService(
-      context
+      context,
     ).getSavedItemIds(4, 1);
 
     expect(savedItemIds.length).toStrictEqual(0);
