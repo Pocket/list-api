@@ -91,7 +91,7 @@ export async function startServer(port: number): Promise<{
   ]);
 
   // Start unleash client
-  const unleashClient = await unleash.getClient();
+  const unleashClient = unleash.getClient();
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {

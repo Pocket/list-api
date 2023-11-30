@@ -232,7 +232,7 @@ describe('updateTag Mutation: ', () => {
   it('should update savedItems in chunks if applied to more than the max transaction size of savedItems', async () => {
     const saveServiceUpdateSpy = sinon.spy(
       SavedItemDataService.prototype,
-      'updateListItemMany',
+      'listItemUpdateBuilder',
     );
     const id = TagModel.encodeId('everything-everywhere');
     const variables = {
@@ -242,9 +242,8 @@ describe('updateTag Mutation: ', () => {
       query: updateTagsMutation,
       variables,
     });
-    expect(saveServiceUpdateSpy.callCount).to.equal(1);
     // Expect batch of two calls, and all three are in response
-    // expect(saveServiceUpdateSpy.getCall(0).returnValue.length).to.equal(2);
+    expect(saveServiceUpdateSpy.callCount).to.equal(2);
     expect(res.body.data.updateTag.savedItems.edges.length).to.equal(3);
   });
   it('should log the tag mutation', async () => {

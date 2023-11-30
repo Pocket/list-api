@@ -281,6 +281,12 @@ export class SavedItemDataService {
     return await this.getSavedItemById(itemId);
   }
 
+  /**
+   * Mirror writes from `list` table to `list_schema_update` table
+   * as part of item_id overflow mitigation.
+   * @param rows the rows to copy into the shadow table
+   * @param trx the transaction object to use for the copy
+   */
   public static async syncShadowTableBulk(
     rows: RawListResult[],
     trx: Knex.Transaction,
@@ -288,6 +294,7 @@ export class SavedItemDataService {
     const input = rows.map((row) =>
       Object.keys(row).reduce((obj, key) => {
         if (row[key] instanceof Date && isNaN(row[key])) {
+          // Convert "Invalid Date" into the mysql zero-date
           obj[key] = '0000-00-00 00:00:00';
         } else {
           obj[key] = row[key];
@@ -297,12 +304,19 @@ export class SavedItemDataService {
     );
     return trx('list_schema_update').insert(input).onConflict().merge();
   }
+  /**
+   * Mirror writes from `list` table to `list_schema_update` table
+   * as part of item_id overflow mitigation.
+   * @param rows the rows to copy into the shadow table
+   * @param trx the transaction object to use for the copy
+   */
   public static async syncShadowTable(
     row: RawListResult,
     trx: Knex.Transaction,
   ) {
     const input = Object.keys(row).reduce((obj, key) => {
       if (row[key] instanceof Date && isNaN(row[key])) {
+        // Convert "Invalid Date" into the mysql zero-date
         obj[key] = '0000-00-00 00:00:00';
       } else {
         obj[key] = row[key];
@@ -508,7 +522,7 @@ export class SavedItemDataService {
    * Do not run this query as-is. Should only be used to compose other
    * queries.
    */
-  private listItemUpdateBuilder(timestamp?: Date): Knex.QueryBuilder {
+  public listItemUpdateBuilder(timestamp?: Date): Knex.QueryBuilder {
     return this.db
       .update({
         time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),

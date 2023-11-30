@@ -36,7 +36,7 @@ describe('context', () => {
       },
     ])(
       'sets the Sentry scope with appropriate headers',
-      async ({ headers, expectedApiId }) => {
+      ({ headers, expectedApiId }) => {
         new ContextManager({
           request: {
             headers: { userid: '1', ...headers },
@@ -125,7 +125,7 @@ describe('context', () => {
     let batchIdFnSpy;
     let context: IContext;
 
-    beforeEach(async () => {
+    beforeEach(() => {
       batchUrlFnSpy =
         SavedItemDataService.prototype.batchGetSavedItemsByGivenUrls = jest
           .fn()

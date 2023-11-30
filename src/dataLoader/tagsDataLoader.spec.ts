@@ -27,7 +27,6 @@ describe('tags dataloader', function () {
 
   afterAll(() => {
     sinon.restore();
-    jest.clearAllMocks();
   });
 
   beforeAll(() => {
