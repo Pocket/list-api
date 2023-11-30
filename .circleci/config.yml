@@ -178,7 +178,7 @@ jobs:
           name: run tests
           command: |
             export $(egrep -v '^#' .docker/local.env | xargs -0)
-            npm run test-integrations  -- --ci --watchAll=false --forceExit
+            npm run test-integrations  -- --ci --watchAll=false
 
   test_specs:
     description: Run spec tests
@@ -339,7 +339,6 @@ workflows:
           sentry_org: pocket
           workspace-path: /tmp/workspace
           source-maps-path: /tmp/workspace/app_prod/dist
-          inject-source-maps: true
           requires:
             - deploy_prod
 
@@ -354,6 +353,5 @@ workflows:
           sentry_org: pocket
           workspace-path: /tmp/workspace
           source-maps-path: /tmp/workspace/app_prod/dist
-          inject-source-maps: true
           requires:
             - deploy_dev
