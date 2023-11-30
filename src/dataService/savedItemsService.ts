@@ -495,7 +495,9 @@ export class SavedItemDataService {
     if (this.flags.mirrorWrites) {
       await this.mirroredListItemUpdateOne(itemId, trx, timestamp);
     } else {
-      await this.listItemUpdateBuilder().where('item_id', itemId);
+      await this.listItemUpdateBuilder()
+        .where('item_id', itemId)
+        .transacting(trx);
     }
   }
 
