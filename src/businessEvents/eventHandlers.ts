@@ -1,4 +1,4 @@
-import { UnifiedEventKinesHandler } from './unifiedEventKinesisHandler';
+import { UnifiedEventKinesisHandler } from './unifiedEventKinesisHandler';
 import { SqsListener } from './sqs/sqsListener';
 import { ItemsEventEmitter } from './itemsEventEmitter';
 import { SnowplowHandler } from './snowplowHandler';
@@ -19,7 +19,7 @@ export function unifiedEventHandler(emitter: ItemsEventEmitter): void {
   const unifiedEventsToListen = Object.keys(
     config.aws.kinesis.unifiedEvents.events,
   ) as Array<keyof typeof EventType>;
-  new UnifiedEventKinesHandler(emitter, unifiedEventsToListen);
+  new UnifiedEventKinesisHandler(emitter, unifiedEventsToListen);
 }
 
 /**

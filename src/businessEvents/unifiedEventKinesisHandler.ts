@@ -12,7 +12,7 @@ import {
 import { serverLogger } from '../server/logger';
 import { ItemsEventEmitter } from './itemsEventEmitter';
 
-export class UnifiedEventKinesHandler {
+export class UnifiedEventKinesisHandler {
   private readonly kinesis: KinesisClient;
   constructor(
     emitter: ItemsEventEmitter,
