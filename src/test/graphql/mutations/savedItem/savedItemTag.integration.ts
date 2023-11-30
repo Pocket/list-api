@@ -237,7 +237,7 @@ describe('savedItemTag mutation', () => {
           code: 'NOT_FOUND',
         },
         message: expect.stringContaining(
-          "Not Found: SavedItem with givenUrl='http://hij' does not exist"
+          "Not Found: SavedItem with givenUrl='http://hij' does not exist",
         ),
       }),
     ]);

@@ -106,11 +106,11 @@ describe('getSavedItems pagination', () => {
       const edges = res.body.data._entities[0].savedItems.edges;
       edges.forEach((edge) => {
         const [actualId, actualTimestamp] = ListPaginationService.decodeCursor(
-          edge.cursor
+          edge.cursor,
         );
         expect(actualId).to.equal(edge.node.id);
         expect(parseInt(actualTimestamp)).to.equal(
-          new Date(rowsById[actualId][sortField]).getTime() / 1000
+          new Date(rowsById[actualId][sortField]).getTime() / 1000,
         );
       });
     });
@@ -150,7 +150,7 @@ describe('getSavedItems pagination', () => {
       const edges = res.body.data._entities[0].savedItems.edges;
       edges.forEach((edge) => {
         const [actualId, actualTimestamp] = ListPaginationService.decodeCursor(
-          edge.cursor
+          edge.cursor,
         );
         expect(actualId).to.equal(edge.node.id);
         expect(actualTimestamp).to.be.null;

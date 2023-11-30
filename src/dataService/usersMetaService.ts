@@ -35,7 +35,7 @@ export class UsersMetaService {
    */
   private insertTimestampByProperty(
     property: number,
-    timestamp: Date
+    timestamp: Date,
   ): Knex.QueryBuilder {
     return this.db.insert({
       user_id: this.userId,
@@ -55,13 +55,13 @@ export class UsersMetaService {
    */
   public async logTagMutation(
     timestamp: Date,
-    trx: Knex.Transaction
+    trx: Knex.Transaction,
   ): Promise<void> {
     const propertyCode = UsersMetaService.propertiesMap.tag;
     // The table should be unique on property:user_id for tag log
     await this.deleteByProperty(propertyCode).transacting(trx);
     await this.insertTimestampByProperty(propertyCode, timestamp).transacting(
-      trx
+      trx,
     );
   }
 }

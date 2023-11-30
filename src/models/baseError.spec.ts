@@ -32,6 +32,6 @@ describe('Error model', () => {
     ({ path, expected }) => {
       const actual = new BaseErrorModel().path(path);
       expect(actual).toStrictEqual(expected);
-    }
+    },
   );
 });

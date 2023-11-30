@@ -22,8 +22,8 @@ export class EventBridgeBase {
   async putEvents(command: PutEventsCommand) {
     const failedEventError = new Error(
       `Failed to send event to event bus. Event Body:\n ${JSON.stringify(
-        command.input['Entries']
-      )}`
+        command.input['Entries'],
+      )}`,
     );
     try {
       const output: PutEventsCommandOutput = await this.client.send(command);
@@ -34,7 +34,7 @@ export class EventBridgeBase {
       }
     } catch (error) {
       serverLogger.error(
-        failedEventError.message + ` OriginalError: ${error.message}`
+        failedEventError.message + ` OriginalError: ${error.message}`,
       );
       // Capture full client send failure in Sentry and Cloudwatch
       Sentry.captureException(failedEventError, {

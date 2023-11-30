@@ -4,7 +4,7 @@ import config from '../../config';
 function mockParserRequest(
   urlToParse: string,
   data: any,
-  options: { endpoint: string; queryParams: { [key: string]: string } }
+  options: { endpoint: string; queryParams: { [key: string]: string } },
 ) {
   nock(config.parserDomain)
     .get(options.endpoint)
@@ -21,7 +21,7 @@ export const mockParserGetItemRequest = (urlToParse: string, data: any) => {
 
 export const mockParserGetItemIdRequest = (
   urlToParse: string,
-  itemId: string | null
+  itemId: string | null,
 ) => {
   return mockParserRequest(
     urlToParse,
@@ -29,6 +29,6 @@ export const mockParserGetItemIdRequest = (
     {
       endpoint: `/${config.parserVersion}/getItem`,
       queryParams: { url: urlToParse, createIfNone: 'false' },
-    }
+    },
   );
 };

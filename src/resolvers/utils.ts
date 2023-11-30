@@ -30,7 +30,7 @@ export function getSavedItemMapFromTags(tags) {
  * @returns map with savedItemId and its unique tagNames
  */
 export function getSavedItemTagsMap(
-  input: SavedItemTagsInput[]
+  input: SavedItemTagsInput[],
 ): SavedItemTagsMap {
   return input.reduce((savedItemTags, input) => {
     let tags = input.tags;
@@ -47,7 +47,7 @@ export function getSavedItemTagsMap(
  * @param savedItemTagsMap
  */
 export function convertToTagSaveAssociations(
-  savedItemTagsMap: SavedItemTagsMap
+  savedItemTagsMap: SavedItemTagsMap,
 ): TagSaveAssociation[] {
   const tagSaveAssociations: TagSaveAssociation[] = [];
   for (const savedItemId in savedItemTagsMap) {
@@ -78,7 +78,7 @@ export async function lazyParentLoad<T extends object, K, A extends keyof T>(
   key: K,
   loader: DataLoader<K, T>,
   parent: T,
-  attr: A
+  attr: A,
 ): Promise<T[A]> {
   if (attr in parent && parent[attr] != undefined) {
     return Promise.resolve(parent[attr]);

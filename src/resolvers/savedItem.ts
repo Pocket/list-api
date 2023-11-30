@@ -11,7 +11,7 @@ import { IContext } from '../server/context';
 export async function suggestedTags(
   parent: SavedItem,
   args,
-  context: IContext
+  context: IContext,
 ): Promise<Pick<Tag, 'id' | 'name'>[]> {
   if (!context.userIsPremium) {
     //Return an empty array if the user is not premium
@@ -21,7 +21,7 @@ export async function suggestedTags(
 
   return new TagDataService(
     context,
-    new SavedItemDataService(context)
+    new SavedItemDataService(context),
   ).getSuggestedTags(parent);
 }
 

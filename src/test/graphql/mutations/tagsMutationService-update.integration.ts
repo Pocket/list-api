@@ -170,9 +170,9 @@ describe('updateTag Mutation: ', () => {
       expect(res).is.not.undefined;
       expect(res.body.data.updateTag.name).equals(newTagName);
       expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
-        expectedSavedItems
+        expectedSavedItems,
       );
-    }
+    },
   );
 
   it('should return error if tagId does not exist', async () => {
@@ -188,7 +188,7 @@ describe('updateTag Mutation: ', () => {
     expect(res).is.not.undefined;
     expect(res.body.data).is.null;
     expect(res.body.errors[0].message).contains(
-      `Tag Id ${variables.input.id} does not exist`
+      `Tag Id ${variables.input.id} does not exist`,
     );
   });
   it('should update tag name with primary key conflict', async () => {
@@ -225,14 +225,14 @@ describe('updateTag Mutation: ', () => {
     expect(res).is.not.undefined;
     expect(res.body.data.updateTag.name).equals('existing_tag');
     expect(res.body.data.updateTag.savedItems.edges).to.deep.equalInAnyOrder(
-      expectedSavedItems
+      expectedSavedItems,
     );
     expect(QueryOldTags.length).equals(0);
   });
   it('should update savedItems in chunks if applied to more than the max transaction size of savedItems', async () => {
     const saveServiceUpdateSpy = sinon.spy(
       SavedItemDataService.prototype,
-      'updateListItemMany'
+      'updateListItemMany',
     );
     const id = TagModel.encodeId('everything-everywhere');
     const variables = {
@@ -271,7 +271,7 @@ describe('updateTag Mutation: ', () => {
     expect(res.body.errors).not.to.be.undefined;
     expect(res.body.errors.length).to.equal(1);
     expect(res.body.errors[0].message).to.contain(
-      'Tag name must have at least 1 non-whitespace character.'
+      'Tag name must have at least 1 non-whitespace character.',
     );
     expect(res.body.errors[0].extensions.code).to.equal('BAD_USER_INPUT');
   });
@@ -298,7 +298,7 @@ describe('updateTag Mutation: ', () => {
     });
     expect(res.body.errors.length).to.equal(1);
     expect(res.body.errors[0].extensions.code).to.equal(
-      'INTERNAL_SERVER_ERROR'
+      'INTERNAL_SERVER_ERROR',
     );
     expect(await listStateQuery).to.deep.equalInAnyOrder(listState);
     expect(await tagStateQuery).to.deep.equalInAnyOrder(tagState);

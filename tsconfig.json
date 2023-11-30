@@ -4,7 +4,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDirs": ["src", "lambda"],
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noEmitHelpers": true,
+    "importHelpers": true
   },
   "exclude": ["node_modules"],
   "include": ["src/**/*.ts", "src/config"],

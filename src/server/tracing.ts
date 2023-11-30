@@ -37,7 +37,7 @@ const _resource = Resource.default().merge(
   new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName,
     [SemanticResourceAttributes.SERVICE_VERSION]: config.sentry.release,
-  })
+  }),
 );
 
 const _traceExporter = new OTLPTraceExporter({
@@ -94,7 +94,7 @@ export async function nodeSDKBuilder() {
       .shutdown()
       .then(() => serverLogger.info('Tracing and Metrics terminated'))
       .catch((error) =>
-        serverLogger.error('Error terminating tracing and metrics', error)
+        serverLogger.error('Error terminating tracing and metrics', error),
       )
       .finally(() => process.exit(0));
   });

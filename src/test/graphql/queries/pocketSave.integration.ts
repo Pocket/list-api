@@ -123,21 +123,21 @@ describe('getPocketSaveByItemId', () => {
     expect(res.body.data?._entities[0].saveById[0].archived).toBe(false);
     expect(res.body.data?._entities[0].saveById[0].archivedAt).toBe(null);
     expect(res.body.data?._entities[0].saveById[0].createdAt).toBe(
-      date1.toISOString()
+      date1.toISOString(),
     );
     expect(res.body.data?._entities[0].saveById[0].deletedAt).toBe(null);
     expect(res.body.data?._entities[0].saveById[0].favorite).toBe(false);
     expect(res.body.data?._entities[0].saveById[0].favoritedAt).toBe(null);
     expect(res.body.data?._entities[0].saveById[0].givenUrl).toBe(
-      'http://www.ideashower.com/'
+      'http://www.ideashower.com/',
     );
     expect(res.body.data?._entities[0].saveById[0].id).toBe('55');
     expect(res.body.data?._entities[0].saveById[0].status).toBe('UNREAD');
     expect(res.body.data?._entities[0].saveById[0].title).toBe(
-      'the Idea Shower'
+      'the Idea Shower',
     );
     expect(res.body.data?._entities[0].saveById[0].updatedAt).toBe(
-      date4.toISOString()
+      date4.toISOString(),
     );
   });
   it('should return multiple pocket saves with all appropriate fields', async () => {
@@ -248,7 +248,7 @@ describe('getPocketSaveByItemId', () => {
         variables,
       });
     expect(res.body.data?._entities[0].saveById[0].deletedAt).toBe(
-      date5.toISOString()
+      date5.toISOString(),
     );
   });
   it('should resolve archived properly', async () => {
@@ -276,13 +276,13 @@ describe('getPocketSaveByItemId', () => {
       });
     expect(archivedRes.body.data?._entities[0].saveById[0].archived).toBe(true);
     expect(archivedRes.body.data?._entities[0].saveById[0].archivedAt).toBe(
-      date5.toISOString()
+      date5.toISOString(),
     );
     expect(nonArchivedRes.body.data?._entities[0].saveById[0].archived).toBe(
-      false
+      false,
     );
     expect(nonArchivedRes.body.data?._entities[0].saveById[0].archivedAt).toBe(
-      null
+      null,
     );
   });
 });

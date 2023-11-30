@@ -34,7 +34,7 @@ describe('ParserCallerTest', function () {
 
     const res = ParserCaller.getOrCreateItem(urlToParse, 1);
     await expect(res).to.be.rejectedWith(
-      `Unable to parse and generate item for ${urlToParse}`
+      `Unable to parse and generate item for ${urlToParse}`,
     );
   });
 
@@ -48,7 +48,7 @@ describe('ParserCallerTest', function () {
 
     const res = ParserCaller.getOrCreateItem(urlToParse, 1);
     await expect(res).to.be.rejectedWith(
-      `Unable to parse and generate item for ${urlToParse}`
+      `Unable to parse and generate item for ${urlToParse}`,
     );
   });
 
@@ -62,7 +62,7 @@ describe('ParserCallerTest', function () {
 
     const res = ParserCaller.getOrCreateItem(urlToParse, 1);
     await expect(res).to.be.rejectedWith(
-      `Unable to parse and generate item for ${urlToParse}`
+      `Unable to parse and generate item for ${urlToParse}`,
     );
   });
 

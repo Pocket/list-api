@@ -23,12 +23,12 @@ export type ItemResponse = {
  */
 export class ParserCaller {
   private static async internalGetOrCreateItem(
-    url: string
+    url: string,
   ): Promise<ItemResponse> {
     const response = await fetch(
       `${config.parserDomain}/${
         config.parserVersion
-      }/getItemListApi?url=${encodeURIComponent(url)}&getItem=1`
+      }/getItemListApi?url=${encodeURIComponent(url)}&getItem=1`,
     );
 
     const data: any = await response.json();
@@ -46,7 +46,7 @@ export class ParserCaller {
 
   public static async getOrCreateItem(
     url: string,
-    tries = config.parserRetries
+    tries = config.parserRetries,
   ): Promise<ItemResponse> {
     const requestCallback = () => this.internalGetOrCreateItem(url);
     return this.sendRequest(requestCallback, tries);
@@ -54,7 +54,7 @@ export class ParserCaller {
 
   private static async sendRequest<R>(
     requestCallback: () => Promise<R>,
-    tries = config.parserRetries
+    tries = config.parserRetries,
   ): Promise<R> {
     let lastError = null;
     while (tries > 0) {
@@ -80,7 +80,7 @@ export class ParserCaller {
    */
   public static async getItemIdFromUrl(
     url: string,
-    tries = config.parserRetries
+    tries = config.parserRetries,
   ): Promise<string | null> {
     const requestCallback = () => this.internalGetItemIdFromUrl(url);
     return this.sendRequest(requestCallback, tries);
@@ -98,7 +98,7 @@ export class ParserCaller {
     const response = await fetch(
       `${config.parserDomain}/${
         config.parserVersion
-      }/getItem?url=${encodeURIComponent(url)}&createIfNone=false`
+      }/getItem?url=${encodeURIComponent(url)}&createIfNone=false`,
     );
 
     const data: PartialGetItemResponse | null = await response.json();

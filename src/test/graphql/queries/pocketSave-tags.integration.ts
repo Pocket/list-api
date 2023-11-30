@@ -13,7 +13,7 @@ describe('pocketSave.tags', () => {
   // proxy for testing we're using dataloader => batch queries
   const dbBatchSpy = sinon.spy(
     TagDataService.prototype,
-    'batchGetTagsByUserItems'
+    'batchGetTagsByUserItems',
   );
   const db = readClient();
   const headers = { userid: '1' };

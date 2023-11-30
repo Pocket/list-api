@@ -108,7 +108,7 @@ describe('savedItemFavorite mutation', function () {
       expect.objectContaining({
         extensions: { code: 'NOT_FOUND' },
         message: expect.stringContaining('SavedItem does not exist'),
-      })
+      }),
     );
   });
   it('should not emit an favorite event if the savedItem did not have an itemId', async () => {
@@ -141,7 +141,7 @@ describe('savedItemFavorite mutation', function () {
       expect.objectContaining({
         extensions: { code: 'NOT_FOUND' },
         message: expect.stringContaining('SavedItem does not exist'),
-      })
+      }),
     );
     expect(eventSpy.callCount).toEqual(0);
   });

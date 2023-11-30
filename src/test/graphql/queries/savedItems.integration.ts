@@ -146,7 +146,7 @@ describe('getSavedItems', () => {
     });
     expect(res.body.errors).to.be.undefined;
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.status
+      res.body.data?._entities[0].savedItems.edges[0].node.status,
     ).to.equal('UNREAD');
   });
 
@@ -162,16 +162,16 @@ describe('getSavedItems', () => {
     expect(res.body.data?._entities[0].savedItems.totalCount).to.equal(3);
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(2);
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://ijk'
+      'http://ijk',
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
+      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl,
     ).to.equal('http://ijk');
     expect(res.body.data?._entities[0].savedItems.edges[1].node.url).to.equal(
-      'http://def'
+      'http://def',
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[1].node.item.givenUrl
+      res.body.data?._entities[0].savedItems.edges[1].node.item.givenUrl,
     ).to.equal('http://def');
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
       .true;
@@ -192,10 +192,10 @@ describe('getSavedItems', () => {
     });
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://abc'
+      'http://abc',
     );
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
+      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl,
     ).to.equal('http://abc');
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasNextPage).to.be
       .false;
@@ -226,10 +226,10 @@ describe('getSavedItems', () => {
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
       .be.true;
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://def'
+      'http://def',
     );
     expect(res.body.data?._entities[0].savedItems.edges[1].node.url).to.equal(
-      'http://abc'
+      'http://abc',
     );
   });
 
@@ -248,7 +248,7 @@ describe('getSavedItems', () => {
     });
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl
+      res.body.data?._entities[0].savedItems.edges[0].node.item.givenUrl,
     ).to.equal('http://ijk');
     expect(res.body.data?._entities[0].savedItems.pageInfo.hasPreviousPage).to
       .be.false;
@@ -445,21 +445,21 @@ describe('getSavedItems', () => {
       expect(res.body.data?._entities[0].savedItems.edges.length)
         .to.equal(2)
         .and.to.equal(
-          compareRes.body.data?._entities[0].savedItems.edges.length
+          compareRes.body.data?._entities[0].savedItems.edges.length,
         );
       expect(res.body.data?._entities[0].savedItems.edges[0]).to.deep.equal(
-        compareRes.body.data?._entities[0].savedItems.edges[1]
+        compareRes.body.data?._entities[0].savedItems.edges[1],
       );
       expect(res.body.data?._entities[0].savedItems.edges[1]).to.deep.equal(
-        compareRes.body.data?._entities[0].savedItems.edges[0]
+        compareRes.body.data?._entities[0].savedItems.edges[0],
       );
       expect(
-        res.body.data._entities[0].savedItems.pageInfo.startCursor
+        res.body.data._entities[0].savedItems.pageInfo.startCursor,
       ).to.equal(
-        compareRes.body.data._entities[0].savedItems.pageInfo.endCursor
+        compareRes.body.data._entities[0].savedItems.pageInfo.endCursor,
       );
       expect(res.body.data._entities[0].savedItems.pageInfo.endCursor).to.equal(
-        compareRes.body.data._entities[0].savedItems.pageInfo.startCursor
+        compareRes.body.data._entities[0].savedItems.pageInfo.startCursor,
       );
     });
     test.each([
@@ -518,10 +518,10 @@ describe('getSavedItems', () => {
         });
         expect(res.body.errors).to.be.undefined;
         const urls = res.body.data?._entities[0].savedItems.edges.map(
-          (edge) => edge.node.item.givenUrl
+          (edge) => edge.node.item.givenUrl,
         );
         expect(expectedUrls).to.deep.equal(urls);
-      }
+      },
     );
   });
   it('should throw error if cursor is not found', async () => {

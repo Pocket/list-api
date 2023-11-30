@@ -101,7 +101,7 @@ describe('tag model', () => {
 
     it('should shorten to 25 characters', () => {
       const cleaned = tagModel.sanitizeTagName(
-        'let it be/ let it be/ let it be/ let it be/ speaking words of wisdom/ let it be'
+        'let it be/ let it be/ let it be/ let it be/ speaking words of wisdom/ let it be',
       );
       expect(cleaned).to.equal('let it be/ let it be/ let');
     });

@@ -51,7 +51,7 @@ export class SavedItemDataService {
    * @param dbResult
    */
   public static convertDbResultStatus(
-    dbResult: DbResult | DbResult[]
+    dbResult: DbResult | DbResult[],
   ): DbResult | DbResult[] {
     if (dbResult == null) {
       return dbResult;
@@ -90,12 +90,12 @@ export class SavedItemDataService {
       'favorite as isFavorite',
       'title',
       this.db.raw(
-        'CASE WHEN favorite = 1 THEN UNIX_TIMESTAMP(time_favorited) ELSE null END as favoritedAt '
+        'CASE WHEN favorite = 1 THEN UNIX_TIMESTAMP(time_favorited) ELSE null END as favoritedAt ',
       ),
       'time_favorited', // for pagination sort
       'status',
       this.db.raw(
-        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN true ELSE false END as isArchived`
+        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN true ELSE false END as isArchived`,
       ),
       this.db.raw('UNIX_TIMESTAMP(time_added) as _createdAt'),
       'time_added', // for pagination sort
@@ -103,11 +103,11 @@ export class SavedItemDataService {
       this.db.raw('UNIX_TIMESTAMP(time_updated) as _updatedAt'),
       'time_updated', // for pagination sort
       this.db.raw(
-        `CASE WHEN status = ${SavedItemStatus.DELETED} THEN UNIX_TIMESTAMP(time_updated) ELSE null END as _deletedAt`
+        `CASE WHEN status = ${SavedItemStatus.DELETED} THEN UNIX_TIMESTAMP(time_updated) ELSE null END as _deletedAt`,
       ),
       this.db.raw(
-        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN UNIX_TIMESTAMP(time_read) ELSE null END as archivedAt`
-      )
+        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN UNIX_TIMESTAMP(time_read) ELSE null END as archivedAt`,
+      ),
     );
   }
 
@@ -166,7 +166,7 @@ export class SavedItemDataService {
   public async getSavedItemTimeRead(itemId: string): Promise<any> {
     return this.db('list')
       .select(
-        this.db.raw('SQL_NO_CACHE UNIX_TIMESTAMP(time_read) as time_read')
+        this.db.raw('SQL_NO_CACHE UNIX_TIMESTAMP(time_read) as time_read'),
       )
       .where({ item_id: itemId, user_id: this.userId })
       .first();
@@ -184,7 +184,7 @@ export class SavedItemDataService {
   public async updateSavedItemFavoriteProperty(
     itemId: string,
     favorite: boolean,
-    updatedAt?: Date
+    updatedAt?: Date,
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeFavorited = favorite ? timestamp : '0000-00-00 00:00:00';
@@ -212,7 +212,7 @@ export class SavedItemDataService {
   public async updateSavedItemArchiveProperty(
     itemId: string,
     archived: boolean,
-    updatedAt?: Date
+    updatedAt?: Date,
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeArchived = archived ? timestamp : '0000-00-00 00:00:00';
@@ -286,7 +286,7 @@ export class SavedItemDataService {
    */
   public async updateSavedItemUnDelete(
     itemId: string,
-    updatedAt?: Date
+    updatedAt?: Date,
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const query: any = await this.getSavedItemTimeRead(itemId);
@@ -316,7 +316,7 @@ export class SavedItemDataService {
    */
   public async upsertSavedItem(
     item: ItemResponse,
-    savedItemUpsertInput: SavedItemUpsertInput
+    savedItemUpsertInput: SavedItemUpsertInput,
   ): Promise<SavedItem> {
     const currentDate = SavedItemDataService.formatDate(new Date());
     const givenTimestamp = new Date(savedItemUpsertInput.timestamp * 1000);
@@ -355,11 +355,11 @@ export class SavedItemDataService {
    */
   public updateListItemMany(
     itemIds: string[],
-    timestamp?: Date
+    timestamp?: Date,
   ): Knex.QueryBuilder[] {
     const itemBatches = chunk(itemIds, config.database.maxTransactionSize);
     return itemBatches.map((ids) =>
-      this.listItemUpdateBuilder(timestamp).whereIn('item_id', ids)
+      this.listItemUpdateBuilder(timestamp).whereIn('item_id', ids),
     );
   }
 

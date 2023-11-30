@@ -188,7 +188,7 @@ describe('item', () => {
     const entities = res.body.data._entities;
     expect(entities.length).toEqual(1);
     expect(entities[0].givenUrl).toEqual(
-      'https://www.youtube.com/watch?v=Tpbo25iBvfU'
+      'https://www.youtube.com/watch?v=Tpbo25iBvfU',
     );
     expect(entities[0].savedItem).toBeNull;
   });

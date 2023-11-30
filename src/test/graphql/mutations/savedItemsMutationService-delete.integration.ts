@@ -18,7 +18,7 @@ async function upsertSavedItem(
   db: Knex,
   status: number,
   date: Date,
-  archived = false
+  archived = false,
 ) {
   await db('list').insert([
     {
