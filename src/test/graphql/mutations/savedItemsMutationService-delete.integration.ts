@@ -1,4 +1,4 @@
-import { writeClient } from '../../../database/client';
+import { readClient, writeClient } from '../../../database/client';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
@@ -123,6 +123,7 @@ describe('Delete/Undelete SavedItem: ', () => {
 
   afterAll(async () => {
     await writeClient().destroy();
+    await readClient().destroy();
     clock.restore();
     sinon.restore();
     config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;
