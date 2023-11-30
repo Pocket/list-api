@@ -130,7 +130,7 @@ export async function startServer(port: number) {
     schema,
     plugins,
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true,
   });
 
   await server.start();
