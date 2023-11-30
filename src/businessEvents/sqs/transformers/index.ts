@@ -58,7 +58,7 @@ export async function permLibSqsTransformer(data: ItemEventPayload) {
     givenUrl: savedItem.url,
     timeAdded: mysqlTimeString(
       new Date(savedItem._createdAt * 1000),
-      config.database.tz
+      config.database.tz,
     ),
     resolvedId: savedItem.resolvedId,
   };

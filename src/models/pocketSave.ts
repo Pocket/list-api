@@ -42,13 +42,13 @@ export class PocketSaveModel {
   public async getById(ids: string[]): Promise<SaveByIdResult[]> {
     const listRows = await this.saveService.getListRowsById(ids);
     const pocketSaves = listRows.map((row) =>
-      PocketSaveModel.transformListRow(row)
+      PocketSaveModel.transformListRow(row),
     );
     const missingIds = ids.filter(
-      (id) => !pocketSaves.some((obj) => obj.id === id)
+      (id) => !pocketSaves.some((obj) => obj.id === id),
     );
     const missingErrors = missingIds.map((id) =>
-      this.context.models.notFound.message('id', id, true)
+      this.context.models.notFound.message('id', id, true),
     );
     return [].concat(pocketSaves, missingErrors);
   }
@@ -65,7 +65,7 @@ export class PocketSaveModel {
   public async getManyById(ids: string[]): Promise<PocketSave[]> {
     const listRows = await this.saveService.getListRowsById(ids);
     const pocketSaves = listRows.map((row) =>
-      PocketSaveModel.transformListRow(row)
+      PocketSaveModel.transformListRow(row),
     );
     return pocketSaves;
   }
@@ -86,12 +86,12 @@ export class PocketSaveModel {
   public async saveArchive(
     ids: string[],
     timestamp: Date,
-    path: GraphQLResolveInfo['path']
+    path: GraphQLResolveInfo['path'],
   ): Promise<SaveWriteMutationPayload> {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.archiveListRow(
       uniqueIds,
-      timestamp
+      timestamp,
     );
     const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     // TODO: Emit events
@@ -120,12 +120,12 @@ export class PocketSaveModel {
   public async saveUnArchive(
     ids: string[],
     timestamp: Date,
-    path: GraphQLResolveInfo['path']
+    path: GraphQLResolveInfo['path'],
   ): Promise<SaveWriteMutationPayload> {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.unArchiveListRow(
       uniqueIds,
-      timestamp
+      timestamp,
     );
     const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     // TODO: Emit events
@@ -146,12 +146,12 @@ export class PocketSaveModel {
   public async saveFavorite(
     ids: string[],
     timestamp: Date,
-    path: GraphQLResolveInfo['path']
+    path: GraphQLResolveInfo['path'],
   ): Promise<SaveWriteMutationPayload> {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.favoriteListRow(
       uniqueIds,
-      timestamp
+      timestamp,
     );
     const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     //todo: emit event
@@ -172,12 +172,12 @@ export class PocketSaveModel {
   public async saveUnFavorite(
     ids: string[],
     timestamp: Date,
-    path: GraphQLResolveInfo['path']
+    path: GraphQLResolveInfo['path'],
   ): Promise<SaveWriteMutationPayload> {
     const uniqueIds = uniqueArray(ids.map((id) => parseInt(id)));
     const { updated, missing } = await this.saveService.unFavoriteListRow(
       uniqueIds,
-      timestamp
+      timestamp,
     );
     const payload = this.formatSaveWriteMutationPayload(missing, updated, path);
     //todo: emit event
@@ -195,7 +195,7 @@ export class PocketSaveModel {
   private formatSaveWriteMutationPayload(
     missing: string[],
     updated: ListResult[],
-    path: GraphQLResolveInfo['path']
+    path: GraphQLResolveInfo['path'],
   ): SaveWriteMutationPayload {
     // prettier-ignore
     const errors =

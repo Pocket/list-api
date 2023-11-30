@@ -97,7 +97,7 @@ export class ListPaginationService {
   private static toGraphql(entity: ListEntity[]): SavedItemResult[];
   private static toGraphql(entity: ListEntity): SavedItemResult;
   private static toGraphql(
-    entity: ListEntity | ListEntity[]
+    entity: ListEntity | ListEntity[],
   ): SavedItemResult | SavedItemResult[] {
     if (Array.isArray(entity)) {
       return entity.map((row) => ListPaginationService._toGraphql(row));
@@ -107,7 +107,7 @@ export class ListPaginationService {
   }
 
   private static _toGraphql(
-    entity: ListEntity
+    entity: ListEntity,
   ): Omit<SavedItem, 'item' | 'tags'> {
     return {
       url: entity.given_url,
@@ -152,7 +152,7 @@ export class ListPaginationService {
           '`time_updated` int(10), ' +
           '`time_read` int(10), ' +
           '`time_favorited` int(10) ' +
-          ') ENGINE = MEMORY'
+          ') ENGINE = MEMORY',
       )
       .connection(connection);
 
@@ -168,7 +168,7 @@ export class ListPaginationService {
         `CREATE TEMPORARY TABLE \`${ListPaginationService.HIGHLIGHTS_TEMP_TABLE}\` ` +
           '(' +
           '`item_id` int(10) unsigned NOT NULL PRIMARY KEY' +
-          ') ENGINE = MEMORY'
+          ') ENGINE = MEMORY',
       )
       .connection(connection);
 
@@ -184,7 +184,7 @@ export class ListPaginationService {
         `CREATE TEMPORARY TABLE \`${ListPaginationService.TAGS_TEMP_TABLE}\` ` +
           '(' +
           '`item_id` int(10) unsigned NOT NULL PRIMARY KEY' +
-          ') ENGINE = MEMORY'
+          ') ENGINE = MEMORY',
       )
       .connection(connection);
 
@@ -200,8 +200,8 @@ export class ListPaginationService {
       ListPaginationService.TEMP_TABLES.map((tableName) =>
         dbClient
           .raw(`DROP TEMPORARY TABLE IF EXISTS \`${tableName}\``)
-          .connection(connection)
-      )
+          .connection(connection),
+      ),
     );
   }
 
@@ -214,7 +214,7 @@ export class ListPaginationService {
     dbClient: Knex,
     pagination: PaginationInput,
     sort: SavedItemsSort,
-    connection: any
+    connection: any,
   ) {
     const queryBuilder = query.select(
       'list.item_id',
@@ -226,7 +226,7 @@ export class ListPaginationService {
       dbClient.raw('UNIX_TIMESTAMP(list.time_added) as time_added'),
       dbClient.raw('UNIX_TIMESTAMP(list.time_updated) AS time_updated'),
       dbClient.raw('UNIX_TIMESTAMP(list.time_read) AS time_read'),
-      dbClient.raw('UNIX_TIMESTAMP(list.time_favorited) AS time_favorited')
+      dbClient.raw('UNIX_TIMESTAMP(list.time_favorited) AS time_favorited'),
     );
     // needs to be same order as above
     const insertStatement = `INSERT INTO \`${ListPaginationService.LIST_TEMP_TABLE}\` (item_id, resolved_id, given_url, given_title, favorite, status, time_added, time_updated, time_read, time_favorited) `;
@@ -239,7 +239,7 @@ export class ListPaginationService {
         cursor,
         pagination,
         sort,
-        connection
+        connection,
       );
     } else {
       return this.pageFirstLast(
@@ -248,7 +248,7 @@ export class ListPaginationService {
         insertStatement,
         sort,
         pagination,
-        connection
+        connection,
       );
     }
   }
@@ -262,7 +262,7 @@ export class ListPaginationService {
     insertStatement: string,
     sort: SavedItemsSort,
     pagination: PaginationInput,
-    connection: any
+    connection: any,
   ) {
     const pageSize = pagination.first ?? pagination.last;
     const sortOrder = new Sort(sort);
@@ -285,7 +285,7 @@ export class ListPaginationService {
       .raw(`${insertStatement} ${queryString}`)
       .connection(connection);
     const returnQuery = dbClient(
-      `${ListPaginationService.LIST_TEMP_TABLE}`
+      `${ListPaginationService.LIST_TEMP_TABLE}`,
     ).select();
     if (pagination.last) {
       // Need to reorder for last
@@ -308,7 +308,7 @@ export class ListPaginationService {
     cursor: string,
     pagination: PaginationInput,
     sort: SavedItemsSort,
-    connection: any
+    connection: any,
   ) {
     const pageSize = pagination.first ?? pagination.last;
     // Since we don't have a unique sequential column for cursor-based pagination
@@ -427,7 +427,7 @@ export class ListPaginationService {
     baseQuery: any,
     dbClient: Knex,
     filter: SavedItemsFilter,
-    connection: any
+    connection: any,
   ): Promise<any> {
     // The base query will always have a 'where' statement selecting
     // the user ID, so use andWhere for all additional methods
@@ -437,8 +437,8 @@ export class ListPaginationService {
         '>',
         mysqlTimeString(
           new Date(filter.updatedSince * 1000),
-          config.database.tz
-        )
+          config.database.tz,
+        ),
       );
     }
     if (filter.isFavorite != null) {
@@ -465,7 +465,7 @@ export class ListPaginationService {
         baseQuery,
         dbClient,
         filter.isHighlighted,
-        connection
+        connection,
       );
     }
     if (filter.contentType != null) {
@@ -486,7 +486,7 @@ export class ListPaginationService {
     baseQuery: Knex,
     dbClient: Knex,
     isHighlighted: boolean,
-    connection: any
+    connection: any,
   ) {
     // Don't want to do aggregate functions inside our pagination query,
     // So use a temp table and simplify, so it's just a join
@@ -505,14 +505,14 @@ export class ListPaginationService {
       baseQuery.innerJoin(
         highlightsTempTable,
         'list.item_id',
-        `${highlightsTempTable}.item_id`
+        `${highlightsTempTable}.item_id`,
       );
     } else {
       baseQuery
         .leftJoin(
           highlightsTempTable,
           'list.item_id',
-          `${highlightsTempTable}.item_id`
+          `${highlightsTempTable}.item_id`,
         )
         .andWhere(dbClient.raw(`\`${highlightsTempTable}\`.item_id is null`));
     }
@@ -526,7 +526,7 @@ export class ListPaginationService {
     baseQuery: Knex.QueryBuilder,
     dbClient: Knex,
     tagNames: string[],
-    connection: any
+    connection: any,
   ) {
     if (tagNames.length === 0) {
       return baseQuery;
@@ -577,12 +577,12 @@ export class ListPaginationService {
    */
   private contentTypeFilter(
     baseQuery: Knex,
-    contentType: SavedItemsContentType
+    contentType: SavedItemsContentType,
   ): Knex {
     baseQuery.join(
       `readitla_b.items_extended`,
       'list.resolved_id',
-      'readitla_b.items_extended.extended_item_id'
+      'readitla_b.items_extended.extended_item_id',
     );
 
     switch (contentType) {
@@ -634,7 +634,7 @@ export class ListPaginationService {
     filter: SavedItemsFilter,
     sort: SavedItemsSort,
     pagination: Pagination,
-    savedItemIds?: string[]
+    savedItemIds?: string[],
   ): Promise<SavedItemConnection> {
     if (pagination == null) {
       pagination = { first: config.pagination.defaultPageSize };
@@ -661,7 +661,7 @@ export class ListPaginationService {
           baseQuery,
           this.context.dbClient,
           filter,
-          connection
+          connection,
         );
       }
       totalCount = (await this.context.dbClient
@@ -675,7 +675,7 @@ export class ListPaginationService {
         this.context.dbClient,
         pagination,
         sort,
-        connection
+        connection,
       );
     } finally {
       //ensure we always release the connection back to the rest of the pool to play with its friends
@@ -688,13 +688,13 @@ export class ListPaginationService {
       nodes = ListPaginationService.toGraphql(
         pageResult
           // strip off sentinel row; this can be unconditional
-          .slice(0, pagination.first)
+          .slice(0, pagination.first),
       );
     } else {
       // conditionally strip off sentinel row if it exists (hasPreviousPage)
       const startIx = pageInfo.hasPreviousPage ? 1 : 0;
       nodes = ListPaginationService.toGraphql(
-        pageResult.slice(startIx, pagination.last + startIx)
+        pageResult.slice(startIx, pagination.last + startIx),
       );
     }
     const sortColumn = this.nodeSortByMap[sort?.sortBy ?? 'CREATED_AT'];
@@ -717,7 +717,7 @@ export class ListPaginationService {
 
   public hydratePageInfo(
     pagedResult: ListEntity[],
-    pagination: PaginationInput
+    pagination: PaginationInput,
   ) {
     const pageInfo = { startCursor: null, endCursor: null };
     if (pagination.first) {

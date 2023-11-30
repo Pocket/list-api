@@ -13,7 +13,7 @@ export class SqsListener {
 
   constructor(
     eventEmitter: ItemsEventEmitter,
-    eventTransformers: EventTransFormer[]
+    eventTransformers: EventTransFormer[],
   ) {
     this.sqs = sqs;
     for (const transformer of eventTransformers) {

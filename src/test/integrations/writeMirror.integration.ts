@@ -1,10 +1,15 @@
-import { PocketSaveDataService, SavedItemDataService } from '../../dataService';
+import {
+  PocketSaveDataService,
+  SavedItemDataService,
+  TagDataService,
+} from '../../dataService';
 import { writeClient } from '../../database/client';
 import { ItemResponse } from '../../externalCaller/parserCaller';
 import { SavedItemUpsertInput } from '../../types';
 import { expect } from '@jest/globals';
 import unleashClient from '../../featureFlags/mockClient';
 import config from '../../config';
+import { ContextManager } from '../../server/context';
 
 function areBothNaN(a, b) {
   if (isNaN(a) && isNaN(b)) {
@@ -34,18 +39,17 @@ describe('List API mirroring', () => {
       impressionData: false,
     },
   ]);
-  const savedItemService = new SavedItemDataService({
+  const context = new ContextManager({
+    request: {
+      headers: { userid: '1', apiid: '777', premium: 'true' },
+    },
     dbClient: db,
-    userId: '1',
-    apiId: '777',
+    eventEmitter: null,
     unleash,
   });
-  const pocketSaveService = new PocketSaveDataService({
-    dbClient: db,
-    userId: '1',
-    apiId: '777',
-    unleash,
-  });
+  const savedItemService = new SavedItemDataService(context);
+  const pocketSaveService = new PocketSaveDataService(context);
+  const tagService = new TagDataService(context, savedItemService);
 
   const fetchRow = (itemId: string, tableName: string) => {
     return db(tableName)
@@ -57,6 +61,7 @@ describe('List API mirroring', () => {
   beforeEach(async () => {
     await db('list').truncate();
     await db('list_schema_update').truncate();
+    await db('item_tags').truncate();
     const listSeed = {
       item_id: 1,
       status: 0,
@@ -87,12 +92,39 @@ describe('List API mirroring', () => {
       api_id: '777',
       api_id_updated: '777',
     };
+    const baseTag = {
+      user_id: 1,
+      status: 1,
+      api_id: '777',
+      api_id_updated: '777',
+      time_added: date,
+      time_updated: date,
+    };
+    const tagSeed = [
+      {
+        ...baseTag,
+        item_id: 1,
+        tag: 'the first and forsaken lion',
+      },
+      {
+        ...baseTag,
+        item_id: 1,
+        tag: 'the eye and seven despairs',
+      },
+      {
+        ...baseTag,
+        item_id: 999,
+        tag: 'the eye and seven despairs',
+      },
+    ];
     await db('list').insert([shadowSeed, listSeed]);
     await db('list_schema_update').insert(shadowSeed);
+    await db('item_tags').insert(tagSeed);
   });
   afterAll(async () => {
     await db('list').truncate();
     await db('list_schema_update').truncate();
+    await db('item_tags').truncate();
     unleash.destroy();
   });
   it('works for fields with zero-dates', async () => {
@@ -127,6 +159,7 @@ describe('List API mirroring', () => {
     const listResult = await fetchRow('2', 'list');
     const shadowResult = await fetchRow('2', 'list_schema_update');
     expect(listResult).not.toBeUndefined();
+    expect(shadowResult).not.toBeUndefined();
     expect(listResult).toStrictEqual(shadowResult);
   });
   it('Merges changes to shadow table for rows that already exist', async () => {
@@ -134,6 +167,7 @@ describe('List API mirroring', () => {
     const listResult = await fetchRow('999', 'list');
     const shadowResult = await fetchRow('999', 'list_schema_update');
     expect(listResult).not.toBeUndefined();
+    expect(shadowResult).not.toBeUndefined();
     expect(listResult.status).toEqual(1);
     expect(listResult).toStrictEqual(shadowResult);
   });
@@ -164,6 +198,78 @@ describe('List API mirroring', () => {
       property: 'archived - pocketSave',
       method: () => pocketSaveService.archiveListRow([1], date),
     },
+    {
+      property: 'tags - insert',
+      method: () =>
+        tagService.insertTags(
+          [
+            {
+              savedItemId: '1',
+              name: 'the lover clad in the raiment of tears',
+            },
+            { savedItemId: '999', name: 'the mask of winters' },
+          ],
+          date,
+        ),
+    },
+    {
+      property: 'tags - delete associations',
+      method: () =>
+        tagService.deleteSavedItemAssociations([
+          {
+            savedItemId: '1',
+            tagName: 'the first and forsaken lion',
+          },
+          {
+            savedItemId: '999',
+            tagName: 'the eye and seven despairs',
+          },
+        ]),
+    },
+    {
+      property: 'tags - rename tag',
+      method: () =>
+        tagService.updateTagByUser(
+          'the eye and seven despairs',
+          'the black heron',
+          ['1', '999'],
+        ),
+    },
+    {
+      property: 'tags - update/replace tags',
+      method: () =>
+        tagService.updateSavedItemTags([
+          {
+            name: 'the bishop of the chalcedony thurible',
+            savedItemId: '1',
+          },
+        ]),
+    },
+    {
+      property: 'tags - remove all tags',
+      method: () => tagService.updateSavedItemRemoveTags('1'),
+    },
+    {
+      property: 'tags - replace tags',
+      method: () =>
+        tagService.replaceSavedItemTags([
+          {
+            name: 'the dowager of the irreverent vulgate in unrent veils',
+            savedItemId: '1',
+          },
+        ]),
+    },
+    {
+      property: 'tags - bulk update',
+      method: () =>
+        tagService.batchUpdateTags(
+          {
+            deletes: [], // Deleting actually doesn't trigger the save row update... maybe a bug?
+            creates: [{ savedItemId: '1', name: 'the silver prince' }],
+          },
+          date,
+        ),
+    },
     // No deleted/undeleted properties for pocketSave
   ])(
     'Copies new rows to shadow table on update: $property',
@@ -174,11 +280,11 @@ describe('List API mirroring', () => {
       const listResult = await fetchRow('1', 'list');
       const shadowResult = await fetchRow('1', 'list_schema_update');
       expect(listResult).not.toBeUndefined();
+      expect(shadowResult).not.toBeUndefined();
       expect(listResult).toStrictEqual(shadowResult);
-    }
+    },
   );
   describe('with feature flag disabled', () => {
-    const syncSpy = jest.spyOn(SavedItemDataService, 'syncShadowTable');
     const disabledUnleash = unleashClient([
       {
         enabled: false,
@@ -191,18 +297,17 @@ describe('List API mirroring', () => {
         impressionData: false,
       },
     ]);
-    const saveServiceNoSync = new SavedItemDataService({
+    const context = new ContextManager({
+      request: {
+        headers: { userid: '1', apiid: '777', premium: 'true' },
+      },
       dbClient: db,
-      userId: '1',
-      apiId: '777',
+      eventEmitter: null,
       unleash: disabledUnleash,
     });
-    const pocketServiceNoSync = new PocketSaveDataService({
-      dbClient: db,
-      userId: '1',
-      apiId: '777',
-      unleash: disabledUnleash,
-    });
+    const saveServiceNoSync = new SavedItemDataService(context);
+    const pocketServiceNoSync = new PocketSaveDataService(context);
+    const tagServiceNoSync = new TagDataService(context, saveServiceNoSync);
     const upsertSeed: { item: ItemResponse; save: SavedItemUpsertInput } = {
       item: {
         itemId: '1',
@@ -215,12 +320,6 @@ describe('List API mirroring', () => {
         timestamp: epochDate,
       },
     };
-    beforeEach(() => {
-      syncSpy.mockClear();
-    });
-    afterAll(() => {
-      syncSpy.mockRestore();
-    });
     it.each([
       {
         property: 'upsert - savedItem',
@@ -253,6 +352,78 @@ describe('List API mirroring', () => {
         property: 'archived - pocketSave',
         method: () => pocketServiceNoSync.archiveListRow([1], date),
       },
+      {
+        property: 'tags - insert',
+        method: () =>
+          tagServiceNoSync.insertTags(
+            [
+              {
+                savedItemId: '1',
+                name: 'the lover clad in the raiment of tears',
+              },
+              { savedItemId: '999', name: 'the mask of winters' },
+            ],
+            date,
+          ),
+      },
+      {
+        property: 'tags - delete associations',
+        method: () =>
+          tagServiceNoSync.deleteSavedItemAssociations([
+            {
+              savedItemId: '1',
+              tagName: 'the first and forsaken lion',
+            },
+            {
+              savedItemId: '999',
+              tagName: 'the eye and seven despairs',
+            },
+          ]),
+      },
+      {
+        property: 'tags - rename tag',
+        method: () =>
+          tagServiceNoSync.updateTagByUser(
+            'the eye and seven despairs',
+            'the black heron',
+            ['1', '999'],
+          ),
+      },
+      {
+        property: 'tags - update/replace tags',
+        method: () =>
+          tagServiceNoSync.updateSavedItemTags([
+            {
+              name: 'the bishop of the chalcedony thurible',
+              savedItemId: '1',
+            },
+          ]),
+      },
+      {
+        property: 'tags - remove all tags',
+        method: () => tagServiceNoSync.updateSavedItemRemoveTags('1'),
+      },
+      {
+        property: 'tags - replace tags',
+        method: () =>
+          tagServiceNoSync.replaceSavedItemTags([
+            {
+              name: 'the dowager of the irreverent vulgate in unrent veils',
+              savedItemId: '1',
+            },
+          ]),
+      },
+      {
+        property: 'tags - bulk update',
+        method: () =>
+          tagServiceNoSync.batchUpdateTags(
+            {
+              deletes: [], // Deleting actually doesn't trigger the save row update... maybe a bug?
+              creates: [{ savedItemId: '1', name: 'the silver prince' }],
+            },
+            date,
+          ),
+      },
       // No deleted/undeleted properties for pocketSave
     ])(
       'Does not sync when feature flag is disabled: $property',
@@ -264,20 +435,7 @@ describe('List API mirroring', () => {
         const shadowResult = await fetchRow('1', 'list_schema_update');
         expect(listResult).not.toBeUndefined();
         expect(shadowResult).toBeUndefined();
-        expect(syncSpy).toBeCalledTimes(0);
-      }
+      },
     );
-    it('another test property', async () => {
-      const method = () =>
-        saveServiceNoSync.upsertSavedItem(upsertSeed.item, upsertSeed.save);
-      const preOperationResult = await fetchRow('1', 'list_schema_update');
-      expect(preOperationResult).toBeUndefined();
-      await method();
-      const listResult = await fetchRow('1', 'list');
-      const shadowResult = await fetchRow('1', 'list_schema_update');
-      expect(listResult).not.toBeUndefined();
-      expect(shadowResult).toBeUndefined();
-      expect(syncSpy).toBeCalledTimes(0);
-    });
   });
 });

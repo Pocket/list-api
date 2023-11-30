@@ -109,19 +109,19 @@ describe('getSavedItemByItemId', () => {
       variables,
     });
     expect(res.body.data?._entities[0].savedItemById.url).to.equal(
-      'http://abc'
+      'http://abc',
     );
     expect(res.body.data?._entities[0].savedItemById.id).to.equal('1');
     expect(res.body.data?._entities[0].savedItemById.favoritedAt).to.equal(
-      unixDate
+      unixDate,
     );
     expect(res.body.data?._entities[0].savedItemById.isFavorite).to.equal(true);
     expect(res.body.data?._entities[0].savedItemById.status).to.equal('UNREAD');
     expect(res.body.data?._entities[0].savedItemById._createdAt).to.equal(
-      unixDate
+      unixDate,
     );
     expect(res.body.data?._entities[0].savedItemById._updatedAt).to.equal(
-      unixDate1
+      unixDate1,
     );
     expect(res.body.data?._entities[0].savedItemById._deletedAt).to.be.null;
   });
@@ -166,7 +166,7 @@ describe('getSavedItemByItemId', () => {
       variables,
     });
     expect(res.body.data?._entities[0].savedItemById.item.givenUrl).to.equal(
-      'http://abc'
+      'http://abc',
     );
   });
 
@@ -180,7 +180,7 @@ describe('getSavedItemByItemId', () => {
       variables,
     });
     expect(res.body.data?._entities[0].savedItemById._deletedAt).to.equal(
-      unixDate1
+      unixDate1,
     );
   });
 
@@ -202,13 +202,13 @@ describe('getSavedItemByItemId', () => {
       variables: nonArchivedVars,
     });
     expect(
-      archivedRes.body.data?._entities[0].savedItemById.isArchived
+      archivedRes.body.data?._entities[0].savedItemById.isArchived,
     ).to.equal(true);
     expect(
-      archivedRes.body.data?._entities[0].savedItemById.archivedAt
+      archivedRes.body.data?._entities[0].savedItemById.archivedAt,
     ).to.equal(getUnixTimestamp(date));
     expect(
-      nonArchivedRes.body.data?._entities[0].savedItemById.isArchived
+      nonArchivedRes.body.data?._entities[0].savedItemById.isArchived,
     ).to.equal(false);
     expect(nonArchivedRes.body.data?._entities[0].savedItemById.archivedAt).to
       .be.null;

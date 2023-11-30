@@ -153,7 +153,7 @@ export async function startServer(port: number) {
     setMorgan(serverLogger),
     expressMiddleware(server, {
       context: async ({ req }) => contextFactory(req),
-    })
+    }),
   );
 
   // The error handler must be before any other error middleware and after all controllers

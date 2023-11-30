@@ -43,35 +43,25 @@ export class SavedItemDataService {
     private readonly context: Pick<
       IContext,
       'dbClient' | 'userId' | 'apiId' | 'unleash'
-    >
+    >,
   ) {
     this.db = context.dbClient;
     this.userId = context.userId;
     this.apiId = context.apiId;
-    console.log(
-      this.context.unleash.isEnabled(config.unleash.flags.mirrorWrites.name)
-    );
-    console.log(
-      this.context.unleash.isEnabled(
-        config.unleash.flags.mirrorWrites.name,
-        undefined,
-        config.unleash.flags.mirrorWrites.fallback
-      )
-    );
     this.flags = {
       mirrorWrites: this.context.unleash.isEnabled(
         config.unleash.flags.mirrorWrites.name,
         undefined,
-        config.unleash.flags.mirrorWrites.fallback
+        config.unleash.flags.mirrorWrites.fallback,
       ),
     };
   }
 
   public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
-    dbResult: T
+    dbResult: T,
   ): T & { status: Pick<ListResult, 'status'> };
   public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
-    dbResult: Array<T>
+    dbResult: Array<T>,
   ): Array<T & { status: Pick<ListResult, 'status'> }>;
   /**
    * Convert the `status` field in the list table to the expected
@@ -79,7 +69,7 @@ export class SavedItemDataService {
    * @param dbResult
    */
   public static convertDbResultStatus<T extends Pick<RawListResult, 'status'>>(
-    dbResult: T | T[]
+    dbResult: T | T[],
   ):
     | (T & { status: Pick<ListResult, 'status'> })
     | Array<T & { status: Pick<ListResult, 'status'> }> {
@@ -123,12 +113,12 @@ export class SavedItemDataService {
       'favorite as isFavorite',
       'title',
       this.db.raw(
-        'CASE WHEN favorite = 1 THEN UNIX_TIMESTAMP(time_favorited) ELSE null END as favoritedAt '
+        'CASE WHEN favorite = 1 THEN UNIX_TIMESTAMP(time_favorited) ELSE null END as favoritedAt ',
       ),
       'time_favorited', // for pagination sort
       'status',
       this.db.raw(
-        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN true ELSE false END as isArchived`
+        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN true ELSE false END as isArchived`,
       ),
       this.db.raw('UNIX_TIMESTAMP(time_added) as _createdAt'),
       'time_added', // for pagination sort
@@ -136,11 +126,11 @@ export class SavedItemDataService {
       this.db.raw('UNIX_TIMESTAMP(time_updated) as _updatedAt'),
       'time_updated', // for pagination sort
       this.db.raw(
-        `CASE WHEN status = ${SavedItemStatus.DELETED} THEN UNIX_TIMESTAMP(time_updated) ELSE null END as _deletedAt`
+        `CASE WHEN status = ${SavedItemStatus.DELETED} THEN UNIX_TIMESTAMP(time_updated) ELSE null END as _deletedAt`,
       ),
       this.db.raw(
-        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN UNIX_TIMESTAMP(time_read) ELSE null END as archivedAt`
-      )
+        `CASE WHEN status = ${SavedItemStatus.ARCHIVED} THEN UNIX_TIMESTAMP(time_read) ELSE null END as archivedAt`,
+      ),
     );
   }
 
@@ -157,14 +147,14 @@ export class SavedItemDataService {
   }
 
   /**
-   *
-   * @param itemId
-   * @param trx
-   * @returns
+   * Fetch a row from the list table by user_id and item_id
+   * @param itemId the item_id to fetch (if exists)
+   * @param trx an open Knex transaction
+   * @returns Promise<RawListResult | null>
    */
   public getSavedItemByIdRaw(
     itemId: string,
-    trx: Knex.Transaction
+    trx: Knex.Transaction,
   ): Promise<RawListResult | null> {
     return trx('list')
       .select('*')
@@ -215,7 +205,7 @@ export class SavedItemDataService {
   public async getSavedItemTimeRead(itemId: string): Promise<any> {
     return this.db('list')
       .select(
-        this.db.raw('SQL_NO_CACHE UNIX_TIMESTAMP(time_read) as time_read')
+        this.db.raw('SQL_NO_CACHE UNIX_TIMESTAMP(time_read) as time_read'),
       )
       .where({ item_id: itemId, user_id: this.userId })
       .first();
@@ -233,7 +223,7 @@ export class SavedItemDataService {
   public async updateSavedItemFavoriteProperty(
     itemId: string,
     favorite: boolean,
-    updatedAt?: Date
+    updatedAt?: Date,
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeFavorited = favorite ? timestamp : '0000-00-00 00:00:00';
@@ -251,7 +241,6 @@ export class SavedItemDataService {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
-    // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
   }
 
@@ -267,7 +256,7 @@ export class SavedItemDataService {
   public async updateSavedItemArchiveProperty(
     itemId: string,
     archived: boolean,
-    updatedAt?: Date
+    updatedAt?: Date,
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const timeArchived = archived ? timestamp : '0000-00-00 00:00:00';
@@ -289,13 +278,28 @@ export class SavedItemDataService {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
-    // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
   }
 
+  public static async syncShadowTableBulk(
+    rows: RawListResult[],
+    trx: Knex.Transaction,
+  ) {
+    const input = rows.map((row) =>
+      Object.keys(row).reduce((obj, key) => {
+        if (row[key] instanceof Date && isNaN(row[key])) {
+          obj[key] = '0000-00-00 00:00:00';
+        } else {
+          obj[key] = row[key];
+        }
+        return obj;
+      }, {}),
+    );
+    return trx('list_schema_update').insert(input).onConflict().merge();
+  }
   public static async syncShadowTable(
     row: RawListResult,
-    trx: Knex.Transaction
+    trx: Knex.Transaction,
   ) {
     const input = Object.keys(row).reduce((obj, key) => {
       if (row[key] instanceof Date && isNaN(row[key])) {
@@ -366,7 +370,7 @@ export class SavedItemDataService {
    */
   public async updateSavedItemUnDelete(
     itemId: string,
-    updatedAt?: Date
+    updatedAt?: Date,
   ): Promise<SavedItem | null> {
     const timestamp = updatedAt ?? SavedItemDataService.formatDate(new Date());
     const query: any = await this.getSavedItemTimeRead(itemId);
@@ -391,7 +395,6 @@ export class SavedItemDataService {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
-    // TODO: Can make this simpler
     return await this.getSavedItemById(itemId);
   }
 
@@ -402,7 +405,7 @@ export class SavedItemDataService {
    */
   public async upsertSavedItem(
     item: ItemResponse,
-    savedItemUpsertInput: SavedItemUpsertInput
+    savedItemUpsertInput: SavedItemUpsertInput,
   ): Promise<SavedItem> {
     const currentDate = SavedItemDataService.formatDate(new Date());
     const givenTimestamp = new Date(savedItemUpsertInput.timestamp * 1000);
@@ -436,7 +439,6 @@ export class SavedItemDataService {
         await SavedItemDataService.syncShadowTable(row, trx);
       }
     });
-    // TODO: Can make this simpler
     return await this.getSavedItemById(item.itemId.toString());
   }
 
@@ -445,17 +447,24 @@ export class SavedItemDataService {
    * the list table, by item id.
    * @param itemIds The item IDS to update the `time_Updated` to now.
    */
-  public updateListItemMany(
+  public async updateListItemMany(
     itemIds: string[],
-    timestamp?: Date
-  ): Knex.QueryBuilder[] {
-    const itemBatches = chunk(itemIds, config.database.maxTransactionSize / 2);
-    return itemBatches.flatMap((ids) => {
-      const queries = this.listItemUpdateBuilder(timestamp);
-      return [
-        queries[0].whereIn('item_id', ids),
-        queries[1].whereIn('item_id', ids),
-      ];
+    trx: Knex.Transaction,
+    timestamp?: Date,
+  ) {
+    const trxModifier = this.flags.mirrorWrites ? 2 : 1;
+    const itemBatches = chunk(
+      itemIds,
+      config.database.maxTransactionSize / trxModifier,
+    );
+    itemBatches.flatMap(async (ids) => {
+      if (this.flags.mirrorWrites) {
+        await this.mirroredListItemUpdateMany(ids, trx, timestamp);
+      } else {
+        await this.listItemUpdateBuilder(timestamp)
+          .whereIn('item_id', ids)
+          .transacting(trx);
+      }
     });
   }
 
@@ -464,9 +473,16 @@ export class SavedItemDataService {
    * the list table, by item id.
    * @param itemId
    */
-  public updateListItemOne(itemId: string): Array<Knex.QueryBuilder> {
-    const base = this.listItemUpdateBuilder();
-    return [base[0].where('item_id', itemId), base[1].where('item_id', itemId)];
+  public async updateListItemOne(
+    itemId: string,
+    trx: Knex.Transaction,
+    timestamp?: Date,
+  ): Promise<Knex.QueryBuilder> {
+    if (this.flags.mirrorWrites) {
+      await this.mirroredListItemUpdateOne(itemId, trx, timestamp);
+    } else {
+      await this.listItemUpdateBuilder().where('item_id', itemId);
+    }
   }
 
   /**
@@ -490,15 +506,56 @@ export class SavedItemDataService {
    * Does not include the necessary `join` or `where` statement
    * to properly execute this query.
    * Do not run this query as-is. Should only be used to compose other
-   * queries. That's why it's private :)
+   * queries.
    */
-  private listItemUpdateBuilder(timestamp?: Date): Array<Knex.QueryBuilder> {
-    const base = this.db
+  private listItemUpdateBuilder(timestamp?: Date): Knex.QueryBuilder {
+    return this.db
       .update({
         time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),
         api_id_updated: this.apiId,
       })
+      .andWhere('user_id', this.userId)
+      .from('list');
+  }
+
+  private async mirroredListItemUpdateOne(
+    itemId: string,
+    trx: Knex.Transaction,
+    timestamp?: Date,
+  ) {
+    await trx('list')
+      .update({
+        time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),
+        api_id_updated: this.apiId,
+      })
+      .where('item_id', itemId)
       .andWhere('user_id', this.userId);
-    return [base.clone().from('list'), base.clone().from('list_schema_update')];
+    const updatedRow = await trx<RawListResult, RawListResult>('list')
+      .select('*')
+      .from('list')
+      .where('item_id', itemId)
+      .andWhere('user_id', this.userId)
+      .first();
+    await SavedItemDataService.syncShadowTable(updatedRow, trx);
+  }
+
+  private async mirroredListItemUpdateMany(
+    itemIds: string[],
+    trx: Knex.Transaction,
+    timestamp?: Date,
+  ) {
+    await trx('list')
+      .update({
+        time_updated: SavedItemDataService.formatDate(timestamp ?? new Date()),
+        api_id_updated: this.apiId,
+      })
+      .whereIn('item_id', itemIds)
+      .andWhere('user_id', this.userId);
+    const updatedRows = await trx<RawListResult, RawListResult>('list')
+      .select('*')
+      .from('list')
+      .whereIn('item_id', itemIds)
+      .andWhere('user_id', this.userId);
+    await SavedItemDataService.syncShadowTableBulk(updatedRows, trx);
   }
 }

@@ -92,7 +92,7 @@ describe('EventBridgeHandler', () => {
   it('should work for every event type', async () => {
     const eventTypes = Object.keys(EventType) as Array<keyof typeof EventType>;
     const eventBuilder = (
-      eventType: keyof typeof EventType
+      eventType: keyof typeof EventType,
     ): ItemEventPayload => ({
       ...eventData,
       eventType: EventType[eventType],

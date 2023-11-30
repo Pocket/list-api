@@ -148,7 +148,7 @@ describe('tags mutation update: ', () => {
   it('updateSavedItemTags should update tags for a given savedItems', async () => {
     const happyPathTagNames = ['changed_name', '🤪😒', '(╯°□°)╯︵ ┻━┻'];
     const happyPathTagIds: string[] = happyPathTagNames.map((tagName) =>
-      Buffer.from(tagName).toString('base64')
+      Buffer.from(tagName).toString('base64'),
     );
 
     const variables = {
@@ -179,10 +179,10 @@ describe('tags mutation update: ', () => {
     expect(res.body.data.updateSavedItemTags.url).equals('http://1');
     expect(res.body.data.updateSavedItemTags._createdAt).equals(unixDate);
     expect(res.body.data.updateSavedItemTags._updatedAt).equals(
-      getUnixTimestamp(updateDate)
+      getUnixTimestamp(updateDate),
     );
     expect(res.body.data.updateSavedItemTags.tags).to.deep.equalInAnyOrder(
-      expectedTags
+      expectedTags,
     );
   });
 
@@ -218,7 +218,7 @@ describe('tags mutation update: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.body.errors[0].message).contains(
-      `SavedItem ID ${variables.input.savedItemId} does not exist`
+      `SavedItem ID ${variables.input.savedItemId} does not exist`,
     );
     expect(res.body.errors[0].extensions.code).equals('NOT_FOUND');
   });
@@ -235,7 +235,7 @@ describe('tags mutation update: ', () => {
 
     expect(res).is.not.undefined;
     expect(res.body.errors[0].message).contains(
-      'Must provide 1 or more values for tag mutations'
+      'Must provide 1 or more values for tag mutations',
     );
     expect(res.body.errors[0].extensions.code).equals('BAD_USER_INPUT');
   });
@@ -302,7 +302,7 @@ describe('tags mutation update: ', () => {
     expect(res.body.data.updateSavedItemRemoveTags.url).equals('http://1');
     expect(res.body.data.updateSavedItemRemoveTags._createdAt).equals(unixDate);
     expect(res.body.data.updateSavedItemRemoveTags._updatedAt).equals(
-      getUnixTimestamp(updateDate)
+      getUnixTimestamp(updateDate),
     );
     expect(res.body.data.updateSavedItemRemoveTags.tags).is.empty;
   });
@@ -319,7 +319,7 @@ describe('tags mutation update: ', () => {
 
     expect(res.body.errors).is.not.undefined;
     expect(res.body.errors[0].message).contains(
-      `SavedItem Id ${variables.savedItemId} does not exist`
+      `SavedItem Id ${variables.savedItemId} does not exist`,
     );
     expect(res.body.errors[0].extensions.code).equals('NOT_FOUND');
   });

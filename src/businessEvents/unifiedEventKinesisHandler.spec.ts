@@ -56,7 +56,7 @@ describe('UnifiedEventHandler', () => {
     ]);
     expect(consoleSpy.mock.calls.length).toEqual(1);
     expect(consoleSpy.mock.calls[0][0]).toContain(
-      'Failed to send event(s) to kinesis stream'
+      'Failed to send event(s) to kinesis stream',
     );
   });
 

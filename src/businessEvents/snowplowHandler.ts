@@ -42,7 +42,7 @@ export class SnowplowHandler {
   constructor(
     private emitter: ItemsEventEmitter,
     private tracker: Tracker,
-    events: string[]
+    events: string[],
   ) {
     // register handler for item events
     events.forEach((event) => emitter.on(event, (data) => this.process(data)));
@@ -68,7 +68,7 @@ export class SnowplowHandler {
    */
   private async track(
     event: PayloadBuilder,
-    context: SelfDescribingJson[]
+    context: SelfDescribingJson[],
   ): Promise<void> {
     try {
       await this.tracker.track(event, context);
@@ -88,7 +88,7 @@ export class SnowplowHandler {
    * @private
    */
   private static async generateEventContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): Promise<SelfDescribingJson[]> {
     return [
       await SnowplowHandler.generateListItemContext(data),
@@ -102,7 +102,7 @@ export class SnowplowHandler {
    * @private
    */
   private static generateListItemUpdateEvent(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): ListItemUpdateEvent {
     return {
       schema: config.snowplow.schemas.listItemUpdate,
@@ -116,7 +116,7 @@ export class SnowplowHandler {
    * @private
    */
   private static async generateListItemContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): Promise<ListItemContext> {
     const savedItem: SavedItem = await data.savedItem;
     return {
@@ -137,7 +137,7 @@ export class SnowplowHandler {
    * @private
    */
   private static async generateContentContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): Promise<ContentContext> {
     const savedItem: SavedItem = await data.savedItem;
     return {
@@ -169,7 +169,7 @@ export class SnowplowHandler {
    * @private
    */
   private static generateApiUserContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): ApiUserContext {
     return {
       schema: config.snowplow.schemas.apiUser,

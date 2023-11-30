@@ -22,7 +22,7 @@ describe('EventBatchHandler', () => {
       emitter,
       ['fake-event'],
       handlerFn,
-      30
+      30,
     );
     const emitterLoop = setInterval(() => {
       emitter.emit('fake-event', { data: ['1'] });
@@ -41,7 +41,7 @@ describe('EventBatchHandler', () => {
       emitter,
       ['fake-event'],
       handlerFn,
-      30
+      30,
     );
     await wait(300);
     await batchJob.stop();
@@ -57,7 +57,7 @@ describe('EventBatchHandler', () => {
       ['different-event', 'fake-event'],
       sinon.fake.resolves(undefined),
       200,
-      2
+      2,
     );
     const emitterLoop = setInterval(() => {
       emitter.emit('fake-event', { data: ['1'] });
@@ -67,7 +67,7 @@ describe('EventBatchHandler', () => {
     clearInterval(emitterLoop);
     expect(consoleSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
     expect(consoleSpy.mock.calls[0][0]).toContain(
-      'Ensure the processing interval is small enough'
+      'Ensure the processing interval is small enough',
     );
   });
   it('should gracefully handle errors during handler execution', async () => {
@@ -79,7 +79,7 @@ describe('EventBatchHandler', () => {
       ['fake-event'],
       handlerFn,
       50,
-      3
+      3,
     );
     // Send a few events
     let eventCount = 0;

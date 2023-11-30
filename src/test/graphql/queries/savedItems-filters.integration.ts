@@ -262,11 +262,11 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data._entities[0].savedItems.edges.length).to.equal(4);
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://ijk'
+      'http://ijk',
     );
     expect(
       res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
-        .length
+        .length,
     ).to.equal(0);
   });
 
@@ -283,14 +283,14 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data._entities[0].savedItems.edges.length).to.equal(1);
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://abc'
+      'http://abc',
     );
     expect(
       res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
-        .length
+        .length,
     ).to.equal(2);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.tags,
     ).to.deep.equalInAnyOrder(tags);
   });
 
@@ -306,7 +306,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data._entities[0].savedItems.edges.length).to.equal(2);
     const actualTags = res.body.data._entities[0].savedItems.edges.map(
-      (edge) => edge.node.item.savedItem.tags
+      (edge) => edge.node.item.savedItem.tags,
     );
     expect(actualTags).to.deep.equalInAnyOrder([
       [{ name: 'tofu' }, { name: 'recipe' }],
@@ -326,7 +326,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data._entities[0].savedItems.edges[0].node.item.savedItem.status
+      res.body.data._entities[0].savedItems.edges[0].node.item.savedItem.status,
     ).to.equal('ARCHIVED');
   });
   it('should return non-archived items', async () => {
@@ -357,7 +357,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://ijk'
+      'http://ijk',
     );
   });
 
@@ -390,7 +390,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(4);
     expect(
       res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem
-        .isFavorite
+        .isFavorite,
     ).to.equal(false);
   });
 
@@ -431,7 +431,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://abc'
+      'http://abc',
     );
   });
 
@@ -499,7 +499,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id,
     ).to.equal('1');
   });
   it('should return articles with videos', async () => {
@@ -514,7 +514,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id,
     ).to.equal('1');
   });
   it('should return videos', async () => {
@@ -529,7 +529,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id,
     ).to.equal('5');
   });
   it('should return images', async () => {
@@ -544,7 +544,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id,
     ).to.equal('6');
   });
   it('should return articles that are un-parsable and will be opened externally', async () => {
@@ -575,7 +575,7 @@ describe('getSavedItems filter', () => {
     expect(res.body.errors).to.be.undefined;
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.id,
     ).to.equal('2');
   });
   it('should use statuses to return multiple statuses', async () => {
@@ -591,8 +591,8 @@ describe('getSavedItems filter', () => {
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(5);
     expect(
       res.body.data?._entities[0].savedItems.edges.map(
-        (edge) => edge.node.item.savedItem.id
-      )
+        (edge) => edge.node.item.savedItem.id,
+      ),
     ).to.deep.equalInAnyOrder(['1', '2', '4', '5', '6']); // Don't care about sort for this test
   });
 
@@ -615,13 +615,14 @@ describe('getSavedItems filter', () => {
     expect(res.body.data?._entities[0].savedItems.edges.length).to.equal(1);
     expect(
       res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem
-        .isFavorite
+        .isFavorite,
     ).to.equal(true);
     expect(
-      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem.status
+      res.body.data?._entities[0].savedItems.edges[0].node.item.savedItem
+        .status,
     ).to.not.equal('ARCHIVED');
     expect(res.body.data?._entities[0].savedItems.edges[0].node.url).to.equal(
-      'http://abc'
+      'http://abc',
     );
   });
 });

@@ -17,7 +17,7 @@ export class ItemModel {
   public getBySave(
     parent:
       | Pick<SavedItem, 'url' | 'id' | 'resolvedId'>
-      | Pick<PocketSave, 'givenUrl' | 'id' | 'resolvedId'>
+      | Pick<PocketSave, 'givenUrl' | 'id' | 'resolvedId'>,
   ): Item | PendingItem {
     let url: string;
     if ('url' in parent) {

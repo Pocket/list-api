@@ -43,13 +43,13 @@ export class EventBatchProcessor<T> {
     public eventNames: string[],
     private handlerFn: EventDataHandler<T[]>,
     private interval = 1000,
-    private batchSize = 500
+    private batchSize = 500,
   ) {
     // Register a listener on the events that pushes the event data to the queue
     this.eventNames.forEach((eventName: string) =>
       this.emitter.on(eventName, (data: T) => {
         this.eventDataQueue.push(data);
-      })
+      }),
     );
     // Start consuming events (constructor can't be async)
     setImmediate(async () => await this.batchIntervals());
@@ -92,7 +92,7 @@ export class EventBatchProcessor<T> {
     if (this.eventDataQueue.length > this.batchSize) {
       serverLogger.warning(
         `${this.eventDataQueue.length} events still in queue after batch processing, Ensure the processing interval is small enough so the queue doesn't grow faster than it can be processed.`,
-        { eventNames: this.eventNames }
+        { eventNames: this.eventNames },
       );
     }
     try {

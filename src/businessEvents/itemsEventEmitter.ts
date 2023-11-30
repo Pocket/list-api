@@ -10,7 +10,7 @@ import { getUnixTimestamp } from '../utils';
 export class ItemsEventEmitter extends EventEmitter {
   private static buildEvent(
     eventData: BasicItemEventPayloadWithContext,
-    eventType: EventType
+    eventType: EventType,
   ): ItemEventPayload {
     return {
       ...eventData,
@@ -23,7 +23,7 @@ export class ItemsEventEmitter extends EventEmitter {
 
   emitItemEvent(
     event: EventType,
-    data: BasicItemEventPayloadWithContext
+    data: BasicItemEventPayloadWithContext,
   ): void {
     this.emit(event, ItemsEventEmitter.buildEvent(data, event));
   }

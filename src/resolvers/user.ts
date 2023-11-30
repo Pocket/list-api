@@ -25,7 +25,7 @@ import config from '../config';
 export function savedItemById(
   parent: User,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
   return new SavedItemDataService(context).getSavedItemById(args.id);
 }
@@ -43,17 +43,17 @@ export function savedItems(
     sort: SavedItemsSort;
     pagination: Pagination;
   },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItemConnection> {
   args.pagination = validatePagination(
     args.pagination,
     config.pagination.defaultPageSize,
-    config.pagination.maxPageSize
+    config.pagination.maxPageSize,
   );
   return new ListPaginationService(context).getSavedItems(
     args.filter,
     args.sort,
-    args.pagination
+    args.pagination,
   );
 }
 
@@ -68,15 +68,15 @@ export async function tags(
   args: {
     pagination: Pagination;
   },
-  context: IContext
+  context: IContext,
 ): Promise<TagConnection> {
   args.pagination = validatePagination(
     args.pagination,
     config.pagination.defaultPageSize,
-    config.pagination.maxPageSize
+    config.pagination.maxPageSize,
   );
   return await new TagDataService(
     context,
-    new SavedItemDataService(context)
+    new SavedItemDataService(context),
   ).getTagsByUser(parent.id, args.pagination);
 }

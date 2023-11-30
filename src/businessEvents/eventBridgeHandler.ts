@@ -8,15 +8,15 @@ import { EventBridgeBase } from '../aws/eventBridgeBase';
 export class EventBridgeHandler extends EventBridgeBase {
   constructor(
     emitter: ItemsEventEmitter,
-    events: Array<keyof typeof EventType>
+    events: Array<keyof typeof EventType>,
   ) {
     super(eventBridgeClient);
     // register handler for item events
     events.forEach((event) =>
       emitter.on(
         EventType[event],
-        async (data: ItemEventPayload) => await this.process(data)
-      )
+        async (data: ItemEventPayload) => await this.process(data),
+      ),
     );
   }
   /**

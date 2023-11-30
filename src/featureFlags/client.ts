@@ -3,6 +3,19 @@ import config from '../config';
 import { serverLogger } from '../server/logger';
 
 export function getClient() {
+  class InMemCache {
+    data: Record<string, string>;
+    constructor() {
+      this.data = {};
+    }
+    async set(key: string, data: any) {
+      this.data[key] = JSON.stringify(data);
+    }
+    async get(key: string) {
+      const data = this.data[key];
+      return JSON.parse(data);
+    }
+  }
   let unleash: Unleash;
   if (config.app.environment.toLowerCase() === 'test') {
     // Local no-op client just to ensure all dependencies (e.g. ContextManager)
@@ -19,6 +32,7 @@ export function getClient() {
       refreshInterval: 0,
       disableMetrics: true,
       bootstrap: { data: [] },
+      storageProvider: new InMemCache(),
     });
   } else {
     // The actual unleash client. Note that this is not a blocking
@@ -34,7 +48,7 @@ export function getClient() {
       refreshInterval: 60000, //ms
     });
     unleash.on('error', (err) =>
-      serverLogger.error('Unleash errror', { data: err })
+      serverLogger.error('Unleash errror', { data: err }),
     );
   }
   return unleash;

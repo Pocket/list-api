@@ -20,7 +20,7 @@ import { serverLogger } from '../server/logger';
  * Reference: https://github.com/pocket/spec/tree/master/backend/data/unified-event
  */
 export async function unifiedEventTransformer(
-  eventPayload: ItemEventPayload
+  eventPayload: ItemEventPayload,
 ): Promise<UnifiedEventPayload> {
   return {
     type: UnifiedEventMap[eventPayload.eventType],
@@ -72,7 +72,7 @@ async function buildUnifiedEventData(eventPayload: ItemEventPayload) {
  * @param events array of event data for unified event stream
  */
 export async function unifiedEventKinesisHandler(
-  events: ItemEventPayload[]
+  events: ItemEventPayload[],
 ): Promise<void> {
   if (events.length == 0) {
     return;
@@ -80,7 +80,7 @@ export async function unifiedEventKinesisHandler(
 
   // For more concise logging of failed events
   const unifiedEvents: Promise<UnifiedEventPayload>[] = events.map(
-    unifiedEventTransformer
+    unifiedEventTransformer,
   );
   const resolvedUnifiedEvents = await Promise.all(unifiedEvents);
   const records: PutRecordsRequestEntry[] = resolvedUnifiedEvents.map(
@@ -89,7 +89,7 @@ export async function unifiedEventKinesisHandler(
         Data: Buffer.from(JSON.stringify(event)),
         PartitionKey: `${index}-partition`,
       };
-    }
+    },
   );
   const putCommand = new PutRecordsCommand({
     StreamName: config.aws.kinesis.unifiedEvents.streamName,
@@ -108,7 +108,7 @@ export async function unifiedEventKinesisHandler(
         }
         return accumulator;
       },
-      []
+      [],
     );
     serverLogger.error('Failed to send event(s) to kinesis stream', {
       stream: config.aws.kinesis.unifiedEvents.streamName,
@@ -119,8 +119,8 @@ export async function unifiedEventKinesisHandler(
     });
     Sentry.captureException(
       new Error(
-        `Failed to send events to kinesis ${config.aws.kinesis.unifiedEvents.streamName}`
-      )
+        `Failed to send events to kinesis ${config.aws.kinesis.unifiedEvents.streamName}`,
+      ),
     );
   }
 }

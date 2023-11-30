@@ -55,12 +55,12 @@ describe('context', () => {
         expect(mockScope.setTag).toHaveBeenNthCalledWith(
           1,
           'pocket-api-id',
-          expectedApiId
+          expectedApiId,
         );
         expect(mockScope.setUser).toHaveBeenNthCalledWith(1, {
           id: headers.encodedid,
         });
-      }
+      },
     );
   });
   describe('event emitter', () => {
@@ -147,7 +147,7 @@ describe('context', () => {
 
     it('creates a data loader for saved items on initialization', async () => {
       const savedItems = await context.dataLoaders.savedItemsByUrl.load(
-        'dont-care.com'
+        'dont-care.com',
       );
 
       expect(context.dataLoaders.savedItemsByUrl).toBeInstanceOf(DataLoader);
@@ -164,10 +164,10 @@ describe('context', () => {
       await loader.load('dont-care.com');
       // At this point both loaders should have filled cache since referencing same object
       expect(Array.from((loader as any)._cacheMap.keys())).toContain(
-        'dont-care.com'
+        'dont-care.com',
       );
       expect(Array.from((loaderAgain as any)._cacheMap.keys())).toContain(
-        'dont-care.com'
+        'dont-care.com',
       );
       await loaderAgain.load('dont-care.com');
       // Second load should have used the cache, so only one call to batch fn
@@ -176,10 +176,12 @@ describe('context', () => {
     it('savedItemById dataloader should fill cache of savedItemByUrl dataloader', async () => {
       await context.dataLoaders.savedItemsById.load('1');
       const loadedItem = await context.dataLoaders.savedItemsByUrl.load(
-        'dont-care.com'
+        'dont-care.com',
       );
       expect(
-        Array.from((context.dataLoaders.savedItemsById as any)._cacheMap.keys())
+        Array.from(
+          (context.dataLoaders.savedItemsById as any)._cacheMap.keys(),
+        ),
       ).toContain('1');
       expect(batchIdFnSpy.mock.calls.length).toStrictEqual(1);
       expect(batchUrlFnSpy.mock.calls.length).toStrictEqual(0);
@@ -189,7 +191,9 @@ describe('context', () => {
       await context.dataLoaders.savedItemsByUrl.load('dont-care.com');
       const loadedItem = await context.dataLoaders.savedItemsById.load('1');
       expect(
-        Array.from((context.dataLoaders.savedItemsById as any)._cacheMap.keys())
+        Array.from(
+          (context.dataLoaders.savedItemsById as any)._cacheMap.keys(),
+        ),
       ).toContain('1');
       expect(batchUrlFnSpy.mock.calls.length).toStrictEqual(1);
       expect(batchIdFnSpy.mock.calls.length).toStrictEqual(0);

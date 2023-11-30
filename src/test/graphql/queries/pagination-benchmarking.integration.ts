@@ -74,7 +74,7 @@ describe.skip('temp table with new list pagination - benchmarking', () => {
           query: GET_SAVED_ITEMS,
           variables,
         }),
-      { name: 'first', times: 20, printToConsole: true, returnValues: true }
+      { name: 'first', times: 20, printToConsole: true, returnValues: true },
     )();
   });
   it('first/after', async () => {
@@ -95,7 +95,7 @@ describe.skip('temp table with new list pagination - benchmarking', () => {
               pagination: { first: 30, after: cursor },
             },
           }),
-      { name: 'first/after', times: 20, returnValues: true }
+      { name: 'first/after', times: 20, returnValues: true },
     )();
   });
   it('last', async () => {
@@ -111,7 +111,7 @@ describe.skip('temp table with new list pagination - benchmarking', () => {
               pagination: { last: 30 },
             },
           }),
-      { name: 'last', times: 20 }
+      { name: 'last', times: 20 },
     )();
   });
   it('last/before', async () => {
@@ -138,7 +138,7 @@ describe.skip('temp table with new list pagination - benchmarking', () => {
               pagination: { last: 30, before: cursor },
             },
           }),
-      { name: 'last/before', times: 20 }
+      { name: 'last/before', times: 20 },
     )();
   });
 });
