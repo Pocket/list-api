@@ -50,7 +50,11 @@ export const contextConnection = (query: string): Knex => {
   return isMutation ? writeClient() : readClient();
 };
 
-export async function startServer(port: number) {
+export async function startServer(port: number): Promise<{
+  app: express.Express;
+  server: ApolloServer<ContextManager>;
+  url: string;
+}> {
   const app = express();
 
   Sentry.init({
@@ -86,8 +90,8 @@ export async function startServer(port: number) {
     eventBridgeEventHandler,
   ]);
 
-  // Start unleash client async, (global namespace)
-  unleash.getClient();
+  // Start unleash client
+  const unleashClient = await unleash.getClient();
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
@@ -96,6 +100,7 @@ export async function startServer(port: number) {
       request: req,
       dbClient,
       eventEmitter: itemsEventEmitter,
+      unleash: unleashClient,
     });
   };
 
@@ -134,7 +139,7 @@ export async function startServer(port: number) {
     schema,
     plugins,
     formatError: process.env.NODE_ENV !== 'test' ? errorHandler : undefined,
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true,
   });
 
   await server.start();
