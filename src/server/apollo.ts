@@ -127,7 +127,6 @@ export async function startServer(port: number): Promise<{
   const defaultPlugins = [
     sentryPlugin,
     ApolloServerPluginUsageReportingDisabled(),
-    ApolloServerPluginLandingPageGraphQLPlayground(),
     ApolloServerPluginDrainHttpServer({ httpServer }),
     createApollo4QueryValidationPlugin({ schema }),
     ApolloServerPluginLandingPageLocalDefault({ footer: false }),
