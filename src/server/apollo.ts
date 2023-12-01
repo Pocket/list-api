@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import express, { query } from 'express';
+import express from 'express';
 import http from 'http';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
