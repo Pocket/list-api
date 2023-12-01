@@ -3,7 +3,10 @@
   "esModuleInterop": true,
   "compilerOptions": {
     "outDir": "dist",
-    "rootDirs": ["src", "lambda"]
+    "rootDirs": ["src", "lambda"],
+    "esModuleInterop": true,
+    "noEmitHelpers": true,
+    "importHelpers": true
   },
   "exclude": ["node_modules"],
   "include": ["src/**/*.ts", "src/config"],

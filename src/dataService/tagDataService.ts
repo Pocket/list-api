@@ -34,7 +34,7 @@ export class TagDataService {
 
   constructor(
     context: IContext,
-    savedItemDataService: SavedItemDataService
+    savedItemDataService: SavedItemDataService,
     //note: for mutations, please pass the writeClient,
     //otherwise there will be replication lags.
   ) {
@@ -52,10 +52,8 @@ export class TagDataService {
         'tag as name',
         'tag',
         this.db.raw('MAX(id) as _cursor'),
-        // TODO: Risky - this could be a HUGE array for certain users (e.g. IFTT auto-taggers)
-        this.db.raw('GROUP_CONCAT(item_id) as savedItems'),
         this.db.raw('NULL as _deletedAt'),
-        this.db.raw('NULL as _version')
+        this.db.raw('NULL as _version'),
         //TODO: add version and deletedAt feature to tag
       )
       .where({ user_id: parseInt(this.userId) })
@@ -69,54 +67,60 @@ export class TagDataService {
   }
 
   /**
-   * For a given item_id, retrieves tags
-   * and list of itemIds associated with it.
+   * For a given item_id, retrieves tags associated with it.
    * @param itemId
    */
   public async getTagsByUserItem(itemId: string): Promise<Tag[]> {
-    const subQueryName = 'subQuery_tags';
-    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
-
-    const getTagsForItemQuery = this.db('item_tags')
-      .select(`${subQueryName}.*`)
-      .where({
-        user_id: parseInt(this.userId),
-        item_id: itemId,
-      });
-
-    const result = await getTagsForItemQuery.join(
-      getItemIdsForEveryTag,
-      function () {
-        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
-      }
-    );
-
-    return result.map(TagModel.toGraphqlEntity);
+    const tags = await this.db('item_tags')
+      .select(
+        'tag as name',
+        this.db.raw('NULL as _deletedAt'),
+        this.db.raw('NULL as _version'),
+        //TODO: add version and deletedAt feature to tag
+      )
+      .orderBy('id', 'desc')
+      .where({ user_id: this.userId, item_id: itemId });
+    return tags.map(TagModel.toGraphqlEntity);
   }
 
   /**
-   * For a given item_id, retrieves tags
-   * and list of itemIds associated with it.
-   * @param itemId
+   * For a list of itemIds, retrieve tags associated with each.
+   * Response is keyed on the itemId (if there are no tags,
+   * associated to a given itemId key, that itemId key will
+   * not be present in the response).
+   * @param itemId ID of the savedItem to fetch tags for
    */
-  public async batchGetTagsByUserItems(itemIds: string[]): Promise<Tag[]> {
-    const subQueryName = 'subQuery_tags';
-    const getItemIdsForEveryTag = this.getTagsByUserSubQuery().as(subQueryName);
+  public async batchGetTagsByUserItems(
+    itemIds: string[],
+  ): Promise<{ [savedItemId: string]: Tag[] }> {
+    const tags = await this.db('item_tags')
+      .select(
+        'tag as name',
+        'item_id',
+        this.db.raw('NULL as _deletedAt'),
+        this.db.raw('NULL as _version'),
+        //TODO: add version and deletedAt feature to tag
+      )
+      .orderBy('id', 'desc')
+      .whereIn('item_id', itemIds)
+      .andWhere({ user_id: parseInt(this.userId) });
 
-    const getTagsForItemQuery = this.db('item_tags')
-      .select(`${subQueryName}.*`)
-      .where({
-        user_id: parseInt(this.userId),
-      })
-      .whereIn('item_id', itemIds);
+    // Aggregate list of tags by item_id
+    const result = tags.reduce(
+      (saveTagMap, tagRow) => {
+        const itemId = tagRow['item_id'].toString();
+        const tagEntity = TagModel.toGraphqlEntity(tagRow);
+        if (saveTagMap[itemId]?.length > 0) {
+          saveTagMap[itemId].push(tagEntity);
+        } else {
+          saveTagMap[itemId] = [tagEntity];
+        }
+        return saveTagMap;
+      },
+      {} as { [savedItemId: string]: Tag[] },
+    );
 
-    const result = await getTagsForItemQuery
-      .join(getItemIdsForEveryTag, function () {
-        this.on('item_tags.tag', '=', `${subQueryName}.tag`);
-      })
-      .distinct();
-
-    return result.map(TagModel.toGraphqlEntity);
+    return result;
   }
 
   /**
@@ -133,7 +137,7 @@ export class TagDataService {
       .leftJoin('readitla_ril-tmp.list', function () {
         this.on('item_tags.item_id', 'readitla_ril-tmp.list.item_id').on(
           'item_tags.user_id',
-          'readitla_ril-tmp.list.user_id'
+          'readitla_ril-tmp.list.user_id',
         );
       })
       .whereNotIn('tag', existingTags)
@@ -171,7 +175,7 @@ export class TagDataService {
 
   public async getTagsByUser(
     userId: string,
-    pagination?: Pagination
+    pagination?: Pagination,
   ): Promise<any> {
     pagination = pagination ?? { first: config.pagination.defaultPageSize };
     const query = this.getItemsByTagsAndUser();
@@ -193,7 +197,7 @@ export class TagDataService {
             ...edge.node,
           },
         }),
-      }
+      },
     );
 
     for (const edge of result.edges) {
@@ -210,7 +214,7 @@ export class TagDataService {
    */
   public async insertTags(
     tagInputs: TagSaveAssociation[],
-    timestamp?: Date
+    timestamp?: Date,
   ): Promise<void> {
     const updatedTime = timestamp ?? new Date();
     await this.db.transaction(async (trx: Knex.Transaction) => {
@@ -222,14 +226,14 @@ export class TagDataService {
   private async insertTagAndUpdateSavedItem(
     tagInputs: TagSaveAssociation[],
     trx: Knex.Transaction<any, any[]>,
-    timestamp?: Date
+    timestamp?: Date,
   ) {
     if (tagInputs.length === 0) {
       return;
     }
     const updateTimestamp = mysqlTimeString(
       timestamp ?? new Date(),
-      config.database.tz
+      config.database.tz,
     );
     const inputData = tagInputs.map((tagInput) => {
       return {
@@ -243,11 +247,11 @@ export class TagDataService {
     });
     await trx('item_tags').insert(inputData).onConflict().ignore();
     const itemIds = uniqueArray(
-      tagInputs.map((element) => element.savedItemId)
+      tagInputs.map((element) => element.savedItemId),
     );
     const saveUpdates = this.savedItemService.updateListItemMany(
       itemIds,
-      timestamp
+      timestamp,
     );
     saveUpdates.forEach(async (updateStatement) => {
       await updateStatement.transacting(trx);
@@ -260,7 +264,7 @@ export class TagDataService {
    * @param input Specify the association pairs to remove
    */
   public async deleteSavedItemAssociations(
-    input: SaveTagNameConnection[]
+    input: SaveTagNameConnection[],
   ): Promise<SaveTagNameConnection[]> {
     await this.db.transaction(async (trx: Knex.Transaction) => {
       const tagDeleteSubquery = trx('item_tags')
@@ -316,7 +320,7 @@ export class TagDataService {
   public async updateTagByUser(
     oldName: string,
     newName: string,
-    itemIds: string[]
+    itemIds: string[],
   ): Promise<void> {
     await this.db.transaction(async (trx: Knex.Transaction) => {
       await trx.raw(
@@ -328,7 +332,7 @@ export class TagDataService {
           userId: this.userId,
           oldTagName: oldName,
           _updatedAt: mysqlTimeString(new Date(), config.database.tz),
-        }
+        },
       );
       const saveUpdates = this.savedItemService.updateListItemMany(itemIds);
       saveUpdates.forEach(async (updateStatement) => {
@@ -351,7 +355,7 @@ export class TagDataService {
    * todo: make a check if savedItemId exist before deleting.
    */
   public async updateSavedItemTags(
-    inserts: TagSaveAssociation[]
+    inserts: TagSaveAssociation[],
   ): Promise<SavedItem> {
     // No FK constraints so check in data service layer
     const exists =
@@ -359,7 +363,7 @@ export class TagDataService {
       null;
     if (!exists) {
       throw new NotFoundError(
-        `SavedItem ID ${inserts[0].savedItemId} does not exist.`
+        `SavedItem ID ${inserts[0].savedItemId} does not exist.`,
       );
     }
     await this.db.transaction(async (trx: Knex.Transaction) => {
@@ -396,7 +400,7 @@ export class TagDataService {
    * @param tagsInputs : list of TagSaveAssociation
    */
   public async replaceSavedItemTags(
-    tagInputs: TagSaveAssociation[]
+    tagInputs: TagSaveAssociation[],
   ): Promise<SavedItem[]> {
     const savedItemIds = tagInputs.map((input) => input.savedItemId);
 
@@ -404,14 +408,14 @@ export class TagDataService {
       await Promise.all(
         savedItemIds.map(async (id) => {
           await this.deleteTagsByItemId(id).transacting(trx);
-        })
+        }),
       );
       await this.insertTagAndUpdateSavedItem(tagInputs, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
 
     return await this.savedItemService.batchGetSavedItemsByGivenIds(
-      savedItemIds
+      savedItemIds,
     );
   }
 
@@ -430,13 +434,13 @@ export class TagDataService {
    */
   public async batchUpdateTags(
     updates: SaveUpdateTagsInputDb,
-    timestamp: Date
+    timestamp: Date,
   ): Promise<{ updated: number[]; missing: string[] }> {
     // First check if the save exists -- no need to initialize
     // transaction yet
     const { deletes, creates } = updates;
     const saveIds = uniqueArray(
-      [...deletes, ...creates].map((req) => parseInt(req.savedItemId))
+      [...deletes, ...creates].map((req) => parseInt(req.savedItemId)),
     );
     const missing = await this.pocketSaveService.checkIdExists(saveIds);
     // Exit if there are any missing Saves, with the missing ids returned
@@ -453,6 +457,14 @@ export class TagDataService {
     return { updated: saveIds, missing: [] };
   }
 
+  public async fetchItemIdAssociations(tag: string): Promise<string[]> {
+    const res = await this.db('item_tags')
+      .select('item_id')
+      .where({ tag, user_id: this.userId })
+      .pluck('item_id');
+    return res as string[];
+  }
+
   private deleteTagsByItemId(itemId: string): Knex.QueryBuilder {
     return this.db('item_tags')
       .where({ user_id: this.userId, item_id: itemId })
@@ -467,7 +479,7 @@ export class TagDataService {
 
   /** Query builder for deleting item_tags rows by PK tuples */
   private deleteTagsByNameAndItemId(
-    association: TagSaveAssociation[]
+    association: TagSaveAssociation[],
   ): Knex.QueryBuilder {
     const tuples = association.map(({ savedItemId, name }) => {
       return [parseInt(savedItemId), name, this.userId];

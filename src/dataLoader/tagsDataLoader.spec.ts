@@ -6,18 +6,24 @@ import { ContextManager, IContext } from '../server/context';
 import { Tag } from '../types';
 
 describe('tags dataloader', function () {
-  const testTags: Tag[] = [
-    {
-      id: '1',
-      name: 'tag1',
-      savedItems: ['1'],
-    },
-    {
-      id: '2',
-      name: 'tag2',
-      savedItems: ['1', '2'],
-    },
-  ];
+  const testTags: { [savedItemId: string]: Tag[] } = {
+    '1': [
+      {
+        id: '1',
+        name: 'tag1',
+      },
+      {
+        id: '2',
+        name: 'tag2',
+      },
+    ],
+    '2': [
+      {
+        id: '2',
+        name: 'tag2',
+      },
+    ],
+  };
 
   afterAll(() => {
     sinon.restore();
@@ -76,12 +82,10 @@ describe('tags dataloader', function () {
     expect(tags[0]).toContainEqual({
       id: '1',
       name: 'tag1',
-      savedItems: ['1'],
     });
     expect(tags[0]).toContainEqual({
       id: '2',
       name: 'tag2',
-      savedItems: ['1', '2'],
     });
     // there are no items with the second given tag;
     expect(tags[1]).toHaveLength(0);
@@ -112,12 +116,10 @@ describe('tags dataloader', function () {
     expect(tags[0]).toContainEqual({
       id: '1',
       name: 'tag1',
-      savedItems: ['1'],
     });
     expect(tags[0]).toContainEqual({
       id: '2',
       name: 'tag2',
-      savedItems: ['1', '2'],
     });
     // there are no items with the second given tag;
     expect(tags[1]).toHaveLength(0);

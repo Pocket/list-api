@@ -16,7 +16,7 @@ describe('tags query tests - happy path', () => {
   // proxy for testing we're using dataloader => batch queries
   const dbBatchSpy = sinon.spy(
     TagDataService.prototype,
-    'batchGetTagsByUserItems'
+    'batchGetTagsByUserItems',
   );
   const db = readClient();
   const headers = { userid: '1', premium: 'true' };
@@ -382,7 +382,7 @@ describe('tags query tests - happy path', () => {
       });
     const expected = {
       url: 'http://abc',
-      tags: [
+      tags: expect.toIncludeSameMembers([
         expect.objectContaining({
           name: 'travel',
           id: toBeStringOfLengthGreaterThanOne(),
@@ -421,7 +421,7 @@ describe('tags query tests - happy path', () => {
             }),
           }),
         }),
-      ],
+      ]),
     };
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data?._entities[0].savedItemById).toMatchObject(expected);
@@ -466,7 +466,7 @@ describe('tags query tests - happy path', () => {
         });
       expect(res.body.errors.length).toBeGreaterThan(0);
       expect(res.body.errors[0].message).toBe(
-        'Cannot specify a cursor on a nested paginated field.'
+        'Cannot specify a cursor on a nested paginated field.',
       );
       expect(dbBatchSpy.callCount).toEqual(1);
     });
@@ -487,7 +487,7 @@ describe('tags query tests - happy path', () => {
         });
       expect(res.body.errors.length).toBeGreaterThan(0);
       expect(res.body.errors[0].message).toBe(
-        'Cannot specify a cursor on a nested paginated field.'
+        'Cannot specify a cursor on a nested paginated field.',
       );
       // dataloader (and dependent DB functions)
       // shouldn't be called upon error at client level

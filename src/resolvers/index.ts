@@ -56,7 +56,7 @@ const resolvers = {
     saveById(
       _parent: any,
       args: any,
-      context: IContext
+      context: IContext,
     ): Promise<SaveByIdResult[]> {
       return context.models.pocketSave.getById(args.ids);
     },
@@ -136,67 +136,67 @@ const resolvers = {
       _,
       args: SaveMutationInput,
       context: IContext,
-      info: GraphQLResolveInfo
+      info: GraphQLResolveInfo,
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.pocketSave.saveArchive(
         args.id,
         args.timestamp,
-        info.path
+        info.path,
       );
     },
     saveUnArchive: async (
       _,
       args: SaveMutationInput,
       context: IContext,
-      info: GraphQLResolveInfo
+      info: GraphQLResolveInfo,
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.pocketSave.saveUnArchive(
         args.id,
         args.timestamp,
-        info.path
+        info.path,
       );
     },
     saveFavorite: async (
       _,
       args: SaveMutationInput,
       context: IContext,
-      info: GraphQLResolveInfo
+      info: GraphQLResolveInfo,
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.pocketSave.saveFavorite(
         args.id,
         args.timestamp,
-        info.path
+        info.path,
       );
     },
     saveUnFavorite: async (
       _,
       args: SaveMutationInput,
       context: IContext,
-      info: GraphQLResolveInfo
+      info: GraphQLResolveInfo,
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.pocketSave.saveUnFavorite(
         args.id,
         args.timestamp,
-        info.path
+        info.path,
       );
     },
     saveBatchUpdateTags: async (
       _,
       args: { input: SaveUpdateTagsInputGraphql[]; timestamp: Date },
       context: IContext,
-      info: GraphQLResolveInfo
+      info: GraphQLResolveInfo,
     ): Promise<SaveWriteMutationPayload> => {
       return await context.models.tag.batchUpdateTagConnections(
         args.input,
         args.timestamp,
-        info.path
+        info.path,
       );
     },
     saveUpsert: (
       _,
       args,
       context: IContext,
-      info: GraphQLResolveInfo
+      info: GraphQLResolveInfo,
     ): null => {
       //TODO @Herraj --> implementation in a follow up PR
       return null;
@@ -204,11 +204,71 @@ const resolvers = {
     savedItemTag: async (
       _,
       args: { input: SavedItemTagInput; timestamp: Date },
-      context: IContext
+      context: IContext,
     ): Promise<SavedItem | null> => {
       return await context.models.tag.createSavedItemTagConnections(
         args.input,
-        args.timestamp
+        args.timestamp,
+      );
+    },
+    savedItemArchive: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext,
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.archiveByUrl(
+        args.givenUrl,
+        args.timestamp,
+      );
+    },
+    savedItemUnArchive: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext,
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.unarchiveByUrl(
+        args.givenUrl,
+        args.timestamp,
+      );
+    },
+    savedItemFavorite: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext,
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.favoriteByUrl(
+        args.givenUrl,
+        args.timestamp,
+      );
+    },
+    savedItemUnFavorite: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext,
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.unfavoriteByUrl(
+        args.givenUrl,
+        args.timestamp,
+      );
+    },
+    savedItemDelete: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext,
+    ): Promise<string | null> => {
+      return await context.models.savedItem.deleteByUrl(
+        args.givenUrl,
+        args.timestamp,
+      );
+    },
+    savedItemUnDelete: async (
+      _,
+      args: { givenUrl: string; timestamp: Date },
+      context: IContext,
+    ): Promise<SavedItem | null> => {
+      return await context.models.savedItem.undeleteByUrl(
+        args.givenUrl,
+        args.timestamp,
       );
     },
   },

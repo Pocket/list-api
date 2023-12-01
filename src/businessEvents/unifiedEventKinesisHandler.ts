@@ -1,9 +1,6 @@
 import kinesis from '../aws/kinesis';
 import config from '../config';
-import {
-  PutRecordsCommand,
-  PutRecordsRequestEntry,
-} from '@aws-sdk/client-kinesis';
+import { KinesisClient, PutRecordCommand } from '@aws-sdk/client-kinesis';
 import * as Sentry from '@sentry/node';
 import {
   EventType,
@@ -12,6 +9,58 @@ import {
   UnifiedEventMap,
   UnifiedEventPayload,
 } from './types';
+import { serverLogger } from '../server/logger';
+import { ItemsEventEmitter } from './itemsEventEmitter';
+
+export class UnifiedEventKinesisHandler {
+  private readonly kinesis: KinesisClient;
+  constructor(
+    emitter: ItemsEventEmitter,
+    events: Array<keyof typeof EventType>,
+  ) {
+    this.kinesis = kinesis;
+    // register handler for item events
+    events.forEach((event) =>
+      emitter.on(
+        EventType[event],
+        async (data: ItemEventPayload) => await this.process(data),
+      ),
+    );
+  }
+
+  /**
+   * Process event array and send to kinesis stream.
+   * If the response still contains failed records after retrying,
+   * log an error to console and sentry.
+   * @param eventPayload the payload to send to event bus
+   */
+  public async process(data: ItemEventPayload) {
+    const unifiedEvent = await unifiedEventTransformer(data);
+
+    const putCommand = new PutRecordCommand({
+      StreamName: config.aws.kinesis.unifiedEvents.streamName,
+      Data: Buffer.from(JSON.stringify(unifiedEvent)),
+      PartitionKey: `0-partition`,
+    });
+
+    try {
+      await this.kinesis.send(putCommand);
+    } catch {
+      serverLogger.error('Failed to send event(s) to kinesis stream', {
+        stream: config.aws.kinesis.unifiedEvents.streamName,
+        event: JSON.stringify(unifiedEvent),
+      });
+      Sentry.addBreadcrumb({
+        message: `Failed Events: \n ${JSON.stringify(unifiedEvent)}`,
+      });
+      Sentry.captureException(
+        new Error(
+          `Failed to send events to kinesis ${config.aws.kinesis.unifiedEvents.streamName}`,
+        ),
+      );
+    }
+  }
+}
 
 /**
  * Transform an ItemEventPayload into the format expected for UnifiedEvents.
@@ -19,7 +68,7 @@ import {
  * Reference: https://github.com/pocket/spec/tree/master/backend/data/unified-event
  */
 export async function unifiedEventTransformer(
-  eventPayload: ItemEventPayload
+  eventPayload: ItemEventPayload,
 ): Promise<UnifiedEventPayload> {
   return {
     type: UnifiedEventMap[eventPayload.eventType],
@@ -62,59 +111,4 @@ async function buildUnifiedEventData(eventPayload: ItemEventPayload) {
   }
 
   return data;
-}
-
-/**
- * Process event array and send to kinesis stream.
- * If the response still contains failed records after retrying,
- * log an error to console and sentry.
- * @param events array of event data for unified event stream
- */
-export async function unifiedEventKinesisHandler(
-  events: ItemEventPayload[]
-): Promise<void> {
-  if (events.length == 0) {
-    return;
-  }
-
-  // For more concise logging of failed events
-  const unifiedEvents: Promise<UnifiedEventPayload>[] = events.map(
-    unifiedEventTransformer
-  );
-  const resolvedUnifiedEvents = await Promise.all(unifiedEvents);
-  const records: PutRecordsRequestEntry[] = resolvedUnifiedEvents.map(
-    (event: UnifiedEventPayload, index: number) => {
-      return {
-        Data: Buffer.from(JSON.stringify(event)),
-        PartitionKey: `${index}-partition`,
-      };
-    }
-  );
-  const putCommand = new PutRecordsCommand({
-    StreamName: config.aws.kinesis.unifiedEvents.streamName,
-    Records: records,
-  });
-  const response = await kinesis.send(putCommand);
-
-  // Check for failed records
-  // AWS SDK automatically retries failed records up to max retries
-  if (response.FailedRecordCount > 0) {
-    // Create array of just failed events
-    const failedEvents = response.Records.reduce(
-      (accumulator: UnifiedEventPayload[], record, index) => {
-        if (record.ErrorCode != null) {
-          accumulator.push(resolvedUnifiedEvents[index]);
-        }
-        return accumulator;
-      },
-      []
-    );
-    const errorMessage = `ERROR: Failed to send ${
-      failedEvents.length
-    } event(s) to kinesis stream '${
-      config.aws.kinesis.unifiedEvents.streamName
-    }'. Failed Events: \n ${JSON.stringify(failedEvents)}`;
-    console.log(errorMessage);
-    Sentry.captureException(new Error(errorMessage));
-  }
 }

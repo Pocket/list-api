@@ -36,6 +36,7 @@ describe('tags mutation: replace savedItem tags', () => {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 
@@ -244,7 +245,7 @@ describe('tags mutation: replace savedItem tags', () => {
     expect(res.body.data.replaceSavedItemTags.length).to.equal(1);
     const tagsAdded = [];
     res.body.data.replaceSavedItemTags[0].tags.forEach((tag) =>
-      tagsAdded.push(tag.name)
+      tagsAdded.push(tag.name),
     );
     expect(tagsAdded).to.deep.equalInAnyOrder([
       'existing_tag',
@@ -292,7 +293,7 @@ describe('tags mutation: replace savedItem tags', () => {
     });
     expect(res.body.errors.length).to.equal(1);
     expect(res.body.errors[0].message).contains(
-      'Tag name must have at least 1 non-whitespace character.'
+      'Tag name must have at least 1 non-whitespace character.',
     );
     expect(res.body.errors[0].extensions?.code).to.equal('BAD_USER_INPUT');
   });

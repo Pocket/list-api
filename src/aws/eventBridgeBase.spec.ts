@@ -6,6 +6,7 @@ import sinon from 'sinon';
 import * as Sentry from '@sentry/node';
 import { EventBridgeBase } from './eventBridgeBase';
 import { eventBridgeClient } from './eventBridgeClient';
+import { serverLogger } from '../server/logger';
 
 describe('EventBridgeBase.putEvent', () => {
   const client = new EventBridgeBase(eventBridgeClient);
@@ -15,7 +16,7 @@ describe('EventBridgeBase.putEvent', () => {
   let consoleSpy: sinon.SinonSpy;
   let sentryStub: sinon.SinonStub;
   beforeEach(() => {
-    consoleSpy = sinon.spy(console, 'error');
+    consoleSpy = sinon.spy(serverLogger, 'error');
     sentryStub = sinon.stub(Sentry, 'captureException');
   });
   afterEach(() => sinon.restore());
@@ -27,11 +28,11 @@ describe('EventBridgeBase.putEvent', () => {
     await client.putEvents(command);
     expect(sentryStub.callCount).toBe(1);
     expect(sentryStub.getCall(0).firstArg.message).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
     expect(consoleSpy.callCount).toBe(1);
     expect(consoleSpy.getCall(0).firstArg.message).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
   });
 
@@ -40,14 +41,14 @@ describe('EventBridgeBase.putEvent', () => {
     await client.putEvents(command);
     expect(sentryStub.callCount).toBe(1);
     expect(sentryStub.getCall(0).firstArg.message).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
     expect(sentryStub.getCall(0).args[1]).toMatchObject({
       extra: { originalError: 'boo!' },
     });
     expect(consoleSpy.callCount).toBe(1);
     expect(consoleSpy.getCall(0).firstArg).toContain(
-      `Failed to send event to event bus`
+      `Failed to send event to event bus`,
     );
     expect(consoleSpy.getCall(0).firstArg).toContain(`boo!`);
   });

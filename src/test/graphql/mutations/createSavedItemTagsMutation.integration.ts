@@ -34,6 +34,7 @@ describe('createSavedItemTags mutation', function () {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 
@@ -176,14 +177,14 @@ describe('createSavedItemTags mutation', function () {
       expect(data[0]._updatedAt).equals(getUnixTimestamp(updateDate));
       expect(data[0].tags.length).to.equal(4);
       expect(data[0].tags).to.deep.equalInAnyOrder(
-        expectedTagsForSavedItemZero
+        expectedTagsForSavedItemZero,
       );
 
       expect(data[1].url).equals('http://1');
       expect(data[1]._updatedAt).equals(getUnixTimestamp(updateDate));
       expect(data[1].tags.length).to.equal(4);
       expect(data[1].tags).to.deep.equalInAnyOrder(expectedTagsForSavedItemOne);
-    }
+    },
   );
 
   it('createSavedItemTags should emit ADD_TAGS event on success', async () => {

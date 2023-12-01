@@ -14,6 +14,7 @@ import * as Sentry from '@sentry/node';
 import { EventType } from '../businessEvents';
 import { getSavedItemTagsMap } from './utils';
 import { TagModel } from '../models';
+import { serverLogger } from '../server/logger';
 
 /**
  * Create or re-add a saved item in a user's list.
@@ -29,7 +30,7 @@ import { TagModel } from '../models';
 export async function upsertSavedItem(
   _,
   args,
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
   const savedItemUpsertInput: SavedItemUpsertInput = args.input;
   const savedItemDataService = new SavedItemDataService(context);
@@ -38,7 +39,7 @@ export async function upsertSavedItem(
     //TODO do we need the resolved id @Herraj
     let item = await ParserCaller.getOrCreateItem(savedItemUpsertInput.url);
     const existingItem = await savedItemDataService.getSavedItemById(
-      item.itemId.toString()
+      item.itemId.toString(),
     );
 
     // if title is provided in the mutation input then use that and not the one received by the parser call
@@ -55,11 +56,16 @@ export async function upsertSavedItem(
     }
     const upsertedItem = await savedItemDataService.upsertSavedItem(
       item,
-      savedItemUpsertInput
+      savedItemUpsertInput,
     );
 
     if (upsertedItem == undefined) {
-      console.info(`savedUrl: ${savedItemUpsertInput.url}`);
+      serverLogger.error('Could not save item', {
+        url: savedItemUpsertInput.url,
+      });
+      Sentry.addBreadcrumb({
+        message: `Saved url ${savedItemUpsertInput.url}`,
+      });
       throw new Error(`unable to add an item`);
     }
 
@@ -77,7 +83,12 @@ export async function upsertSavedItem(
     }
     return upsertedItem;
   } catch (e) {
-    console.log(e.message);
+    serverLogger.error('unable to add item', {
+      url: savedItemUpsertInput.url,
+    });
+    Sentry.addBreadcrumb({
+      message: `unable to add item with url: ${savedItemUpsertInput.url}`,
+    });
     Sentry.captureException(e);
     throw new Error(`unable to add item with url: ${savedItemUpsertInput.url}`);
   }
@@ -92,15 +103,9 @@ export async function upsertSavedItem(
 export async function updateSavedItemFavorite(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
-    args.id,
-    true
-  );
-  context.emitItemEvent(EventType.FAVORITE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.favoriteById(args.id);
 }
 
 /**
@@ -112,15 +117,9 @@ export async function updateSavedItemFavorite(
 export async function updateSavedItemUnFavorite(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemFavoriteProperty(
-    args.id,
-    false
-  );
-  context.emitItemEvent(EventType.UNFAVORITE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.unfavoriteById(args.id);
 }
 
 /**
@@ -132,15 +131,9 @@ export async function updateSavedItemUnFavorite(
 export async function updateSavedItemArchive(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
-    args.id,
-    true
-  );
-  context.emitItemEvent(EventType.ARCHIVE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.archiveById(args.id);
 }
 
 /**
@@ -152,15 +145,9 @@ export async function updateSavedItemArchive(
 export async function updateSavedItemUnArchive(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
-  const savedItemService = new SavedItemDataService(context);
-  const savedItem = await savedItemService.updateSavedItemArchiveProperty(
-    args.id,
-    false
-  );
-  context.emitItemEvent(EventType.UNARCHIVE_ITEM, savedItem);
-  return savedItem;
+  return context.models.savedItem.unarchiveById(args.id);
 }
 
 /**
@@ -172,14 +159,9 @@ export async function updateSavedItemUnArchive(
 export async function deleteSavedItem(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<string> {
-  // TODO: setup a process to delete saved items X number of days after deleted
-  const savedItemService = new SavedItemDataService(context);
-  await savedItemService.deleteSavedItem(args.id);
-  const savedItem = await savedItemService.getSavedItemById(args.id);
-  context.emitItemEvent(EventType.DELETE_ITEM, savedItem);
-  return args.id;
+  return context.models.savedItem.deleteById(args.id);
 }
 
 /**
@@ -191,14 +173,9 @@ export async function deleteSavedItem(
 export async function updateSavedItemUnDelete(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
-  // TODO: when there is a process in place to permanently delete a saved item,
-  // check if saved item exists before attempting to undelete.
-  // TODO: Implement item undelete action
-  return await new SavedItemDataService(context).updateSavedItemUnDelete(
-    args.id
-  );
+  return context.models.savedItem.undeleteById(args.id);
 }
 
 /**
@@ -211,15 +188,15 @@ export async function updateSavedItemUnDelete(
 export async function updateSavedItemTags(
   root,
   args: { input: SavedItemTagUpdateInput },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
   const savedItem = await context.models.tag.updateTagSaveConnections(
-    args.input
+    args.input,
   );
   context.emitItemEvent(
     EventType.REPLACE_TAGS,
     savedItem,
-    args.input.tagIds.map((id) => TagModel.decodeId(id))
+    args.input.tagIds.map((id) => TagModel.decodeId(id)),
   );
   return savedItem;
 }
@@ -236,10 +213,10 @@ export async function updateSavedItemTags(
 export async function updateSavedItemRemoveTags(
   root,
   args: { savedItemId: string },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem> {
   const { save, removed } = await context.models.tag.removeSaveTags(
-    args.savedItemId
+    args.savedItemId,
   );
   context.emitItemEvent(EventType.CLEAR_TAGS, save, removed);
   return save;
@@ -255,18 +232,18 @@ export async function updateSavedItemRemoveTags(
 export async function createSavedItemTags(
   root,
   args: { input: SavedItemTagsInput[] },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem[]> {
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
   const savedItems = await context.models.tag.createTagSaveConnections(
-    args.input
+    args.input,
   );
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
       EventType.ADD_TAGS,
       savedItem,
-      savedItemTagsMap[savedItem.id]
+      savedItemTagsMap[savedItem.id],
     );
   }
 
@@ -280,10 +257,10 @@ export async function createSavedItemTags(
 export async function deleteSavedItemTags(
   root,
   args: { input: DeleteSavedItemTagsInput[] },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem[]> {
   const deleteOperations = await context.models.tag.deleteTagSaveConnection(
-    args.input
+    args.input,
   );
   const saves = deleteOperations.map(({ save, removed }) => {
     context.emitItemEvent(EventType.REMOVE_TAGS, save, removed);
@@ -299,7 +276,7 @@ export async function deleteSavedItemTags(
 export async function deleteTag(
   root,
   args: { id: string },
-  context: IContext
+  context: IContext,
 ): Promise<string> {
   return context.models.tag.deleteTag(args.id);
 }
@@ -313,18 +290,18 @@ export async function deleteTag(
 export async function replaceSavedItemTags(
   root,
   args: { input: SavedItemTagsInput[] },
-  context: IContext
+  context: IContext,
 ): Promise<SavedItem[]> {
   const savedItemTagsMap = getSavedItemTagsMap(args.input);
   const savedItems = await context.models.tag.replaceSaveTagConnections(
-    args.input
+    args.input,
   );
 
   for (const savedItem of savedItems) {
     context.emitItemEvent(
       EventType.REPLACE_TAGS,
       savedItem,
-      savedItemTagsMap[savedItem.id]
+      savedItemTagsMap[savedItem.id],
     );
   }
   return savedItems;
@@ -333,7 +310,7 @@ export async function replaceSavedItemTags(
 export async function updateTag(
   root,
   args: { input: TagUpdateInput },
-  context: IContext
+  context: IContext,
 ): Promise<Tag> {
   return context.models.tag.renameTag(args.input);
 }

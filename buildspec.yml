@@ -24,7 +24,7 @@ env:
   secrets-manager:
     #Pull in the default terraform cloud token
     TERRAFORM_TOKEN: 'CodeBuild/Default:terraform_token'
-    PAGERDUTY_TOKEN: 'CodeBuild/Default:pagerduty_token'
+    PAGERDUTY_TOKEN: 'CodeBuild/Default:mozilla_pagerduty_token'
     GITHUB_ACCESS_TOKEN: 'CodeBuild/Default:github_access_token'
 
 #All phases are ran within the pocket/pocket-build:prod docker image
@@ -32,25 +32,27 @@ phases:
   pre_build:
     run-as: circleci
     commands:
-      - . /home/circleci/.codebuild_shims_wrapper.sh
-      - echo $CODEBUILD_WEBHOOK_HEAD_REF
-      - echo Setting Up Terraform Token
-      - rc="credentials \"app.terraform.io\" { "
-      - rc="${rc} token=\"$TERRAFORM_TOKEN\" "
-      - rc="${rc}}"
-      - echo "$rc" > ~/.terraformrc
-      - echo Setting Github Access Token
-      - echo "//npm.pkg.github.com/:_authToken=${GITHUB_ACCESS_TOKEN}" > ~/.npmrc
-      - echo Setting environment variables
-      - cd .aws
-      - tfenv install
-      - npm ci
-      - npm run build
-      # synthesize the js into terraform json with the proper node environment
-      - 'if [ "$GIT_BRANCH" = "$DEV_BRANCH" ]; then NODE_ENV=development npm run synth; else npm run synth; fi'
-      - cd cdktf.out/stacks/list-api
-      - rm -rf .terraform # remove sym-link to ../.terraform (if this sym-link exists, terraform doesn't apply correctly. hmmmm)
-      - terraform init
+      - |
+        . /home/circleci/.codebuild_shims_wrapper.sh
+        echo $CODEBUILD_WEBHOOK_HEAD_REF
+        echo Setting Up Terraform Token
+        rc="credentials \"app.terraform.io\" { "
+        rc="${rc} token=\"$TERRAFORM_TOKEN\" "
+        rc="${rc}}"
+        echo "$rc" > ~/.terraformrc
+        echo Setting Github Access Token
+        echo "//npm.pkg.github.com/:_authToken=${GITHUB_ACCESS_TOKEN}" > ~/.npmrc
+        echo Setting environment variables
+        cd .aws
+        nvm install --no-progress
+        nvm use
+        npm ci
+        tfenv install
+        tfenv use
+        npm run build
+        if [ "$GIT_BRANCH" = "$DEV_BRANCH" ]; then NODE_ENV=development npm run synth; else npm run synth; fi
+        cd cdktf.out/stacks/list-api
+        terraform init
   build:
     run-as: circleci
     commands:

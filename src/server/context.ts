@@ -17,6 +17,7 @@ import {
   ItemModel,
   TagModel,
 } from '../models';
+import { SavedItemModel } from '../models/SavedItem';
 export interface IContext {
   userId: string;
   headers: IncomingHttpHeaders;
@@ -29,6 +30,7 @@ export interface IContext {
     pocketSave: PocketSaveModel;
     notFound: NotFoundErrorModel;
     item: ItemModel;
+    savedItem: SavedItemModel;
   };
   dataLoaders: {
     savedItemsById: DataLoader<string, SavedItem>;
@@ -41,7 +43,7 @@ export interface IContext {
   emitItemEvent(
     event: EventType,
     savedItem: SavedItem,
-    tags?: string[]
+    tags?: string[],
   ): Promise<void>;
 }
 
@@ -54,7 +56,7 @@ export class ContextManager implements IContext {
       request: any;
       dbClient: Knex;
       eventEmitter: ItemsEventEmitter;
-    }
+    },
   ) {
     this._dbClient = config.dbClient;
     this.dataLoaders = {
@@ -66,14 +68,18 @@ export class ContextManager implements IContext {
       tag: new TagModel(this),
       pocketSave: new PocketSaveModel(this),
       notFound: new NotFoundErrorModel(),
+      savedItem: new SavedItemModel(this),
     };
     // Set tracking data for Sentry
     Sentry.configureScope((scope) => {
       scope.setTag(
         'pocket-api-id',
-        (config.request.headers.apiid || '0') as string
+        (config.request.headers.apiid || '0') as string,
       );
-      scope.setUser({ id: config.request.headers.encodedid as string });
+      scope.setUser({
+        id: config.request.headers.encodedid as string,
+        ip_address: config.request.headers.gatewayipaddress as string,
+      });
     });
   }
   models: {
@@ -81,6 +87,7 @@ export class ContextManager implements IContext {
     tag: TagModel;
     pocketSave: PocketSaveModel;
     notFound: NotFoundErrorModel;
+    savedItem: SavedItemModel;
   };
 
   get headers(): { [key: string]: any } {
@@ -92,7 +99,7 @@ export class ContextManager implements IContext {
 
     if (!userId) {
       throw new AuthenticationError(
-        'You must be logged in to use this service'
+        'You must be logged in to use this service',
       );
     }
 
@@ -128,7 +135,7 @@ export class ContextManager implements IContext {
   async emitItemEvent(
     event: EventType,
     savedItem: SavedItem,
-    tagsUpdated?: string[]
+    tagsUpdated?: string[],
   ): Promise<void> {
     if (savedItem == null) {
       Sentry.captureEvent({
@@ -139,7 +146,7 @@ export class ContextManager implements IContext {
     }
     try {
       const tags = (await this.models.tag.getBySaveId(savedItem.id)).map(
-        (_) => _.name
+        (_) => _.name,
       );
 
       const payload = this.generateEventPayload(savedItem, tags, tagsUpdated);
@@ -158,7 +165,7 @@ export class ContextManager implements IContext {
   private generateEventPayload(
     save: SavedItem,
     tags: string[],
-    tagsUpdated: string[]
+    tagsUpdated: string[],
   ): BasicItemEventPayloadWithContext {
     return {
       savedItem: save,

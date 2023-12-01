@@ -3,6 +3,7 @@ import { SendMessageCommand, SQS } from '@aws-sdk/client-sqs';
 import { ItemsEventEmitter } from '../itemsEventEmitter';
 import { EventTransFormer } from './transformers';
 import { sqs } from '../../aws/sqs';
+import { serverLogger } from '../../server/logger';
 
 /**
  * SQSListener receives business events and adds them to the queue
@@ -12,7 +13,7 @@ export class SqsListener {
 
   constructor(
     eventEmitter: ItemsEventEmitter,
-    eventTransformers: EventTransFormer[]
+    eventTransformers: EventTransFormer[],
   ) {
     this.sqs = sqs;
     for (const transformer of eventTransformers) {
@@ -36,7 +37,10 @@ export class SqsListener {
       await this.sqs.send(sendCommand);
     } catch (err) {
       const errorMessage = `unable to add event to queue: ${queueUrl}`;
-      console.log(errorMessage, err, { data: JSON.stringify(data) });
+      serverLogger.error('unable to add event to queue', {
+        data: JSON.stringify(data),
+        queueUrl,
+      });
       Sentry.captureMessage(errorMessage);
     }
   }

@@ -139,7 +139,7 @@ describe('saveBatchUpdateTags', () => {
     ];
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
   });
@@ -169,13 +169,13 @@ describe('saveBatchUpdateTags', () => {
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
   });
   it('deletes one or more tags from a save with tags', async () => {
     const removeTagIds = ['shoyo', 'tobio'].map((tag) =>
-      TagModel.encodeId(tag)
+      TagModel.encodeId(tag),
     );
     const variables = {
       userId: '1',
@@ -224,7 +224,7 @@ describe('saveBatchUpdateTags', () => {
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
   });
@@ -250,7 +250,7 @@ describe('saveBatchUpdateTags', () => {
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
     expect(res.body.data.saveBatchUpdateTags.errors).toBeArrayOfSize(0);
   });
@@ -280,12 +280,12 @@ describe('saveBatchUpdateTags', () => {
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(1);
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
   });
   it('deletes and adds tags for more than one save', async () => {
     const removeTagIds = ['shoyo', 'tobio'].map((tag) =>
-      TagModel.encodeId(tag)
+      TagModel.encodeId(tag),
     );
     const variables = {
       userId: '1',
@@ -363,7 +363,7 @@ describe('saveBatchUpdateTags', () => {
     ];
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.errors).toIncludeSameMembers(
-      expectedErrors
+      expectedErrors,
     );
     expect(res.body.data.saveBatchUpdateTags.save).toBeArrayOfSize(0);
 
@@ -375,7 +375,7 @@ describe('saveBatchUpdateTags', () => {
       .send({ query: print(GET_TAGS_FOR_SAVE), variables: getTagVars });
     const expectedTags = [{ name: 'tobio' }, { name: 'shoyo' }];
     expect(
-      tagData.body.data._entities[0].saveById[0].tags
+      tagData.body.data._entities[0].saveById[0].tags,
     ).toIncludeSameMembers(expectedTags);
   });
   it('skips adding tags that already exist', async () => {
@@ -400,7 +400,7 @@ describe('saveBatchUpdateTags', () => {
     const expectedTags = [{ name: 'tobio' }, { name: 'shoyo' }];
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
     const dbResult = await db('item_tags')
       .select('tag', 'time_added', 'time_updated')
@@ -437,7 +437,7 @@ describe('saveBatchUpdateTags', () => {
     ];
     expect(res.body.data.errors).toBeUndefined();
     expect(res.body.data.saveBatchUpdateTags.save[0].tags).toIncludeSameMembers(
-      expectedTags
+      expectedTags,
     );
     const dbResult = await db('item_tags')
       .select('tag', 'time_added', 'time_updated')
@@ -459,7 +459,7 @@ describe('saveBatchUpdateTags', () => {
         saveId: '1',
         removeTagIds: [],
         addTagNames: Array.from(Array(30).keys()).map(
-          (j) => `dalmation_${i * 30 + j}`
+          (j) => `dalmation_${i * 30 + j}`,
         ),
       };
     });
@@ -481,7 +481,7 @@ describe('saveBatchUpdateTags', () => {
     expect(res.body.errors).toBeArrayOfSize(1);
     expect(res.body.errors[0].extensions.code).toBe('BAD_USER_INPUT');
     expect(res.body.errors[0].message).toStartWith(
-      'Maximum number of operations exceeded (received=181, max='
+      'Maximum number of operations exceeded (received=181, max=',
     );
   });
   it.todo('emits appropriate events');

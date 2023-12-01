@@ -132,7 +132,7 @@ describe('Mutation for Tag deletions: ', () => {
           { name: 'nadja' },
           { name: 'guillermo' },
           { name: 'laszlo' },
-        ]
+        ],
       );
       expect(dbTags).to.deep.equalInAnyOrder([
         'nandor',
@@ -175,7 +175,7 @@ describe('Mutation for Tag deletions: ', () => {
       const now = new Date();
       const vampireNames = ['nandor', 'colin', 'laszlo', 'nadja'];
       const vampires = vampireNames.map((vampire) =>
-        Buffer.from(vampire).toString('base64')
+        Buffer.from(vampire).toString('base64'),
       );
       const variables = {
         input: [{ savedItemId: '0', tagIds: vampires }],
@@ -203,10 +203,10 @@ describe('Mutation for Tag deletions: ', () => {
       const now = new Date();
       const newVampireNames = ['nandor', 'colin', 'laszlo', 'nadja'];
       const newVampires = newVampireNames.map((vampire) =>
-        Buffer.from(vampire).toString('base64')
+        Buffer.from(vampire).toString('base64'),
       );
       const oldVampires = ['deacon', 'viago', 'vladislav'].map((vampire) =>
-        Buffer.from(vampire).toString('base64')
+        Buffer.from(vampire).toString('base64'),
       );
       const variables = {
         input: [
@@ -244,7 +244,7 @@ describe('Mutation for Tag deletions: ', () => {
         },
       ];
       expect(res.body.data.deleteSavedItemTags).to.deep.equalInAnyOrder(
-        expectedSavedItems
+        expectedSavedItems,
       );
       updates.forEach((update) => {
         expect(update).to.be.closeToTime(now, 5);
@@ -274,7 +274,7 @@ describe('Mutation for Tag deletions: ', () => {
       });
       expect(res.body.errors.length).to.equal(1);
       expect(res.body.errors[0].extensions.code).to.equal(
-        'INTERNAL_SERVER_ERROR'
+        'INTERNAL_SERVER_ERROR',
       );
       // Check that all the lists are still in the pre-operation state
       expect(await listStateQuery).to.deep.equalInAnyOrder(listState);

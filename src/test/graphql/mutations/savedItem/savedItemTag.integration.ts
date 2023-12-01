@@ -1,14 +1,14 @@
 import { ApolloServer } from '@apollo/server';
-import { ContextManager } from '../../../server/context';
-import { readClient } from '../../../database/client';
-import { startServer } from '../../../server/apollo';
-import { mockParserGetItemIdRequest } from '../../utils/parserMocks';
+import { ContextManager } from '../../../../server/context';
+import { readClient } from '../../../../database/client';
+import { startServer } from '../../../../server/apollo';
+import { mockParserGetItemIdRequest } from '../../../utils/parserMocks';
 import { Express } from 'express';
 import { gql } from 'graphql-tag';
 import { print } from 'graphql';
 import request from 'supertest';
 import sinon from 'sinon';
-import { EventType } from '../../../businessEvents';
+import { EventType } from '../../../../businessEvents';
 
 describe('savedItemTag mutation', () => {
   const db = readClient();
@@ -237,7 +237,7 @@ describe('savedItemTag mutation', () => {
           code: 'NOT_FOUND',
         },
         message: expect.stringContaining(
-          "Not Found: SavedItem with givenUrl='http://hij' does not exist"
+          "Not Found: SavedItem with givenUrl='http://hij' does not exist",
         ),
       }),
     ]);

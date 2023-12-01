@@ -48,7 +48,7 @@ describe('UsersMetaService ', () => {
     expect(res.length).to.equal(1);
     expect(res[0].property).to.equal(18);
     expect(res[0].value).to.equal(
-      mysqlTimeString(currentTime, config.database.tz)
+      mysqlTimeString(currentTime, config.database.tz),
     );
     expect(res[0].time_updated).to.be.closeToTime(currentTime, 1); // mySQL isn't storing milliseconds
   });

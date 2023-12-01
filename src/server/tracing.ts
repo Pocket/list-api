@@ -1,7 +1,6 @@
 import config from '../config/index';
 import process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { AWSXRayIdGenerator } from '@opentelemetry/id-generator-aws-xray';
 import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
@@ -12,7 +11,6 @@ import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { KnexInstrumentation } from '@opentelemetry/instrumentation-knex';
-import { MySQLInstrumentation } from '@opentelemetry/instrumentation-mysql';
 import { MySQL2Instrumentation } from '@opentelemetry/instrumentation-mysql2';
 import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -24,6 +22,7 @@ import {
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express/build/src/enums/ExpressLayerType';
+import { serverLogger } from './logger';
 
 /**
  * documentation:https://aws-otel.github.io/docs/getting-started/js-sdk/trace-manual-instr#instrumenting-the-aws-sdk
@@ -38,7 +37,7 @@ const _resource = Resource.default().merge(
   new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName,
     [SemanticResourceAttributes.SERVICE_VERSION]: config.sentry.release,
-  })
+  }),
 );
 
 const _traceExporter = new OTLPTraceExporter({
@@ -46,10 +45,7 @@ const _traceExporter = new OTLPTraceExporter({
   url: `http://${config.tracing.host}:${config.tracing.grpcDefaultPort}`,
 });
 const _spanProcessor = new BatchSpanProcessor(_traceExporter);
-
-const _tracerConfig = {
-  idGenerator: new AWSXRayIdGenerator(),
-};
+const _idGenerator = new AWSXRayIdGenerator();
 
 /**
  * function to setup open-telemetry tracing config
@@ -63,7 +59,6 @@ export async function nodeSDKBuilder() {
       new AwsInstrumentation({
         suppressInternalInstrumentation: true,
       }),
-      new AwsLambdaInstrumentation({}),
       new DataloaderInstrumentation({}),
       new ExpressInstrumentation({
         ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
@@ -77,19 +72,18 @@ export async function nodeSDKBuilder() {
         ignoreIncomingPaths: ['/.well-known/apollo/server-health'],
       }),
       new KnexInstrumentation({}),
-      new MySQLInstrumentation({}),
       new MySQL2Instrumentation({}),
       new NetInstrumentation({}),
     ],
     resource: _resource,
     spanProcessor: _spanProcessor,
     traceExporter: _traceExporter,
+    idGenerator: _idGenerator,
     sampler: new ParentBasedSampler({
       //set at 20% sampling rate
       root: new TraceIdRatioBasedSampler(config.tracing.samplingRatio),
     }),
   });
-  sdk.configureTracerProvider(_tracerConfig, _spanProcessor);
 
   // this enables the API to record telemetry
   await sdk.start();
@@ -98,9 +92,9 @@ export async function nodeSDKBuilder() {
   process.on('SIGTERM', () => {
     sdk
       .shutdown()
-      .then(() => console.log('Tracing and Metrics terminated'))
+      .then(() => serverLogger.info('Tracing and Metrics terminated'))
       .catch((error) =>
-        console.log('Error terminating tracing and metrics', error)
+        serverLogger.error('Error terminating tracing and metrics', error),
       )
       .finally(() => process.exit(0));
   });

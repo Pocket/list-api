@@ -10,7 +10,9 @@ import {
   SqsListener,
 } from '../../../businessEvents';
 import {
+  QueueAttributeName,
   ReceiveMessageCommand,
+  ReceiveMessageCommandInput,
   ReceiveMessageCommandOutput,
 } from '@aws-sdk/client-sqs';
 import { sqs } from '../../../aws/sqs';
@@ -34,10 +36,10 @@ function mockParserGetItemRequest(urlToParse: string, data: any) {
 }
 
 async function getSqsMessages(
-  queueUrl: string
+  queueUrl: string,
 ): Promise<ReceiveMessageCommandOutput> {
-  const receiveParams = {
-    AttributeNames: ['All'],
+  const receiveParams: ReceiveMessageCommandInput = {
+    AttributeNames: [QueueAttributeName.All],
     MaxNumberOfMessages: 10,
     MessageAttributeNames: ['All'],
     QueueUrl: queueUrl,
@@ -73,6 +75,7 @@ describe('UpsertSavedItem Mutation', () => {
     clock = sinon.useFakeTimers({
       now: dateNow,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 
@@ -140,7 +143,7 @@ describe('UpsertSavedItem Mutation', () => {
             resolved_id: itemId,
             title: url,
           },
-        })
+        }),
       );
     });
 
@@ -333,7 +336,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(data.url).equals('http://favorite.com');
       expect(data.isFavorite).is.true;
       expect(data.favoritedAt).to.not.equal(
-        getUnixTimestamp(new Date('0000-00-00 00:00:00'))
+        getUnixTimestamp(new Date('0000-00-00 00:00:00')),
       );
     });
 
@@ -361,7 +364,7 @@ describe('UpsertSavedItem Mutation', () => {
       expect(eventData[0]).to.equal(EventType.ADD_ITEM);
       expect(eventData[1].url).to.equal(variables.url);
       expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
+        variables.url,
       );
     });
 
@@ -390,7 +393,7 @@ describe('UpsertSavedItem Mutation', () => {
       });
       expect(eventSpy.callCount).to.equal(0);
       expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
+        variables.url,
       );
     });
 
@@ -413,15 +416,15 @@ describe('UpsertSavedItem Mutation', () => {
         variables,
       });
       expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
+        variables.url,
       );
 
       const publisherQueueMessages = await getSqsMessages(
-        config.aws.sqs.publisherQueue.url
+        config.aws.sqs.publisherQueue.url,
       );
       expect(publisherQueueMessages?.Messages[0]?.Body).is.not.null;
       const publisherQueueMessageBody = JSON.parse(
-        publisherQueueMessages?.Messages[0]?.Body
+        publisherQueueMessages?.Messages[0]?.Body,
       );
       expect(publisherQueueMessageBody.action).equals(SQSEvents.ADD_ITEM);
       expect(publisherQueueMessageBody.user_id).equals(1);
@@ -429,10 +432,10 @@ describe('UpsertSavedItem Mutation', () => {
       expect(publisherQueueMessageBody.api_id).equals(0);
 
       const permLibQueueData = await getSqsMessages(
-        config.aws.sqs.permLibItemMainQueue.url
+        config.aws.sqs.permLibItemMainQueue.url,
       );
       // Should not send for non-premium users
-      expect(permLibQueueData?.Messages).is.undefined;
+      expect(permLibQueueData?.Messages).is.empty;
     });
 
     it('should push addItem event to perm lib queue for premium users', async () => {
@@ -457,11 +460,11 @@ describe('UpsertSavedItem Mutation', () => {
           variables,
         });
       expect(mutationResult.body.data?.upsertSavedItem.url).to.equal(
-        variables.url
+        variables.url,
       );
 
       const permLibQueueData = await getSqsMessages(
-        config.aws.sqs.permLibItemMainQueue.url
+        config.aws.sqs.permLibItemMainQueue.url,
       );
       expect(permLibQueueData?.Messages[0]?.Body).is.not.null;
       const permLibQueueBody = JSON.parse(permLibQueueData?.Messages[0]?.Body);
@@ -679,7 +682,7 @@ describe('UpsertSavedItem Mutation', () => {
         variables,
       });
       expect(mutationResult.body.errors[0].message).equals(
-        `unable to add item with url: ${variables.url}`
+        `unable to add item with url: ${variables.url}`,
       );
     });
     it('should return error when insertion throws error', async () => {
@@ -716,7 +719,7 @@ describe('UpsertSavedItem Mutation', () => {
       });
       contextStub.restore();
       expect(mutationResult.body.errors[0].message).equals(
-        `unable to add item with url: ${variables.url}`
+        `unable to add item with url: ${variables.url}`,
       );
     });
   });

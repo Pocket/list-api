@@ -4,6 +4,7 @@ import { DataAwsCallerIdentity } from '@cdktf/provider-aws/lib/data-aws-caller-i
 import { DataAwsRegion } from '@cdktf/provider-aws/lib/data-aws-region';
 import { DataAwsKmsAlias } from '@cdktf/provider-aws/lib/data-aws-kms-alias';
 import { DataAwsSnsTopic } from '@cdktf/provider-aws/lib/data-aws-sns-topic';
+import { CloudwatchLogGroup } from '@cdktf/provider-aws/lib/cloudwatch-log-group';
 import { LocalProvider } from '@cdktf/provider-local/lib/provider';
 import { NullProvider } from '@cdktf/provider-null/lib/provider';
 import { PagerdutyProvider } from '@cdktf/provider-pagerduty/lib/provider';
@@ -109,11 +110,12 @@ class ListAPI extends TerraformStack {
     return new PocketPagerDuty(this, 'pagerduty', {
       prefix: config.prefix,
       service: {
+        // This is a Tier 2 service and as such only raises non-critical alarms.
         criticalEscalationPolicyId: incidentManagement
-          .get('policy_backend_critical_id')
+          .get('policy_default_non_critical_id')
           .toString(),
         nonCriticalEscalationPolicyId: incidentManagement
-          .get('policy_backend_non_critical_id')
+          .get('policy_default_non_critical_id')
           .toString(),
       },
     });
@@ -208,6 +210,10 @@ class ListAPI extends TerraformStack {
       tags: config.tags,
       cdn: false,
       domain: config.domain,
+      taskSize: {
+        cpu: 1024,
+        memory: 2048,
+      },
       containerConfigs: [
         {
           name: 'app',
@@ -268,6 +274,12 @@ class ListAPI extends TerraformStack {
               name: 'OTLP_COLLECTOR_HOST',
               value: config.tracing.host,
             },
+            {
+              name: 'RELEASE_SHA',
+              value:
+                process.env.CODEBUILD_RESOLVED_SOURCE_VERSION ??
+                process.env.CIRCLE_SHA1,
+            },
           ],
           secretEnvVars: [
             {
@@ -307,6 +319,8 @@ class ListAPI extends TerraformStack {
               valueFrom: databaseSecretEnvVars.writePassword,
             },
           ],
+          logGroup: this.createCustomLogGroup('app'),
+          logMultilinePattern: '^\\S.+',
         },
         {
           name: 'aws-otel-collector',
@@ -425,18 +439,38 @@ class ListAPI extends TerraformStack {
           'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
       },
       autoscalingConfig: {
-        targetMinCapacity: config.environment === 'Prod' ? 10 : 2,
-        targetMaxCapacity: config.environment === 'Prod' ? 30 : 10,
+        targetMinCapacity: config.environment === 'Prod' ? 2 : 2,
+        targetMaxCapacity: config.environment === 'Prod' ? 10 : 10,
       },
       alarms: {
         http5xxErrorPercentage: {
           threshold: 25,
           evaluationPeriods: 4,
           period: 300,
-          actions: config.isDev ? [] : [pagerDuty.snsCriticalAlarmTopic.arn],
+          actions: config.isDev ? [] : [pagerDuty.snsNonCriticalAlarmTopic.arn],
         },
       },
     });
+  }
+
+  /**
+   * Create Custom log group for ECS to share across task revisions
+   * @param containerName
+   * @private
+   */
+  private createCustomLogGroup(containerName: string) {
+    const logGroup = new CloudwatchLogGroup(
+      this,
+      `${containerName}-log-group`,
+      {
+        name: `/Backend/${config.prefix}/ecs/${containerName}`,
+        retentionInDays: 90,
+        skipDestroy: true,
+        tags: config.tags,
+      }
+    );
+
+    return logGroup.name;
   }
 }
 

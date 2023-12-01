@@ -2,29 +2,32 @@ version: '3.8'
 
 services:
   mysql:
-    image: mysql:5.6@sha256:20575ecebe6216036d25dab5903808211f1e9ba63dc7825ac20cb975e34cfcae
+    image: mysql:5.7
     env_file:
       - ./.docker/local.env
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-      TZ: "US/Central"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+      TZ: 'US/Central'
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
       timeout: 20s
       retries: 10
     platform: linux/amd64
+    command:
+      - mysqld
+      - --sql_mode=NO_ENGINE_SUBSTITUTION
     ports:
       - '3309:3306'
     volumes:
       - .docker/mysql/schema:/docker-entrypoint-initdb.d:delegated
 
   localstack:
-    image: localstack/localstack@sha256:9e672725b3937f55b69c5c6afe3311d3ac034aab753633ceb2779a1efbba5c7d
+    image: localstack/localstack:3.0.1
     env_file:
       - .docker/local.env
     environment:
       LOCALSTACK_HOST: localstack
-      SERVICES: "kinesis,firehose,sqs,events"
+      SERVICES: 'kinesis,firehose,sqs,events'
     healthcheck:
       test:
         - CMD
@@ -40,8 +43,8 @@ services:
       - ./.docker/localstack:/etc/localstack/init/ready.d
 
   otlpcollector:
-    image: amazon/aws-otel-collector@sha256:1addb52aaf4880455aaabcc934924d735212d95e81f5a5fa44ee6a61fa03b8f1
-    command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=debug
+    image: amazon/aws-otel-collector
+    command: --config=/etc/ecs/ecs-default-config.yaml --set=service.telemetry.logs.level=error
     env_file:
       - .docker/local.env
     ports:
@@ -50,13 +53,11 @@ services:
 
   snowplow:
     image: pocket/snowplow-micro:prod
-    platform: linux/amd64
     ports:
       - '9090:9090'
 
   app:
-    image: node:16@sha256:550f484fc5f314b575f5e397c9e2c71d7f218e59729fcda9ffa7ea1fc825dce7
-    platform: linux/amd64
+    image: node:20
     working_dir: /app
     ports:
       - '4005:4005'

@@ -15,7 +15,7 @@ export async function tagsSavedItems(
   parent: Tag,
   args,
   context: IContext,
-  info: GraphQLResolveInfo
+  info: GraphQLResolveInfo,
 ): Promise<SavedItemConnection> {
   args.pagination = validatePagination(args.pagination);
   // Disallow before/after pagination if this field is already
@@ -34,29 +34,18 @@ export async function tagsSavedItems(
   if (foundArray) {
     if (args.pagination.before || args.pagination.after) {
       throw new UserInputError(
-        'Cannot specify a cursor on a nested paginated field.'
+        'Cannot specify a cursor on a nested paginated field.',
       );
     }
   }
-  // Now get result
-  // If the IDs are on the parent, use them
-  if (parent.savedItems != null) {
-    return savedItemDataService.getSavedItems(
-      args.filter,
-      args.sort,
-      args.pagination,
-      parent.savedItems
-    );
-  } else {
-    // Use filter to retrieve the SavedItems if IDs are not on the parent
-    const tagFilter: SavedItemsFilter = {
-      ...args.filter,
-      tagNames: [parent.name],
-    };
-    return savedItemDataService.getSavedItems(
-      tagFilter,
-      args.sort,
-      args.pagination
-    );
-  }
+  // Use filter to retrieve the SavedItems
+  const tagFilter: SavedItemsFilter = {
+    ...args.filter,
+    tagNames: [parent.name],
+  };
+  return savedItemDataService.getSavedItems(
+    tagFilter,
+    args.sort,
+    args.pagination,
+  );
 }

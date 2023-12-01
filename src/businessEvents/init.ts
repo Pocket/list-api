@@ -6,7 +6,7 @@ export const itemsEventEmitter = new ItemsEventEmitter();
 
 export function initItemEventHandlers(
   emitter: ItemsEventEmitter,
-  handlers: ItemEventHandlerFn[]
+  handlers: ItemEventHandlerFn[],
 ) {
   handlers.forEach((handler) => handler(emitter));
 }

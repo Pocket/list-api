@@ -40,6 +40,7 @@ describe('Update Mutation for SavedItem: ', () => {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: true,
+      shouldClearNativeTimers: true,
     });
 
     await db('list').truncate();

@@ -1,11 +1,10 @@
-import { writeClient } from '../../../database/client';
+import { readClient, writeClient } from '../../../database/client';
 import chai, { expect } from 'chai';
 import chaiDateTime from 'chai-datetime';
 import sinon from 'sinon';
 import { Knex } from 'knex';
 import { EventType } from '../../../businessEvents';
 import { getUnixTimestamp } from '../../../utils';
-import { SavedItemDataService } from '../../../dataService';
 import config from '../../../config';
 import { ContextManager } from '../../../server/context';
 import { startServer } from '../../../server/apollo';
@@ -19,7 +18,7 @@ async function upsertSavedItem(
   db: Knex,
   status: number,
   date: Date,
-  archived = false
+  archived = false,
 ) {
   await db('list').insert([
     {
@@ -124,6 +123,7 @@ describe('Delete/Undelete SavedItem: ', () => {
 
   afterAll(async () => {
     await writeClient().destroy();
+    await readClient().destroy();
     clock.restore();
     sinon.restore();
     config.batchDelete.deleteDelayInMilliSec = batchDeleteDelay;
@@ -139,6 +139,7 @@ describe('Delete/Undelete SavedItem: ', () => {
     clock = sinon.useFakeTimers({
       now: updateDate,
       shouldAdvanceTime: false,
+      shouldClearNativeTimers: true,
     });
   });
 
@@ -150,31 +151,6 @@ describe('Delete/Undelete SavedItem: ', () => {
   });
 
   afterEach(() => sinon.resetHistory());
-
-  it('should batch delete saved items', async () => {
-    await setUpSavedItem(db, date);
-    const savedItemService = new SavedItemDataService({
-      dbClient: db,
-      userId: '1',
-      apiId: 'backend',
-    });
-    await savedItemService.batchDeleteSavedItems([1, 2]);
-    const tables = ['list', 'item_tags', 'item_attribution', 'items_scroll'];
-    const baseQuery = db
-      .whereIn('item_id', [1, 2])
-      .andWhere({ user_id: 1 })
-      .count('* as count')
-      .first();
-    const counts = await Promise.all(
-      tables.map((table) =>
-        baseQuery
-          .clone()
-          .from(table)
-          .then((row) => row.count)
-      )
-    );
-    expect(counts.every((count) => count === 0));
-  });
 
   it('should delete a saved item', async () => {
     await setUpSavedItem(db, date);

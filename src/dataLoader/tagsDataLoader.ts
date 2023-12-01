@@ -22,13 +22,13 @@ import DataLoader from 'dataloader';
  * be freshly created for every GraphQL request.
  */
 export function createTagDataLoaders(
-  context: IContext
+  context: IContext,
 ): Pick<IContext['dataLoaders'], 'tagsById' | 'tagsByName' | 'tagsByItemId'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
     const savedItemDataService = new SavedItemDataService(context);
     const tags = await batchGetTagsByIds(
       new TagDataService(context, savedItemDataService),
-      ids
+      ids,
     );
     tags.forEach((tag) => byNameLoader.prime(tag.name, tag));
     return tags;
@@ -37,7 +37,7 @@ export function createTagDataLoaders(
     const savedItemDataService = new SavedItemDataService(context);
     const tags = await batchGetTagsByNames(
       new TagDataService(context, savedItemDataService),
-      names
+      names,
     );
     tags.forEach((tag) => byIdLoader.prime(tag.id, tag));
     return tags;
@@ -47,14 +47,14 @@ export function createTagDataLoaders(
       const savedItemDataService = new SavedItemDataService(context);
       const tags = await batchGetTagsByItemIds(
         new TagDataService(context, savedItemDataService),
-        itemIds
+        itemIds,
       );
       return tags;
     },
     {
       cache: false,
       maxBatchSize: config.dataloaderDefaults.maxBatchSize,
-    }
+    },
   );
   return {
     tagsById: byIdLoader,
@@ -70,7 +70,7 @@ export function createTagDataLoaders(
  */
 export async function batchGetTagsByIds(
   tagDataService: TagDataService,
-  ids: string[]
+  ids: string[],
 ): Promise<Tag[]> {
   const names = ids.map(TagModel.decodeId);
   const tags: Tag[] = await batchGetTagsByNames(tagDataService, names);
@@ -84,7 +84,7 @@ export async function batchGetTagsByIds(
  */
 export async function batchGetTagsByNames(
   tagDataService: TagDataService,
-  names: string[]
+  names: string[],
 ): Promise<Tag[]> {
   const tags = await tagDataService.getTagsByName(names);
   return reorderResultByKey<Tag, 'name'>({ key: 'name', values: names }, tags);
@@ -97,15 +97,10 @@ export async function batchGetTagsByNames(
  */
 export async function batchGetTagsByItemIds(
   tagDataService: TagDataService,
-  itemIds: string[]
+  itemIds: string[],
 ): Promise<Tag[][]> {
   // get tags from database for given PocketSave or SavedItem IDs.
-  const tags = await tagDataService.batchGetTagsByUserItems(itemIds);
-  // forces itemIds to string. SavedItem Mutations can return int or number ID.
-  // re-structures tags response for 1 array of tags per given Item ID,
-  // sorted following order of original Item ID array passed to dataloader.
-  const results: Tag[][] = itemIds.map((itemId) =>
-    tags.filter((x) => x.savedItems.includes(itemId.toString()))
-  );
-  return results;
+  const saveTags = await tagDataService.batchGetTagsByUserItems(itemIds);
+  // Return tag list per itemId in the original itemId order requested
+  return itemIds.map((itemId) => saveTags[itemId] ?? []);
 }

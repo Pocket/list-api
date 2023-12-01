@@ -11,7 +11,7 @@ import { reorderResultByKey } from './utils';
  */
 export async function batchGetSavedItemsByUrls(
   savedItemService: SavedItemDataService,
-  urls: string[]
+  urls: string[],
 ): Promise<SavedItem[]> {
   const savedItems: SavedItem[] =
     await savedItemService.batchGetSavedItemsByGivenUrls(urls);
@@ -21,7 +21,7 @@ export async function batchGetSavedItemsByUrls(
   //if we skip deleted urls, then dataloader throws error at resolver
   return reorderResultByKey<SavedItem, 'url'>(
     { key: 'url', values: urls },
-    savedItems
+    savedItems,
   );
 }
 
@@ -32,7 +32,7 @@ export async function batchGetSavedItemsByUrls(
  */
 export async function batchGetSavedItemsByIds(
   savedItemService: SavedItemDataService,
-  ids: string[]
+  ids: string[],
 ): Promise<SavedItem[]> {
   const savedItems: SavedItem[] =
     await savedItemService.batchGetSavedItemsByGivenIds(ids);
@@ -42,7 +42,7 @@ export async function batchGetSavedItemsByIds(
   //if we skip deletedIds, then dataloader throws error at resolver
   return reorderResultByKey<SavedItem, 'id'>(
     { key: 'id', values: ids },
-    savedItems
+    savedItems,
   );
 }
 
@@ -59,12 +59,12 @@ export async function batchGetSavedItemsByIds(
  * be freshly created for every GraphQL request.
  */
 export function createSavedItemDataLoaders(
-  context: IContext
+  context: IContext,
 ): Pick<IContext['dataLoaders'], 'savedItemsById' | 'savedItemsByUrl'> {
   const byIdLoader = new DataLoader(async (ids: string[]) => {
     const items = await batchGetSavedItemsByIds(
       new SavedItemDataService(context),
-      ids
+      ids,
     );
     items.forEach((item) => {
       if (item) {
@@ -76,7 +76,7 @@ export function createSavedItemDataLoaders(
   const byUrlLoader = new DataLoader(async (urls: string[]) => {
     const items = await batchGetSavedItemsByUrls(
       new SavedItemDataService(context),
-      urls
+      urls,
     );
     items.forEach((item) => {
       if (item) {

@@ -9,11 +9,8 @@ This app is currently designed to run in the US/Central timezone. This is mostly
 ## Getting Started
 
 - Copy `.env.example` and rename to `.env` file.
-  - Replace `GITHUB_TOKEN` with your personal GitHub token
-    - Your GitHub token needs to have the `read:packages` permission
-  - Add path to desired parser endpoint in `.env` file
+  - Add path to desired parser domain in `.env` file - this could be production, dev, or a local instance of the parser
 - Run `docker-compose up`
-- to run locally, make sure to configure ~/.npmrc with your git PAT token. Steps are [here](https://getpocket.atlassian.net/wiki/spaces/PE/pages/2230321181/How+to+set+up+a+Node.js+development+environment)
 
 ### Running queries
 

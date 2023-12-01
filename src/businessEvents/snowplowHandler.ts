@@ -16,6 +16,7 @@ import {
 import { ItemsEventEmitter } from './itemsEventEmitter';
 import config from '../config';
 import { SavedItem } from '../types';
+import { serverLogger } from '../server/logger';
 
 type ListItemUpdateEvent = Omit<SelfDescribingJson, 'data'> & {
   data: ListItemUpdate;
@@ -41,7 +42,7 @@ export class SnowplowHandler {
   constructor(
     private emitter: ItemsEventEmitter,
     private tracker: Tracker,
-    events: string[]
+    events: string[],
   ) {
     // register handler for item events
     events.forEach((event) => emitter.on(event, (data) => this.process(data)));
@@ -67,13 +68,17 @@ export class SnowplowHandler {
    */
   private async track(
     event: PayloadBuilder,
-    context: SelfDescribingJson[]
+    context: SelfDescribingJson[],
   ): Promise<void> {
     try {
       await this.tracker.track(event, context);
     } catch (ex) {
+      serverLogger.error('Failed to send event to snowplow', {
+        event,
+        context,
+        error: ex,
+      });
       const message = `Failed to send event to snowplow.\n event: ${event}\n context: ${context}`;
-      console.log(message);
       Sentry.addBreadcrumb({ message });
       Sentry.captureException(ex);
     }
@@ -83,7 +88,7 @@ export class SnowplowHandler {
    * @private
    */
   private static async generateEventContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): Promise<SelfDescribingJson[]> {
     return [
       await SnowplowHandler.generateListItemContext(data),
@@ -97,7 +102,7 @@ export class SnowplowHandler {
    * @private
    */
   private static generateListItemUpdateEvent(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): ListItemUpdateEvent {
     return {
       schema: config.snowplow.schemas.listItemUpdate,
@@ -111,7 +116,7 @@ export class SnowplowHandler {
    * @private
    */
   private static async generateListItemContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): Promise<ListItemContext> {
     const savedItem: SavedItem = await data.savedItem;
     return {
@@ -132,7 +137,7 @@ export class SnowplowHandler {
    * @private
    */
   private static async generateContentContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): Promise<ContentContext> {
     const savedItem: SavedItem = await data.savedItem;
     return {
@@ -164,7 +169,7 @@ export class SnowplowHandler {
    * @private
    */
   private static generateApiUserContext(
-    data: ItemEventPayload
+    data: ItemEventPayload,
   ): ApiUserContext {
     return {
       schema: config.snowplow.schemas.apiUser,

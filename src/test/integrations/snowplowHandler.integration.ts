@@ -35,7 +35,7 @@ function parseSnowplowData(data: string): { [key: string]: any } {
 
 function assertValidSnowplowListItemUpdateEvents(
   events,
-  triggers: ListItemUpdate['trigger'][]
+  triggers: ListItemUpdate['trigger'][],
 ) {
   const parsedEvents = events
     .map(parseSnowplowData)
@@ -45,7 +45,7 @@ function assertValidSnowplowListItemUpdateEvents(
     triggers.map((trigger) => ({
       schema: config.snowplow.schemas.listItemUpdate,
       data: { trigger: trigger },
-    }))
+    })),
   );
 }
 
@@ -136,7 +136,7 @@ describe('SnowplowHandler', () => {
     assertValidSnowplowEventContext(goodEvents[1].rawEvent.parameters.cx);
     assertValidSnowplowListItemUpdateEvents(
       goodEvents.map((goodEvent) => goodEvent.rawEvent.parameters.ue_px),
-      ['save', 'favorite']
+      ['save', 'favorite'],
     );
   });
 
@@ -177,11 +177,11 @@ describe('SnowplowHandler', () => {
     const goodEvents = await getGoodSnowplowEvents();
 
     goodEvents.forEach((goodEvent) =>
-      assertValidSnowplowEventContext(goodEvent.rawEvent.parameters.cx)
+      assertValidSnowplowEventContext(goodEvent.rawEvent.parameters.cx),
     );
     assertValidSnowplowListItemUpdateEvents(
       goodEvents.map((goodEvent) => goodEvent.rawEvent.parameters.ue_px),
-      ['tags_update']
+      ['tags_update'],
     );
   });
 });
