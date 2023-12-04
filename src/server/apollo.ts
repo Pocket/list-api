@@ -6,7 +6,6 @@ import { ApolloServer, ApolloServerPlugin } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import {
   ApolloServerPluginInlineTraceDisabled,
-  ApolloServerPluginLandingPageDisabled,
   ApolloServerPluginUsageReportingDisabled,
 } from '@apollo/server/plugin/disabled';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
@@ -29,6 +28,24 @@ import { schema } from './schema';
 import { setMorgan } from '@pocket-tools/ts-logger';
 import { serverLogger } from './logger';
 import * as unleash from '../featureFlags';
+
+/**
+ * Used to determine if a query is an introspection query so
+ * that it can bypass our authentication checks and return the schema.
+ * @param query
+ * @returns
+ */
+export const isIntrospection = (query: string): boolean => {
+  //Ref: https://github.com/anvilco/apollo-server-plugin-introspection-metadata/blob/main/src/index.js#L25
+  const isIntrospectionRegex = /\b(__schema|__type)\b/;
+  return typeof query === 'string' && isIntrospectionRegex.test(query);
+};
+
+export const isSubgraphIntrospection = (query: string): boolean => {
+  //Ref: https://github.com/anvilco/apollo-server-plugin-introspection-metadata/blob/main/src/index.js#L25
+  const isSubgraphIntrospectionRegex = /\b(_service)\b/;
+  return typeof query === 'string' && isSubgraphIntrospectionRegex.test(query);
+};
 
 /**
  * Stopgap method to set global db connection in context,
@@ -95,6 +112,13 @@ export async function startServer(port: number): Promise<{
 
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
+    if (
+      isIntrospection(req.body.query) ||
+      isSubgraphIntrospection(req.body.query)
+    ) {
+      // Bypass auth (ie, the userId() function throwing auth errors) for introspection
+      return null;
+    }
     const dbClient = contextConnection(req.body.query);
     return new ContextManager({
       request: req,
@@ -123,7 +147,6 @@ export async function startServer(port: number): Promise<{
       ApolloServerPluginInlineTrace({ includeErrors: { unmodified: true } }),
     ],
     production: [
-      ApolloServerPluginLandingPageDisabled(),
       ApolloServerPluginInlineTrace({
         includeErrors: { unmodified: true },
       }),
