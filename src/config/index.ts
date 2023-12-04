@@ -125,6 +125,18 @@ export default {
     release: process.env.GIT_SHA || '',
     environment: process.env.NODE_ENV || 'development',
   },
+  unleash: {
+    clientKey: process.env.UNLEASH_KEY || 'unleash-key-fake',
+    endpoint: process.env.UNLEASH_ENDPOINT || 'https://unleash-client.com/api',
+    flags: {
+      mirrorWrites: {
+        name: 'temp.backend.list_table_mirror_writes_enabled',
+        // TODO(@kschelon): Change this before rollout
+        // POCKET-9216
+        fallback: false,
+      },
+    },
+  },
   snowplow: {
     endpoint: process.env.SNOWPLOW_ENDPOINT || 'localhost:9090',
     httpProtocol: snowplowHttpProtocol,

@@ -6,6 +6,7 @@ import {
   batchGetSavedItemsByUrls,
 } from './savedItemsDataLoader';
 import { writeClient } from '../database/client';
+import { getClient } from '../featureFlags/client';
 
 describe('savedItem data loader', function () {
   const testSavedItem: SavedItem[] = [
@@ -48,6 +49,7 @@ describe('savedItem data loader', function () {
       dbClient: db,
       userId: '1',
       apiId: 'backend',
+      unleash: getClient(),
     });
     sinon
       .stub(service, 'batchGetSavedItemsByGivenIds')
@@ -66,6 +68,7 @@ describe('savedItem data loader', function () {
       dbClient: db,
       userId: '1',
       apiId: 'backend',
+      unleash: getClient(),
     });
     sinon
       .stub(service, 'batchGetSavedItemsByGivenUrls')

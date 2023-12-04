@@ -4,59 +4,14 @@ import { mysqlDateConvert, mysqlTimeString, setDifference } from './utils';
 import { PocketSaveStatus } from '../types';
 import { NotFoundError } from '@pocket-tools/apollo-utils';
 import config from '../config';
-
-export type RawListResult = {
-  api_id: string;
-  api_id_updated: number;
-  favorite: number;
-  given_url: string;
-  item_id: number;
-  resolved_id: number;
-  status: number;
-  time_added: Date;
-  time_favorited: Date;
-  time_read: Date;
-  time_updated: Date;
-  title: string;
-  user_id: number;
-};
-
-export type ListResult = {
-  api_id: string;
-  api_id_updated: number;
-  favorite: number;
-  given_url: string;
-  item_id: number;
-  resolved_id: number;
-  status: keyof typeof PocketSaveStatus;
-  time_added: Date;
-  time_favorited: Date;
-  time_read: Date;
-  time_updated: Date;
-  title: string;
-  user_id: number;
-};
-
-export type UpdateField = {
-  time_updated: string; // Timestamp string
-  api_id_updated: string;
-};
-
-export type ListArchiveUpdate = UpdateField & {
-  status: PocketSaveStatus;
-  time_read: string; // Timestamp string
-};
-
-export type ListFavoriteUpdate = UpdateField & {
-  favorite: FavoriteStatus;
-  time_favorited: string; // Timestamp string
-};
-
-export enum FavoriteStatus {
-  FAVORITE = 1,
-  UNFAVORITE = 0,
-}
-
+import { SavedItemDataService } from './savedItemsService';
+import {
+  ListResult,
+  RawListResult,
+  ListArchiveUpdate,
+  ListFavoriteUpdate,
+  FavoriteStatus,
+} from './types';
 /**
  * Make PocketSaveStatus enums
  * to the desired status string.
@@ -117,10 +72,25 @@ export class PocketSaveDataService {
     'title',
     'user_id',
   ];
-  constructor(context: Pick<IContext, 'apiId' | 'dbClient' | 'userId'>) {
+
+  // For release/toggle flags
+  private flags: Record<string, boolean>;
+  constructor(
+    private context: Pick<
+      IContext,
+      'apiId' | 'dbClient' | 'userId' | 'unleash'
+    >,
+  ) {
     this.apiId = context.apiId;
     this.db = context.dbClient;
     this.userId = context.userId;
+    this.flags = {
+      mirrorWrites: this.context.unleash.isEnabled(
+        config.unleash.flags.mirrorWrites.name,
+        undefined,
+        config.unleash.flags.mirrorWrites.fallback,
+      ),
+    };
   }
 
   public static convertListResult(listResult: null): null;
@@ -314,6 +284,14 @@ export class PocketSaveDataService {
         // being present
         if (updated.length !== ids.length) {
           throw new NotFoundError('At least one ID was not found');
+        }
+        // Mirror writes to "shadow" table for itemId overflow mitigation
+        if (this.flags.mirrorWrites) {
+          await Promise.all(
+            updated.map((row) =>
+              SavedItemDataService.syncShadowTable(row, trx),
+            ),
+          );
         }
       });
     } catch (error) {

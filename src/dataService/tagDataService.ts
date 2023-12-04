@@ -249,13 +249,7 @@ export class TagDataService {
     const itemIds = uniqueArray(
       tagInputs.map((element) => element.savedItemId),
     );
-    const saveUpdates = this.savedItemService.updateListItemMany(
-      itemIds,
-      timestamp,
-    );
-    saveUpdates.forEach(async (updateStatement) => {
-      await updateStatement.transacting(trx);
-    });
+    await this.savedItemService.updateListItemMany(itemIds, trx, timestamp);
   }
 
   /**
@@ -280,10 +274,7 @@ export class TagDataService {
 
       // Need to mark an update on the list items
       const itemIds = input.map((element) => element.savedItemId);
-      const saveUpdates = this.savedItemService.updateListItemMany(itemIds);
-      saveUpdates.forEach(async (updateStatement) => {
-        await updateStatement.transacting(trx);
-      });
+      await this.savedItemService.updateListItemMany(itemIds, trx);
       // Also need to update the users_meta
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
@@ -302,11 +293,7 @@ export class TagDataService {
     if (affectedItems.length > 0) {
       await this.db.transaction(async (trx: Knex.Transaction) => {
         await this.deleteTagsByName(tagName).transacting(trx);
-        const saveUpdates =
-          this.savedItemService.updateListItemMany(affectedItems);
-        saveUpdates.forEach(async (updateStatement) => {
-          await updateStatement.transacting(trx);
-        });
+        await this.savedItemService.updateListItemMany(affectedItems, trx);
         await this.usersMetaService.logTagMutation(new Date(), trx);
       });
     }
@@ -334,10 +321,7 @@ export class TagDataService {
           _updatedAt: mysqlTimeString(new Date(), config.database.tz),
         },
       );
-      const saveUpdates = this.savedItemService.updateListItemMany(itemIds);
-      saveUpdates.forEach(async (updateStatement) => {
-        await updateStatement.transacting(trx);
-      });
+      await this.savedItemService.updateListItemMany(itemIds, trx);
       await this.deleteTagsByName(oldName).transacting(trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
@@ -356,7 +340,7 @@ export class TagDataService {
    */
   public async updateSavedItemTags(
     inserts: TagSaveAssociation[],
-  ): Promise<SavedItem> {
+  ): Promise<SavedItem | null> {
     // No FK constraints so check in data service layer
     const exists =
       (await this.savedItemService.getSavedItemById(inserts[0].savedItemId)) !=
@@ -386,12 +370,9 @@ export class TagDataService {
     //clear first, so we can get rid of noisy data if savedItem doesn't exist.
     await this.db.transaction(async (trx: Knex.Transaction) => {
       await this.deleteTagsByItemId(savedItemId).transacting(trx);
-      await this.savedItemService
-        .updateListItemOne(savedItemId)
-        .transacting(trx);
+      await this.savedItemService.updateListItemOne(savedItemId, trx);
       await this.usersMetaService.logTagMutation(new Date(), trx);
     });
-
     return await this.savedItemService.getSavedItemById(savedItemId);
   }
 

@@ -291,6 +291,10 @@ class ListAPI extends TerraformStack {
               valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/SNOWPLOW_ENDPOINT`,
             },
             {
+              name: 'UNLEASH_ENDPOINT',
+              valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/UNLEASH_ENDPOINT`,
+            },
+            {
               name: 'SENTRY_DSN',
               valueFrom: `arn:aws:ssm:${region.name}:${caller.accountId}:parameter/${config.name}/${config.environment}/SENTRY_DSN`,
             },
@@ -317,6 +321,10 @@ class ListAPI extends TerraformStack {
             {
               name: 'DATABASE_WRITE_PASSWORD',
               valueFrom: databaseSecretEnvVars.writePassword,
+            },
+            {
+              name: 'UNLEASH_KEY',
+              valueFrom: `arn:aws:secretsmanager:${region.name}:${caller.accountId}:secret:${config.name}/${config.environment}/UNLEASH_KEY`,
             },
           ],
           logGroup: this.createCustomLogGroup('app'),
@@ -473,7 +481,6 @@ class ListAPI extends TerraformStack {
     return logGroup.name;
   }
 }
-
 const app = new App();
 new ListAPI(app, 'list-api');
 app.synth();

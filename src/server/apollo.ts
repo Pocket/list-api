@@ -27,6 +27,8 @@ import { createApollo4QueryValidationPlugin } from 'graphql-constraint-directive
 import { schema } from './schema';
 import { setMorgan } from '@pocket-tools/ts-logger';
 import { serverLogger } from './logger';
+import * as unleash from '../featureFlags';
+
 /**
  * Used to determine if a query is an introspection query so
  * that it can bypass our authentication checks and return the schema.
@@ -105,6 +107,9 @@ export async function startServer(port: number): Promise<{
     eventBridgeEventHandler,
   ]);
 
+  // Start unleash client
+  const unleashClient = unleash.getClient();
+
   // Inject initialized event emittter to create context factory function
   const contextFactory = (req: express.Request) => {
     if (
@@ -119,6 +124,7 @@ export async function startServer(port: number): Promise<{
       request: req,
       dbClient,
       eventEmitter: itemsEventEmitter,
+      unleash: unleashClient,
     });
   };
 
