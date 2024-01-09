@@ -1,5 +1,8 @@
 # list-api
 
+> [!IMPORTANT]  
+> This repo has been moved to [Pocket's Monorepo](https://github.com/Pocket/pocket-monorepo)
+
 This repo contains the GraphQL subgraph for viewing and managing a user's List in Pocket. It is part of the effort to migrate from a monolithic architecture to microservices.
 
 ## Important Note
